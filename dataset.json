@@ -1,0 +1,69 @@
+{
+    "train": {
+        "rgb_left": [
+            "train-data/train/rgb_left/000000.png",
+            "train-data/train/rgb_left/000001.png",
+            "train-data/train/rgb_left/000002.png"
+        ],
+        "rgb_right": [
+            "train-data/train/rgb_right/000000.png",
+            "train-data/train/rgb_right/000001.png",
+            "train-data/train/rgb_right/000002.png"
+        ],
+        "top_seg": [
+            "train-data/train/top_seg/000000.png",
+            "train-data/train/top_seg/000001.png",
+            "train-data/train/top_seg/000002.png"
+        ],
+        "mask": [
+            "train-data/train/mask/000000.png",
+            "train-data/train/mask/000001.png",
+            "train-data/train/mask/000002.png"
+        ],
+        "top_ipm": [
+            "train-data/train/top_ipm/000000.png",
+            "train-data/train/top_ipm/000001.png",
+            "train-data/train/top_ipm/000002.png"
+        ],
+        "top_ipm_m": [
+            "train-data/train/top_ipm_m/000000.npy",
+            "train-data/train/top_ipm_m/000001.npy",
+            "train-data/train/top_ipm_m/000002.npy"
+        ],
+        "confs": [
+            "train-data/train/confs/000000.npy",
+            "train-data/train/confs/000001.npy",
+            "train-data/train/confs/000002.npy"
+        ]
+    },
+    "test": {
+        "rgb_left": [
+            "train-data/test/rgb_left/000000.png",
+            "train-data/test/rgb_left/000001.png"
+        ],
+        "rgb_right": [
+            "train-data/test/rgb_right/000000.png",
+            "train-data/test/rgb_right/000001.png"
+        ],
+        "top_seg": [
+            "train-data/test/top_seg/000000.png",
+            "train-data/test/top_seg/000001.png"
+        ],
+        "mask": [
+            "train-data/test/mask/000000.png",
+            "train-data/test/mask/000001.png"
+        ],
+        "top_ipm": [
+            "train-data/test/top_ipm/000000.png",
+            "train-data/test/top_ipm/000001.png"
+        ],
+        "top_ipm_m": [
+            "train-data/test/top_ipm_m/000000.npy",
+            "train-data/test/top_ipm_m/000001.npy"
+        ],
+        "confs": [
+            "train-data/test/confs/000000.npy",
+            "train-data/test/confs/000001.npy"
+        ]
+    }
+} 

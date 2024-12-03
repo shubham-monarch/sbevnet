@@ -1,0 +1,5 @@
+- make dataset loading work
+- run without mask
+- generate dataset.json
+- prepare train-data 
+- do prediction using the trained model

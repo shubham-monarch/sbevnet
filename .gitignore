@@ -1,5 +1,7 @@
 data/
 
+train-data/*
+*.png
 
 
 sync.expect
@@ -105,4 +107,4 @@ ENV/
 .ropeproject
 
 # VSCode settings
-.vscode/
+.vscode/train-data/

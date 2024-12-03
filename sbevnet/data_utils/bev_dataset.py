@@ -258,7 +258,7 @@ def sbevnet_dataset(
     sub_datasets = {}
 
     
-    sub_datasets['input_imgs'] = ImgsLoader( [ jj[dataset_split]["rgb_left"]  ,jj[dataset_split]["rgb_right"] ] , tw=image_w , th=image_h , loader=default_loader )
+    sub_datasets['input_imgs'] = ader( [ jj[dataset_split]["rgb_left"]  ,jj[dataset_split]["rgb_right"] ] , tw=image_w , th=image_h , loader=default_loader )
 
     
     if do_mask:
