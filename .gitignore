@@ -2,7 +2,7 @@ data/
 
 train-data/*
 *.png
-
+*.swp
 
 sync.expect
 

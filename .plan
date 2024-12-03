@@ -1,5 +1,4 @@
-- make dataset loading work
-- run without mask
+- prepare train-data => [left, right, top_seg, top_ipm] 
 - generate dataset.json
-- prepare train-data 
-- do prediction using the trained model
+- train trimmed model
+- visualize top_seg file
