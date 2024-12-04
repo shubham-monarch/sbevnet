@@ -2,8 +2,11 @@
 
 import os
 import shutil
+from tqdm import tqdm
 
-def organize_images(src_folder, target_folder):
+def restructure_dataset(src_folder, target_folder):
+    '''Restructure the dataset into left, right, and segmented-GT folders.'''
+    
     # Create the target folder if it doesn't exist
     os.makedirs(target_folder, exist_ok=True)
 
@@ -17,8 +20,6 @@ def organize_images(src_folder, target_folder):
     os.makedirs(right_folder, exist_ok=True)
     os.makedirs(segmented_gt_folder, exist_ok=True)
 
-    # Walk through the source folder
-    from tqdm import tqdm
 
     # Count total files for progress bar
     total_files = sum(len(files) for _, _, files in os.walk(src_folder))
@@ -47,6 +48,6 @@ if __name__ == "__main__":
     # Example usage
     src_folder = 'train-data'
     target_folder = 'train-data-organized'
-    organize_images(src_folder, target_folder)
+    restructure_dataset(src_folder, target_folder)
 
 
