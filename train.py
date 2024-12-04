@@ -10,21 +10,11 @@ from tqdm import tqdm
 
 from sbevnet.models.network_sbevnet import SBEVNet
 from sbevnet.data_utils.bev_dataset import sbevnet_dataset
+from helpers import get_logger
 
-def setup_logging():
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.StreamHandler(),
-            logging.FileHandler('training.log')
-        ]
-    )
 
 def train_sbevnet():
-    # Setup logging
-    setup_logging()
-    logger = logging.getLogger(__name__)
+    logger = get_logger("train")
     
     # Training parameters
     params = {
@@ -42,7 +32,7 @@ def train_sbevnet():
         'tx': 0.2,
         'camera_ext_x': 0.9,
         'camera_ext_y': -0.1,
-        'batch_size': 3,
+        'batch_size': 1,
         'num_epochs': 20,
         'learning_rate': 0.001
     }
@@ -102,19 +92,37 @@ def train_sbevnet():
         pin_memory=True
     )
     
+    logger.info(f'==================')
+    logger.info(f'type(train_dataset): {type(train_dataset)}')
     logger.info(f'Training dataset size: {len(train_dataset)}')
+    logger.info(f'==================\n')
+    
     
     # Training loop
     best_loss = float('inf')
     
-    for epoch in range(params['num_epochs']):
+
+    # for epoch in range(params['num_epochs']):
+    for epoch in range(1):
         network.train()
         epoch_loss = 0
         
-        # Progress bar for batches
-        progress_bar = tqdm(train_loader, desc=f'Epoch {epoch+1}/{params["num_epochs"]}')
-        
-        for batch_idx, data in enumerate(progress_bar):
+        for batch_idx, data in enumerate(train_loader):
+            
+            if batch_idx > 2:
+                break
+
+            # train_logger.warning(f'==================')
+            # train_logger.warning(f'batch_idx: {batch_idx}')
+            # train_logger.warning(f'==================\n')
+
+            # train_logger.info(f'==================')
+            # train_logger.info(f'type(data): {type(data)}')
+            # train_logger.info(f'len(data): {len(data)}')
+            # train_logger.info(f'data: {data}')
+            # # train_logger.info(f'data keys: {data.keys()}')
+            # train_logger.info(f'==================\n')
+
             try:
                 # Move data to device
                 for key in data:
@@ -126,19 +134,32 @@ def train_sbevnet():
                 
                 # Forward pass
                 optimizer.zero_grad()
+
+                logger.warning(f'==================')
+                logger.warning(f'CKPT-1')
+                logger.warning(f'==================\n')
+                
                 output = network(data)
                 
+                logger.warning(f'==================')
+                logger.warning(f'CKPT-2')
+                logger.warning(f'==================\n')
+
                 # Compute loss
                 loss = criterion(output['top_seg'], data['top_seg'])
                 
+                logger.warning(f'==================')
+                logger.warning(f'CKPT-3')
+                logger.warning(f'==================\n')
+
                 # Backward pass and optimize
                 loss.backward()
                 optimizer.step()
                 
                 epoch_loss += loss.item()
                 
-                # Update progress bar
-                progress_bar.set_postfix({'loss': f'{loss.item():.4f}'})
+                # Log loss for each batch
+                logger.info(f'Epoch {epoch+1}, Batch {batch_idx+1} - Loss: {loss.item():.4f}')
                 
             except Exception as e:
                 logger.error(f'Error in batch {batch_idx}: {str(e)}')

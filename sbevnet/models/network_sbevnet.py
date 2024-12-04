@@ -28,7 +28,7 @@ import inspect
 from .submodule import feature_extraction , convbn_3d ,convbn  
 from .unet import UNet 
 from .bev_costvol_utils import get_grid_one , pt_costvol_to_hmap  , warp_p_scale  , build_cost_volume 
-    
+from helpers import get_logger
     
 class CostVolRefine(nn.Module):
     def __init__(self , n_inp=64):
@@ -211,6 +211,8 @@ class SBEVNet(nn.Module):
         self.sys_confs = sys_confs 
         self.fixed_cam_confs = fixed_cam_confs 
 
+        self.logger = get_logger("network_sbevnet")
+
 
 
        
@@ -236,6 +238,10 @@ class SBEVNet(nn.Module):
         self.down4x = nn.AvgPool3d( 4 )
 
     def forward(self, data , feats_ret={} ):
+        
+        self.logger.warning(f'==================')
+        self.logger.warning(f'[network_sbevnet] --> forward()')
+        self.logger.warning(f'==================\n')
 
         ret = {}
         
