@@ -7,7 +7,7 @@ datasets/*
 *.swp
 checkpoints/**
 
-
+.cursorrules
 sync.expect
 
 

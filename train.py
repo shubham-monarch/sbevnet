@@ -106,51 +106,42 @@ def train_sbevnet():
     for epoch in range(1):
         network.train()
         epoch_loss = 0
+
+        logger.info(f'==================')
+        logger.info(f'epoch: {epoch}')
+        logger.info(f'==================\n')
         
         for batch_idx, data in enumerate(train_loader):
             
-            if batch_idx > 2:
+            if batch_idx > 0:
                 break
 
-            # train_logger.warning(f'==================')
-            # train_logger.warning(f'batch_idx: {batch_idx}')
-            # train_logger.warning(f'==================\n')
-
-            # train_logger.info(f'==================')
-            # train_logger.info(f'type(data): {type(data)}')
-            # train_logger.info(f'len(data): {len(data)}')
-            # train_logger.info(f'data: {data}')
-            # # train_logger.info(f'data keys: {data.keys()}')
-            # train_logger.info(f'==================\n')
-
+            logger.info(f'==================')
+            logger.info(f'batch_idx: {batch_idx}')
+            logger.info(f'==================\n')
+            
             try:
-                # Move data to device
-                for key in data:
-                    if isinstance(data[key], torch.Tensor):
-                        data[key] = data[key].to(device)
-                    elif isinstance(data[key], list):
-                        data[key] = [item.to(device) if isinstance(item, torch.Tensor) else item 
-                                   for item in data[key]]
-                
                 # Forward pass
                 optimizer.zero_grad()
 
-                logger.warning(f'==================')
-                logger.warning(f'CKPT-1')
-                logger.warning(f'==================\n')
+                # logger.warning(f'==================')
+                # logger.warning(f'CKPT-1')
+                # logger.warning(f'==================\n')
+                
+                if not isinstance(data, dict):
+                    raise TypeError("Expected 'data' to be a dictionary")
                 
                 output = network(data)
-                
-                logger.warning(f'==================')
-                logger.warning(f'CKPT-2')
-                logger.warning(f'==================\n')
+                # logger.warning(f'==================')
+                # logger.warning(f'CKPT-2')
+                # logger.warning(f'==================\n')
 
                 # Compute loss
                 loss = criterion(output['top_seg'], data['top_seg'])
                 
-                logger.warning(f'==================')
-                logger.warning(f'CKPT-3')
-                logger.warning(f'==================\n')
+                # logger.warning(f'==================')
+                # logger.warning(f'CKPT-3')
+                # logger.warning(f'==================\n')
 
                 # Backward pass and optimize
                 loss.backward()

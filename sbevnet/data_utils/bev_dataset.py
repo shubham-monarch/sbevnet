@@ -291,5 +291,6 @@ def sbevnet_dataset(
     #     sub_datasets['cam_confs']= NPArrayLoader(   jj[dataset_split]["confs"]  ) 
 
    
-    return ComposeDatasetDict( sub_datasets , ret_double=True )
+    # return ComposeDatasetDict( sub_datasets , ret_double=True )
+    return ComposeDatasetDict( sub_datasets , ret_double=False )
     
