@@ -1,6 +1,8 @@
 data/
 
 train-data/*
+train-data-organized/*
+datasets/*
 *.png
 *.swp
 
