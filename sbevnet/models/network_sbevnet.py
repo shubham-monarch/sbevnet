@@ -245,11 +245,20 @@ class SBEVNet(nn.Module):
 
         ret = {}
         
+        
         imgs = data['input_imgs']
-
+        
+        self.logger.info(f"=================")
+        self.logger.info(f"CKPT-1")
+        self.logger.info(f"=================\n")
+    
         left = imgs[0]
         right = imgs[1]
 
+        self.logger.info(f"=================")
+        self.logger.info(f"CKPT-2")
+        self.logger.info(f"=================\n")
+        
         
         if self.do_ipm_rgb:
             img_ipm = data['ipm_rgb']

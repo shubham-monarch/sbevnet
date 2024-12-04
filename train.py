@@ -60,8 +60,8 @@ def train_sbevnet():
         tx=params['tx'],
         camera_ext_x=params['camera_ext_x'],
         camera_ext_y=params['camera_ext_y'],
-        do_ipm_rgb=True,
-        do_ipm_feats=True,
+        do_ipm_rgb=False,
+        do_ipm_feats=False,
         fixed_cam_confs=True
     ).to(device)
     
@@ -112,7 +112,6 @@ def train_sbevnet():
         logger.info(f'==================\n')
         
         for batch_idx, data in enumerate(train_loader):
-            
             if batch_idx > 0:
                 break
 
@@ -121,6 +120,13 @@ def train_sbevnet():
             logger.info(f'==================\n')
             
             try:
+                # Move data to device
+                for key in data:
+                    if isinstance(data[key], torch.Tensor):
+                        data[key] = data[key].to(device)
+                    elif isinstance(data[key], list):
+                        data[key] = [item.to(device) if isinstance(item, torch.Tensor) else item for item in data[key]]
+
                 # Forward pass
                 optimizer.zero_grad()
 
@@ -132,16 +138,10 @@ def train_sbevnet():
                     raise TypeError("Expected 'data' to be a dictionary")
                 
                 output = network(data)
-                # logger.warning(f'==================')
-                # logger.warning(f'CKPT-2')
-                # logger.warning(f'==================\n')
 
-                # Compute loss
-                loss = criterion(output['top_seg'], data['top_seg'])
-                
-                # logger.warning(f'==================')
-                # logger.warning(f'CKPT-3')
-                # logger.warning(f'==================\n')
+                # Ensure target is on the same device
+                target = data['top_seg'].to(device)
+                loss = criterion(output['top_seg'], target)
 
                 # Backward pass and optimize
                 loss.backward()
