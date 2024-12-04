@@ -18,20 +18,34 @@ def train_sbevnet():
     
     # Training parameters
     params = {
+        
+        # image dimensions
         'image_w': 640,
         'image_h': 480,
         'max_disp': 64,
+
+        # segmentation and heatmap parameters
+        'n_classes_seg': 5,
         'n_hmap': 100,
         'xmin': 1,
         'xmax': 39,
         'ymin': -19,
         'ymax': 19,
+        
+        # camera parameters
         'cx': 256,
         'cy': 144,
         'f': 179.2531,
         'tx': 0.2,
         'camera_ext_x': 0.9,
         'camera_ext_y': -0.1,
+
+        # additional parameters for SBEVNet
+        'do_ipm_rgb': False,
+        'do_ipm_feats': False,
+        'fixed_cam_confs': True,
+        
+        # training parameters
         'batch_size': 1,
         'num_epochs': 20,
         'learning_rate': 0.001
@@ -46,23 +60,32 @@ def train_sbevnet():
     logger.info(f'Using device: {device}')
     
     network = SBEVNet(
+        
+        # image dimensions
         image_w=params['image_w'],
         image_h=params['image_h'],
+        max_disp=params['max_disp'],
+
+        # segmentation and heatmap parameters
+        n_hmap=params['n_hmap'],
         xmin=params['xmin'],
         xmax=params['xmax'],
         ymin=params['ymin'],
         ymax=params['ymax'],
-        n_hmap=params['n_hmap'],
-        max_disp=params['max_disp'],
+
+        # camera parameters
         cx=params['cx'],
         cy=params['cy'],
         f=params['f'],
         tx=params['tx'],
         camera_ext_x=params['camera_ext_x'],
         camera_ext_y=params['camera_ext_y'],
-        do_ipm_rgb=False,
-        do_ipm_feats=False,
-        fixed_cam_confs=True
+
+        # additional parameters for SBEVNet
+        do_ipm_rgb=params['do_ipm_rgb'],
+        do_ipm_feats=params['do_ipm_feats'],
+        fixed_cam_confs=params['fixed_cam_confs']
+    
     ).to(device)
     
     # Define loss function and optimizer
@@ -141,7 +164,22 @@ def train_sbevnet():
 
                 # Ensure target is on the same device
                 target = data['top_seg'].to(device)
+
+                logger.warning(f"=================")
+                logger.warning(f"[train_sbevnet] --> before loss")
+                logger.warning(f"=================\n")
+                
+                logger.info(f"=================")
+                logger.info(f"output['top_seg'].shape: {output['top_seg'].shape}")
+                logger.info(f"target.shape: {target.shape}")
+                logger.info(f"=================\n")
+
                 loss = criterion(output['top_seg'], target)
+
+                logger.warning(f"=================")
+                logger.warning(f"[train_sbevnet] --> after loss")
+                logger.warning(f"=================\n")
+
 
                 # Backward pass and optimize
                 loss.backward()

@@ -119,6 +119,8 @@ class BEVSegHead(nn.Module):
     def __init__(self , nnn , n_classes_seg , bev_size=128   ):
         super(BEVSegHead, self).__init__()
         
+        self.logger = get_logger("bev_seg_head")
+        
         self.dres_2d_seg_1 = nn.Sequential(convbn( nnn  ,  nnn , 3, 1, 1 , 1 ),
                                    nn.ReLU(inplace=True),
                                    convbn( nnn ,  nnn , 3, 1, 1 , 1 )) 
@@ -138,6 +140,10 @@ class BEVSegHead(nn.Module):
 
         
     def forward(self , fea ):
+        
+        # self.logger.warning(f"=================")
+        # self.logger.warning(f"[BEVSegHead] --> forward()")
+        # self.logger.warning(f"=================\n")
         
         fea = self.unet( fea )
         fea = self.dres_2d_seg_1(fea) + fea
@@ -224,7 +230,7 @@ class SBEVNet(nn.Module):
         if do_ipm_feats:
             nnn += 32
             
-            
+
         self.bev_seg_head = BEVSegHead( nnn , n_classes_seg , bev_size=sys_confs['n_hmap']    )
 
 
@@ -248,16 +254,16 @@ class SBEVNet(nn.Module):
         
         imgs = data['input_imgs']
         
-        self.logger.info(f"=================")
-        self.logger.info(f"CKPT-1")
-        self.logger.info(f"=================\n")
+        # self.logger.info(f"=================")
+        # self.logger.info(f"CKPT-1")
+        # self.logger.info(f"=================\n")
     
         left = imgs[0]
         right = imgs[1]
 
-        self.logger.info(f"=================")
-        self.logger.info(f"CKPT-2")
-        self.logger.info(f"=================\n")
+        # self.logger.info(f"=================")
+        # self.logger.info(f"CKPT-2")
+        # self.logger.info(f"=================\n")
         
         
         if self.do_ipm_rgb:
@@ -297,8 +303,17 @@ class SBEVNet(nn.Module):
         if self.do_ipm_feats:
             fea = torch.cat( [ fea , feat_ipm  ] , dim=1 )
     
-
+        # self.logger.info(f"=================")
+        # self.logger.info(f"CKPT-3")
+        # self.logger.info(f"=================\n")
+        
         pred_seg = self.bev_seg_head(fea)
+        
+        
+        # self.logger.info(f"=================")
+        # self.logger.info(f"CKPT-4")
+        # self.logger.info(f"=================\n")
+        
         ret['top_seg'] =  pred_seg
            
         
