@@ -6,3 +6,6 @@
 - visualize models 
 - migrate to recommended pytorch / vision version
 - figure out the co-ordinate system
+
+
+- fix num_workers for train_loader

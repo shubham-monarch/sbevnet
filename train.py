@@ -48,7 +48,12 @@ def train_sbevnet():
         # training parameters
         'batch_size': 1,
         'num_epochs': 20,
-        'learning_rate': 0.001
+        'learning_rate': 0.001,
+
+        # dataset parameters
+        'do_mask': False,
+        'do_top_seg': True,
+        'zero_mask': False
     }
     
     # Create save directory
@@ -67,6 +72,7 @@ def train_sbevnet():
         max_disp=params['max_disp'],
 
         # segmentation and heatmap parameters
+        n_classes_seg=params['n_classes_seg'],
         n_hmap=params['n_hmap'],
         xmin=params['xmin'],
         xmax=params['xmax'],
@@ -96,12 +102,12 @@ def train_sbevnet():
     train_dataset = sbevnet_dataset(
         json_path='datasets/dataset.json',
         dataset_split='train',
-        do_ipm_rgb=False,
-        do_ipm_feats=False,
-        fixed_cam_confs=True,
-        do_mask=False,
-        do_top_seg=True,
-        zero_mask=False,
+        do_ipm_rgb=params['do_ipm_rgb'],
+        do_ipm_feats=params['do_ipm_feats'],
+        fixed_cam_confs=params['fixed_cam_confs'],
+        do_mask=params['do_mask'],
+        do_top_seg=params['do_top_seg'],
+        zero_mask=params['zero_mask'],
         image_w=params['image_w'],
         image_h=params['image_h']
     )

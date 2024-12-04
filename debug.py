@@ -39,38 +39,56 @@ class ComposeDatasetDict(data.Dataset):
         for k in self.data_loaders:
             return len(self.data_loaders[k]) 
 
+params = {
+    
+    # image dimensions
+    'image_w': 640,
+    'image_h': 480,
+    'max_disp': 64,
 
+    # segmentation and heatmap parameters
+    'n_classes_seg': 5,
+    'n_hmap': 100,
+    'xmin': 1,
+    'xmax': 39,
+    'ymin': -19,
+    'ymax': 19,
+    
+    # camera parameters
+    'cx': 256,
+    'cy': 144,
+    'f': 179.2531,
+    'tx': 0.2,
+    'camera_ext_x': 0.9,
+    'camera_ext_y': -0.1,
+
+    # additional parameters for SBEVNet
+    'do_ipm_rgb': False,
+    'do_ipm_feats': False,
+    'fixed_cam_confs': True,
+    
+    # training parameters
+    'batch_size': 1,
+    'num_epochs': 20,
+    'learning_rate': 0.001,
+
+    # dataset parameters
+    'do_mask': False,
+    'do_top_seg': True,
+    'zero_mask': False
+}
+    
 
 if __name__ == '__main__':
     
     logger = get_logger('debug')
-    params = {
-        'image_w': 640,
-        'image_h': 480,
-        'max_disp': 64,
-        'n_hmap': 100,
-        'xmin': 1,
-        'xmax': 39,
-        'ymin': -19,
-        'ymax': 19,
-        'cx': 256,
-        'cy': 144,
-        'f': 179.2531,
-        'tx': 0.2,
-        'camera_ext_x': 0.9,
-        'camera_ext_y': -0.1,
-        'batch_size': 1,
-        'num_epochs': 20,
-        'learning_rate': 0.001
-    }
     
-    # type(composed_dataset_) = <class 'ComposeDatasetDict'>
     composed_dataset_ = sbevnet_dataset(
         json_path='datasets/dataset.json',
         dataset_split='train',
-        do_ipm_rgb=False,
-        do_ipm_feats=False,
-        fixed_cam_confs=True,
+        do_ipm_rgb=params['do_ipm_rgb'],
+        do_ipm_feats=params['do_ipm_feats'],
+        fixed_cam_confs=params['fixed_cam_confs'],
         do_mask=False,
         do_top_seg=True,
         zero_mask=False,
