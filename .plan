@@ -1,7 +1,8 @@
-- prepare train-data => [left, right, top_seg, top_ipm] 
-- generate dataset.json
++ prepare train-data => [left, right, top_seg, top_ipm] 
++ generate dataset.json
+- fix train.py
 - train trimmed model
 - convert / visualize top_seg file in rgb
-- visualize models scripts
+- visualize models 
 - migrate to recommended pytorch / vision version
 - figure out the co-ordinate system
