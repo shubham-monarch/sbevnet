@@ -4,6 +4,8 @@ import os
 import shutil
 from tqdm import tqdm
 
+
+
 def restructure_dataset(src_folder, target_folder):
     '''Restructure the dataset into left, right, and segmented-GT folders.'''
     

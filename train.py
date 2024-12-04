@@ -1,125 +1,160 @@
 import os
-import argparse
 import torch
+import torch.nn as nn
+import torch.optim as optim
 from torch.utils.data import DataLoader
-
-from pytorch_propane.models import Model
-from pytorch_propane.registry import registry
+import logging
+from tqdm import tqdm
 
 from sbevnet.models.network_sbevnet import SBEVNet
-from sbevnet.models.model_sbevnet import sbevnet_model
-from sbevnet.data_utils.bev_dataset import ImgsLoader
+from sbevnet.data_utils.bev_dataset import sbevnet_dataset
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='Train SBEVNet')
-    
-    # Dataset parameters
-    parser.add_argument('--datapath', required=True, help='Path to dataset JSON file')
-    parser.add_argument('--batch_size', type=int, default=3, help='Training batch size')
-    parser.add_argument('--eval_batch_size', type=int, default=1, help='Evaluation batch size')
-    
-    # Model parameters
-    parser.add_argument('--image_w', type=int, default=512, help='Input image width')
-    parser.add_argument('--image_h', type=int, default=288, help='Input image height')
-    parser.add_argument('--max_disp', type=int, default=64, help='Maximum disparity')
-    parser.add_argument('--n_hmap', type=int, default=100, help='Height map size')
-    parser.add_argument('--xmin', type=float, default=1, help='Minimum x coordinate')
-    parser.add_argument('--xmax', type=float, default=39, help='Maximum x coordinate')
-    parser.add_argument('--ymin', type=float, default=-19, help='Minimum y coordinate')
-    parser.add_argument('--ymax', type=float, default=19, help='Maximum y coordinate')
-    
-    # Camera parameters
-    parser.add_argument('--cx', type=float, default=256, help='Principal point x')
-    parser.add_argument('--cy', type=float, default=144, help='Principal point y')
-    parser.add_argument('--f', type=float, default=179.2531, help='Focal length')
-    parser.add_argument('--tx', type=float, default=0.2, help='Baseline')
-    parser.add_argument('--camera_ext_x', type=float, default=0.9, help='Camera external parameter x')
-    parser.add_argument('--camera_ext_y', type=float, default=-0.1, help='Camera external parameter y')
+def setup_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler('training.log')
+        ]
+    )
+
+def train_sbevnet():
+    # Setup logging
+    setup_logging()
+    logger = logging.getLogger(__name__)
     
     # Training parameters
-    parser.add_argument('--n_epochs', type=int, default=20, help='Number of epochs')
-    parser.add_argument('--save_path', required=True, help='Path to save model checkpoints')
-    parser.add_argument('--do_ipm_rgb', type=bool, default=True, help='Use IPM RGB')
-    parser.add_argument('--do_ipm_feats', type=bool, default=True, help='Use IPM features')
-    parser.add_argument('--fixed_cam_confs', type=bool, default=True, help='Use fixed camera configuration')
-    parser.add_argument('--check_degenerate', type=bool, default=True, help='Check for degenerate predictions')
+    params = {
+        'image_w': 512,
+        'image_h': 288,
+        'max_disp': 64,
+        'n_hmap': 100,
+        'xmin': 1,
+        'xmax': 39,
+        'ymin': -19,
+        'ymax': 19,
+        'cx': 256,
+        'cy': 144,
+        'f': 179.2531,
+        'tx': 0.2,
+        'camera_ext_x': 0.9,
+        'camera_ext_y': -0.1,
+        'batch_size': 3,
+        'num_epochs': 20,
+        'learning_rate': 0.001
+    }
     
-    return parser.parse_args()
-
-def main():
-    args = parse_args()
+    # Create save directory
+    save_dir = 'checkpoints'
+    os.makedirs(save_dir, exist_ok=True)
     
-    # Create network
+    # Initialize network
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    logger.info(f'Using device: {device}')
+    
     network = SBEVNet(
-        image_w=args.image_w,
-        image_h=args.image_h,
-        xmin=args.xmin,
-        xmax=args.xmax,
-        ymin=args.ymin,
-        ymax=args.ymax,
-        n_hmap=args.n_hmap,
-        max_disp=args.max_disp,
-        cx=args.cx,
-        cy=args.cy,
-        f=args.f,
-        tx=args.tx,
-        camera_ext_x=args.camera_ext_x,
-        camera_ext_y=args.camera_ext_y,
-        do_ipm_rgb=args.do_ipm_rgb,
-        do_ipm_feats=args.do_ipm_feats,
-        fixed_cam_confs=args.fixed_cam_confs
-    )
+        image_w=params['image_w'],
+        image_h=params['image_h'],
+        xmin=params['xmin'],
+        xmax=params['xmax'],
+        ymin=params['ymin'],
+        ymax=params['ymax'],
+        n_hmap=params['n_hmap'],
+        max_disp=params['max_disp'],
+        cx=params['cx'],
+        cy=params['cy'],
+        f=params['f'],
+        tx=params['tx'],
+        camera_ext_x=params['camera_ext_x'],
+        camera_ext_y=params['camera_ext_y'],
+        do_ipm_rgb=True,
+        do_ipm_feats=True,
+        fixed_cam_confs=True
+    ).to(device)
     
-    # Create model wrapper
-    model = sbevnet_model(
-        network=network,
-        check_degenerate=args.check_degenerate
-    )
+    # Define loss function and optimizer
+    criterion = nn.NLLLoss2d(ignore_index=-100)
+    optimizer = optim.Adam(network.parameters(), lr=params['learning_rate'])
     
-    # Create data loaders
-    # Note: You'll need to implement your dataset class based on your data format
-    train_dataset = ImgsLoader(
-        rgb_imgs=None,  # Load your training data here
-        th=args.image_h,
-        tw=args.image_w
+    # Load datasets
+    train_dataset = sbevnet_dataset(
+        datapath='dataset.json',
+        split='train',
+        th=params['image_h'],
+        tw=params['image_w']
     )
     
     train_loader = DataLoader(
         train_dataset,
-        batch_size=args.batch_size,
+        batch_size=params['batch_size'],
         shuffle=True,
-        num_workers=4
+        num_workers=4,
+        pin_memory=True
     )
     
-    # Create save directory if it doesn't exist
-    os.makedirs(args.save_path, exist_ok=True)
+    logger.info(f'Training dataset size: {len(train_dataset)}')
     
     # Training loop
-    for epoch in range(args.n_epochs):
-        model.train()
+    best_loss = float('inf')
+    
+    for epoch in range(params['num_epochs']):
+        network.train()
+        epoch_loss = 0
         
-        for batch_idx, data in enumerate(train_loader):
-            # Your training step here
-            # The model expects input in the format:
-            # data = {
-            #     'input_imgs': [left_img, right_img],
-            #     'ipm_rgb': ipm_rgb,  # if do_ipm_rgb
-            #     'ipm_feats_m': ipm_feats_m,  # if do_ipm_feats
-            #     'cam_confs': cam_confs  # if not fixed_cam_confs
-            # }
-            
-            loss = model.train_on_batch(data)
-            
-            if batch_idx % 100 == 0:
-                print(f'Epoch: {epoch}, Batch: {batch_idx}, Loss: {loss}')
+        # Progress bar for batches
+        progress_bar = tqdm(train_loader, desc=f'Epoch {epoch+1}/{params["num_epochs"]}')
+        
+        for batch_idx, data in enumerate(progress_bar):
+            try:
+                # Move data to device
+                for key in data:
+                    if isinstance(data[key], torch.Tensor):
+                        data[key] = data[key].to(device)
+                    elif isinstance(data[key], list):
+                        data[key] = [item.to(device) if isinstance(item, torch.Tensor) else item 
+                                   for item in data[key]]
+                
+                # Forward pass
+                optimizer.zero_grad()
+                output = network(data)
+                
+                # Compute loss
+                loss = criterion(output['top_seg'], data['top_seg'])
+                
+                # Backward pass and optimize
+                loss.backward()
+                optimizer.step()
+                
+                epoch_loss += loss.item()
+                
+                # Update progress bar
+                progress_bar.set_postfix({'loss': f'{loss.item():.4f}'})
+                
+            except Exception as e:
+                logger.error(f'Error in batch {batch_idx}: {str(e)}')
+                continue
+        
+        # Calculate average epoch loss
+        avg_epoch_loss = epoch_loss / len(train_loader)
+        logger.info(f'Epoch {epoch+1} - Average Loss: {avg_epoch_loss:.4f}')
         
         # Save checkpoint
-        checkpoint_path = os.path.join(args.save_path, f'checkpoint_epoch_{epoch}.pth')
-        torch.save({
+        checkpoint = {
             'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': model.optimizer.state_dict(),
-        }, checkpoint_path)
+            'model_state_dict': network.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'loss': avg_epoch_loss,
+        }
+        
+        # Save latest checkpoint
+        torch.save(checkpoint, os.path.join(save_dir, 'latest_checkpoint.pth'))
+        
+        # Save best model
+        if avg_epoch_loss < best_loss:
+            best_loss = avg_epoch_loss
+            torch.save(checkpoint, os.path.join(save_dir, 'best_model.pth'))
+            logger.info(f'New best model saved with loss: {best_loss:.4f}')
 
 if __name__ == '__main__':
-    main() 
+    train_sbevnet() 

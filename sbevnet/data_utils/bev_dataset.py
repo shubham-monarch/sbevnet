@@ -234,7 +234,7 @@ class DispImgLoader(data.Dataset):
 @registry.register_dataset("sbevnet_dataset_main")
 def sbevnet_dataset(
 
-    datapath , dataset_split  , do_ipm_rgb=False , 
+    json_path , dataset_split  , do_ipm_rgb=False , 
     do_ipm_feats=False , fixed_cam_confs=True , 
     do_mask=True ,  do_top_seg=True ,  
     zero_mask=False ,
@@ -247,9 +247,11 @@ def sbevnet_dataset(
     print( "dataset argsss : " ,  { arg: localss[arg] for arg in inspect.getfullargspec(sbevnet_dataset ).args if arg != 'self'}) 
 
 
-    jj = json.loads(open( datapath ).read()) 
+    jj = json.loads(open( json_path).read()) 
 
-    rootp = os.path.dirname( datapath )
+    # populate_json(json_path)
+
+    rootp = os.path.dirname( json_path )
 
     for s in ['train' , 'test']:
         for k in jj[s]:
@@ -258,7 +260,7 @@ def sbevnet_dataset(
     sub_datasets = {}
 
     
-    sub_datasets['input_imgs'] = ader( [ jj[dataset_split]["rgb_left"]  ,jj[dataset_split]["rgb_right"] ] , tw=image_w , th=image_h , loader=default_loader )
+    sub_datasets['input_imgs'] = ImgsLoader( [ jj[dataset_split]["rgb_left"]  ,jj[dataset_split]["rgb_right"] ] , tw=image_w , th=image_h , loader=default_loader )
 
     
     if do_mask:
@@ -274,14 +276,14 @@ def sbevnet_dataset(
     
     
         
-    if  do_ipm_rgb:
-        sub_datasets['ipm_rgb'] =  IPMLoader( jj[dataset_split]["top_ipm"]  )
+    # if  do_ipm_rgb:
+    #     sub_datasets['ipm_rgb'] =  IPMLoader( jj[dataset_split]["top_ipm"]  )
 
-    if do_ipm_feats:
-        sub_datasets['ipm_feats_m']= NPArrayLoader(  jj[dataset_split]["top_ipm_m"]  )
+    # if do_ipm_feats:
+    #     sub_datasets['ipm_feats_m']= NPArrayLoader(  jj[dataset_split]["top_ipm_m"]  )
 
-    if not fixed_cam_confs:
-        sub_datasets['cam_confs']= NPArrayLoader(   jj[dataset_split]["confs"]  ) 
+    # if not fixed_cam_confs:
+    #     sub_datasets['cam_confs']= NPArrayLoader(   jj[dataset_split]["confs"]  ) 
 
    
     return ComposeDatasetDict( sub_datasets , ret_double=True )
