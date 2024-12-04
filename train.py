@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 import os
 import torch
 import torch.nn as nn
@@ -26,8 +28,8 @@ def train_sbevnet():
     
     # Training parameters
     params = {
-        'image_w': 512,
-        'image_h': 288,
+        'image_w': 640,
+        'image_h': 480,
         'max_disp': 64,
         'n_hmap': 100,
         'xmin': 1,
@@ -79,12 +81,19 @@ def train_sbevnet():
     
     # Load datasets
     train_dataset = sbevnet_dataset(
-        datapath='dataset.json',
-        split='train',
-        th=params['image_h'],
-        tw=params['image_w']
+        json_path='datasets/dataset.json',
+        dataset_split='train',
+        do_ipm_rgb=False,
+        do_ipm_feats=False,
+        fixed_cam_confs=True,
+        do_mask=False,
+        do_top_seg=True,
+        zero_mask=False,
+        image_w=params['image_w'],
+        image_h=params['image_h']
     )
-    
+
+
     train_loader = DataLoader(
         train_dataset,
         batch_size=params['batch_size'],

@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
     # CASE => 2
     # Populate the json file with the file paths of the images in the dataset.
-    json_path = 'datasets/dataset.json'
-    dataset_path = 'datasets'
-    populate_json(json_path, dataset_path)
+    # json_path = 'datasets/dataset.json'
+    # dataset_path = 'datasets'
+    # populate_json(json_path, dataset_path)
 

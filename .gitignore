@@ -5,6 +5,8 @@ train-data-organized/*
 datasets/*
 *.png
 *.swp
+checkpoints/**
+
 
 sync.expect
 
