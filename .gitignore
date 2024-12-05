@@ -1,5 +1,7 @@
 data/
 
+.vscode/*
+train-data
 train-data/*
 train-data-organized/*
 datasets/*

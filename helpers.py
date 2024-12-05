@@ -136,12 +136,15 @@ def restructure_dataset(src_folder, target_folder):
     # Define the target subfolders
     left_folder = os.path.join(target_folder, 'left')
     right_folder = os.path.join(target_folder, 'right')
-    bev_segmented_folder = os.path.join(target_folder, 'bev-segmented')
+    seg_masks_mono_folder = os.path.join(target_folder, 'seg-masks-mono')
+    seg_masks_rgb_folder = os.path.join(target_folder, 'seg-masks-rgb')
+
 
     # Create the target subfolders if they don't exist
     os.makedirs(left_folder, exist_ok=True)
     os.makedirs(right_folder, exist_ok=True)
-    os.makedirs(bev_segmented_folder, exist_ok=True)
+    os.makedirs(seg_masks_mono_folder, exist_ok=True)
+    os.makedirs(seg_masks_rgb_folder, exist_ok=True)
 
 
     # Count total files for progress bar
@@ -160,20 +163,25 @@ def restructure_dataset(src_folder, target_folder):
                     prefix = os.path.basename(root)
                     new_filename = f"{prefix}_{file}"
                     shutil.copy(os.path.join(root, file), os.path.join(right_folder, new_filename))
-                elif file.endswith('_left.disp.png'):
+                elif file.endswith('-mono.png'):
                     # Use the directory name as a prefix to prevent overwriting
                     prefix = os.path.basename(root)
                     new_filename = f"{prefix}_{file}"
-                    shutil.copy(os.path.join(root, file), os.path.join(bev_segmented_folder, new_filename))
+                    shutil.copy(os.path.join(root, file), os.path.join(seg_masks_mono_folder, new_filename))
+                elif file.endswith('-rgb.png'):
+                    # Use the directory name as a prefix to prevent overwriting
+                    prefix = os.path.basename(root)
+                    new_filename = f"{prefix}_{file}"
+                    shutil.copy(os.path.join(root, file), os.path.join(seg_masks_rgb_folder, new_filename))
                 pbar.update(1)
 
 if __name__ == "__main__":
     pass    
     # CASE => 1
     # Restructure the train-dataset into left, right, and bev-segmented folders.
-    # src_folder = 'train-data'
-    # target_folder = 'train-data-organized'
-    # restructure_dataset(src_folder, target_folder)
+    src_folder = 'train-data'
+    target_folder = 'train-data-organized'
+    restructure_dataset(src_folder, target_folder)
 
     # CASE => 2
     # Populate the json file with the file paths of the images in the dataset.
@@ -189,6 +197,6 @@ if __name__ == "__main__":
 
     # CASE => 4
     # Get the number of unique labels from an RGB segmentation mask.
-    segmentation_mask = 'datasets/train/bev-segmented/1__left.disp.png'
-    num_labels = get_unique_labels_from_rgb_mask(segmentation_mask)
-    print(f"Number of unique labels: {num_labels}")
+    # segmentation_mask = 'datasets/train/bev-segmented/1__left.disp.png'
+    # num_labels = get_unique_labels_from_rgb_mask(segmentation_mask)
+    # print(f"Number of unique labels: {num_labels}")
