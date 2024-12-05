@@ -9,6 +9,8 @@ datasets/*
 *.swp
 checkpoints/**
 
+debug/*
+
 .cursorrules
 sync.expect
 

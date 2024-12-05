@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 import os
 import torch
 import torch.nn as nn
@@ -202,7 +204,7 @@ def evaluate_sbevnet():
                     cv2.imwrite(pred_path, pred_np.astype(np.uint8))
                     
                     # Save colored visualization
-                    colored_pred = get_colored_segmentation_image(pred_np)
+                    colored_pred = get_colored_segmentation_image(pred_np, config_path='Mavis.yaml')
                     colored_path = os.path.join(pred_dir, f'pred_{batch_idx}_{i}_color.png')
                     cv2.imwrite(colored_path, colored_pred)
                 
