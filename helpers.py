@@ -113,7 +113,7 @@ def populate_json(json_path, dataset_path, split="train"):
         "train": {
             "rgb_left": get_relative_files(os.path.join(dataset_path, 'train/left'), IMG_EXTENSIONS),
             "rgb_right": get_relative_files(os.path.join(dataset_path, 'train/right'), IMG_EXTENSIONS),
-            "top_seg": get_relative_files(os.path.join(dataset_path, 'train/bev-segmented'), ['.png'])
+            "top_seg": get_relative_files(os.path.join(dataset_path, 'train/seg-masks-mono'), ['.png'])
         },
         "test": {
             "rgb_left": [],
@@ -179,9 +179,9 @@ if __name__ == "__main__":
     pass    
     # CASE => 1
     # Restructure the train-dataset into left, right, and bev-segmented folders.
-    src_folder = 'train-data'
-    target_folder = 'train-data-organized'
-    restructure_dataset(src_folder, target_folder)
+    # src_folder = 'train-data'
+    # target_folder = 'train-data-organized'
+    # restructure_dataset(src_folder, target_folder)
 
     # CASE => 2
     # Populate the json file with the file paths of the images in the dataset.
