@@ -14,11 +14,14 @@
 + convert bev_segmented to single channel 
 
 - fix poor results
+
+- parallelize GT dataset generation pipeline 
 - use 2 classes => void + canopy
+
 - fix GT seg-mask resolution across files
 - why are there huge black patches in GT? 
 - why is segmented-bev not centered in GT? 
-- fix preprocessing
+- fix sbevnet preprocessing
 - fix num_workers for train_loader
 - fix transpose=True for SegLoader
 - importance of transpse
