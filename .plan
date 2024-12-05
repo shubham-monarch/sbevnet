@@ -1,3 +1,8 @@
+[keys]
++ --> done
+* --> dropped
+- --> to-do
+
 + prepare train-data => [left, right, top_seg, top_ipm] 
 + generate dataset.json
 + fix train.py
@@ -8,10 +13,11 @@
 + fix bev_segmented dataset
 + convert bev_segmented to single channel 
 
-
 - fix poor results
-
-- why is segmented-bev not centered in GT data? 
+- use 2 classes => void + canopy
+- fix GT seg-mask resolution across files
+- why are there huge black patches in GT? 
+- why is segmented-bev not centered in GT? 
 - fix preprocessing
 - fix num_workers for train_loader
 - fix transpose=True for SegLoader
