@@ -1,0 +1,1097 @@
+.
+├── 1
+│   ├── _left.disp.png
+│   ├── _left.disp_single_channel.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 10
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 100
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 101
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 102
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 104
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 105
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 106
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 107
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 108
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 109
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 110
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 111
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 112
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 113
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 114
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 115
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 116
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 117
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 118
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 119
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 12
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 121
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 122
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 123
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 124
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 125
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 126
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 127
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 128
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 129
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 13
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 130
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 131
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 132
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 134
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 135
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 136
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 137
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 138
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 139
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 14
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 140
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 141
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 142
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 143
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 144
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 145
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 146
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 147
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 148
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 149
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 15
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 150
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 151
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 152
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 153
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 154
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 156
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 157
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 158
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 16
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 160
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 161
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 163
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 164
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 165
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 166
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 167
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 168
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 169
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 17
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 170
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 171
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 173
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 174
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 175
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 176
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 177
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 178
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 179
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 18
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 180
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 181
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 182
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 184
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 185
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 186
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 187
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 188
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 189
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 19
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 190
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 191
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 192
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 193
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 194
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 195
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 196
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 197
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 198
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 199
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 2
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 20
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 21
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 22
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 23
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 24
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 25
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 26
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 27
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 28
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 29
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 3
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 30
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 31
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 32
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 33
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 34
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 35
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 36
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 37
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 38
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 39
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 4
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 40
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 41
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 44
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 45
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 46
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 47
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 48
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 49
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 5
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 50
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 51
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 52
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 54
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 55
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 56
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 57
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 58
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 59
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 6
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 60
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 62
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 64
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 65
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 66
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 68
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 69
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 7
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 70
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 71
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 72
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 73
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 76
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 77
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 78
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 79
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 8
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 80
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 81
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 82
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 83
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 84
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 85
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 86
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 87
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 88
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 89
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 9
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 90
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 91
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 92
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 93
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 94
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 95
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 96
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 97
+│   ├── bev_image.png
+│   ├── left-rgb.ply
+│   ├── left-segmented-labelled.ply
+│   ├── left.jpg
+│   └── right.jpg
+├── 98
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+├── 99
+│   ├── _left.disp.png
+│   ├── _left.jpg
+│   ├── _right.jpg
+│   ├── left-rgb.ply
+│   └── left-segmented-labelled.ply
+└── train-data-structure.txt
+
+182 directories, 912 files
