@@ -239,9 +239,9 @@ class SBEVNet(nn.Module):
 
     def forward(self, data , feats_ret={} ):
         
-        self.logger.warning(f'==================')
-        self.logger.warning(f'[network_sbevnet] --> forward()')
-        self.logger.warning(f'==================\n')
+        # self.logger.warning(f'==================')
+        # self.logger.warning(f'[network_sbevnet] --> forward()')
+        # self.logger.warning(f'==================\n')
 
         ret = {}
         

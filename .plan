@@ -1,7 +1,7 @@
 + prepare train-data => [left, right, top_seg, top_ipm] 
 + generate dataset.json
-- fix train.py
-- train trimmed model
++ fix train.py
++ train trimmed model
 + convert / visualize top_seg file in rgb
 - visualize models 
 - migrate to recommended pytorch / vision version
@@ -13,3 +13,8 @@
 + convert bev_segmented to single channel 
 - fix num_workers for train_loader
 - fix transpose=True for SegLoader
+
+- visualise cropped-seg-masks-mono in rgb
+- eval on the trained model
+- generate square shaped top_seg
+- multiple training dicts

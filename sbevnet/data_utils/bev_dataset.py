@@ -165,9 +165,9 @@ class SegLoader(data.Dataset):
         
         seg_img = cv2.imread( self.f_list[index] , cv2.IMREAD_UNCHANGED)
 
-        self.logger.info(f"=================")
-        self.logger.info(f"seg_img.shape: {seg_img.shape}")
-        self.logger.info(f"=================\n")
+        # self.logger.info(f"=================")
+        # self.logger.info(f"seg_img.shape: {seg_img.shape}")
+        # self.logger.info(f"=================\n")
 
         if len( seg_img.shape ) == 3 :
             seg_img = seg_img[: , : , 2 ]
@@ -182,9 +182,9 @@ class SegLoader(data.Dataset):
         
         seg_img = torch.from_numpy( seg_img ).long()
         
-        self.logger.info(f"=================")
-        self.logger.info(f"seg_img.shape: {seg_img.shape}")
-        self.logger.info(f"=================\n")
+        # self.logger.info(f"=================")
+        # self.logger.info(f"seg_img.shape: {seg_img.shape}")
+        # self.logger.info(f"=================\n")
         
         if self.mask_segs:
             if not self.explicit_mask is None:
@@ -193,9 +193,9 @@ class SegLoader(data.Dataset):
             else:
                 seg_img[seg_img<0.5] = -100
 
-        self.logger.info(f"=================")
-        self.logger.info(f"seg_img.shape: {seg_img.shape}")
-        self.logger.info(f"=================\n")
+        # self.logger.info(f"=================")
+        # self.logger.info(f"seg_img.shape: {seg_img.shape}")
+        # self.logger.info(f"=================\n")
         return seg_img
 
     def __len__(self):

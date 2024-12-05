@@ -25,7 +25,7 @@ def train_sbevnet():
         'max_disp': 64,
 
         # segmentation and heatmap parameters
-        'n_classes_seg': 5,
+        'n_classes_seg': 6,
         'n_hmap': 480,
         'xmin': 1,
         'xmax': 39,
@@ -33,12 +33,12 @@ def train_sbevnet():
         'ymax': 19,
         
         # camera parameters
-        'cx': 256,
-        'cy': 144,
-        'f': 179.2531,
-        'tx': 0.2,
-        'camera_ext_x': 0.9,
-        'camera_ext_y': -0.1,
+        'cx': 964.989,
+        'cy': 569.276,
+        'f': 1093.2768,
+        'tx': 0.13,
+        'camera_ext_x': 0.0,
+        'camera_ext_y': 0.0,
 
         # additional parameters for SBEVNet
         'do_ipm_rgb': False,
@@ -131,18 +131,16 @@ def train_sbevnet():
     best_loss = float('inf')
     
 
-    # for epoch in range(params['num_epochs']):
-    for epoch in range(1):
+    for epoch in range(params['num_epochs']):
+    # for epoch in range(1):
         network.train()
         epoch_loss = 0
 
-        logger.info(f'==================')
-        logger.info(f'epoch: {epoch}')
-        logger.info(f'==================\n')
+        logger.warning(f'==================')
+        logger.warning(f'epoch: {epoch}')
+        logger.warning(f'==================\n')
         
         for batch_idx, data in enumerate(train_loader):
-            if batch_idx > 0:
-                break
 
             logger.info(f'==================')
             logger.info(f'batch_idx: {batch_idx}')
@@ -175,10 +173,10 @@ def train_sbevnet():
                 # logger.warning(f"[train_sbevnet] --> before loss")
                 # logger.warning(f"=================\n")
                 
-                logger.info(f"=================")
-                logger.info(f"output['top_seg'].shape: {output['top_seg'].shape}")
-                logger.info(f"target.shape: {target.shape}")
-                logger.info(f"=================\n")
+                # logger.info(f"=================")
+                # logger.info(f"output['top_seg'].shape: {output['top_seg'].shape}")
+                # logger.info(f"target.shape: {target.shape}")
+                # logger.info(f"=================\n")
 
                 loss = criterion(output['top_seg'], target)
 
