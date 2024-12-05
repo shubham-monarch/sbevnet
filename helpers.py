@@ -120,9 +120,9 @@ def populate_json(json_path, dataset_path, split="train"):
             "top_seg": get_relative_files(os.path.join(dataset_path, 'train/cropped-seg-masks-mono'), ['.png'])
         },
         "test": {
-            "rgb_left": [],
-            "rgb_right": [],
-            "top_seg": []
+            "rgb_left": get_relative_files(os.path.join(dataset_path, 'test/left'), IMG_EXTENSIONS),
+            "rgb_right": get_relative_files(os.path.join(dataset_path, 'test/right'), IMG_EXTENSIONS),
+            "top_seg": get_relative_files(os.path.join(dataset_path, 'test/cropped-seg-masks-mono'), ['.png'])
         }
     }
 

@@ -1,0 +1,22 @@
+# This file is covered by the LICENSE file in the root of this project.
+name: "Mavis"
+labels:
+ 0: "void"
+ 1: "obstacle"
+ 2: "navigable_space"
+ 3: "vine_canopy"
+ 4: "vine_stem"
+ 5: "vine_pole"
+ 6: "vegetation"
+ 7: "tractor_hood"
+ 8: "sky"
+color_map: # bgr
+ 0: [0, 0, 0] 
+ 1: [246, 4, 228] 
+ 2: [173, 94, 48] 
+ 3: [68, 171, 117] 
+ 4: [162, 122, 174] 
+ 5: [121, 119, 148] 
+ 6: [253, 75, 40] 
+ 7: [170, 60, 100] 
+ 8: [60, 100, 179]
