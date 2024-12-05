@@ -2,12 +2,14 @@
 + generate dataset.json
 - fix train.py
 - train trimmed model
-- convert / visualize top_seg file in rgb
++ convert / visualize top_seg file in rgb
 - visualize models 
 - migrate to recommended pytorch / vision version
 - figure out the co-ordinate system
 
-- fix bev_segmented dataset
-- convert bev_segmented to single channel 
+- importance of transpse
+- fix preprocessing 
++ fix bev_segmented dataset
++ convert bev_segmented to single channel 
 - fix num_workers for train_loader
 - fix transpose=True for SegLoader

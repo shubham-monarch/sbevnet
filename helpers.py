@@ -11,44 +11,42 @@ import coloredlogs
 import numpy as np
 import cv2
 
-def get_unique_labels_from_rgb_mask(segmentation_mask: str) -> int:
-    '''Read an RGB segmentation mask and detect number of unique labels based on RGB values.'''
-    
-    # Read RGB segmentation mask
-    mask = cv2.imread(segmentation_mask, cv2.IMREAD_UNCHANGED)
-    
-    if mask.ndim != 3 or mask.shape[2] != 3:
-        raise ValueError("Input segmentation mask must be an RGB image with 3 channels.")
-        
-    # Reshape to Nx3 array where N is number of pixels
-    pixels = mask.reshape(-1, 3)
-    
-    # Find unique RGB combinations with tolerance for similar values
-    tolerance = 10  # RGB values within this range will be considered the same
-    
-    # Sort pixels to process similar values together
-    sorted_pixels = pixels[np.lexsort((pixels[:,2], pixels[:,1], pixels[:,0]))]
-    
-    # Initialize list with first pixel
-    unique_labels = [sorted_pixels[0]]
-    
-    # Group similar values
-    for pixel in sorted_pixels:
-        # Check if pixel is significantly different from all existing labels
-        is_new_label = True
-        for label in unique_labels:
-            if np.all(np.abs(pixel - label) <= tolerance):
-                is_new_label = False
-                break
-        if is_new_label:
-            unique_labels.append(pixel)
-    
-    unique_labels = np.array(unique_labels)
-    num_labels = len(unique_labels)
-    
-    return num_labels
-    # return num_labels, unique_labels
 
+def resize_segmentation_masks(
+    input_folder: str, 
+    output_folder: str, 
+    new_size: tuple, 
+    labels=[0, 1, 2, 3, 4, 5]
+):
+    '''Resize segmentation masks in the input folder and save them to the output folder.'''
+    
+    # Create output folder if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+    
+    # Get all mask files from the input folder
+    mask_files = get_files_from_folder(input_folder, ['.png', '.jpg', '.bmp'])
+    
+    for mask_file in tqdm(mask_files, desc="Resizing masks"):
+        # Read the mask
+        mask = cv2.imread(mask_file, cv2.IMREAD_UNCHANGED)
+        
+        if mask is None:
+            raise ValueError(f"Failed to read mask file: {mask_file}")
+        
+        # Resize the mask
+        resized_mask = cv2.resize(mask, new_size, interpolation=cv2.INTER_NEAREST)
+        
+        # Ensure the resized mask contains only the specified label values
+        unique_values = np.unique(resized_mask)
+        min_label, max_label = min(labels), max(labels)
+        resized_mask = np.clip(np.round(resized_mask), min_label, max_label)
+        
+        # Assert that the number of unique labels is less than the number of specified labels
+        assert len(unique_values) <= len(labels), f"Number of unique labels {len(unique_values)} is not less than {len(labels)}"
+
+        # Save the resized mask to the output folder
+        output_path = os.path.join(output_folder, os.path.basename(mask_file))
+        cv2.imwrite(output_path, resized_mask)
 
 
 def convert_rgb_to_single_channel(segmentation_mask: str) -> np.ndarray:
@@ -102,6 +100,11 @@ def get_files_from_folder(folder, extensions):
 
 def populate_json(json_path, dataset_path, split="train"):
     '''Populate the json file with the file paths of the images in the dataset.'''
+    
+    # Remove the json at the json path if it exists
+    if os.path.exists(json_path):
+        os.remove(json_path)
+    
     IMG_EXTENSIONS = ['.jpg', '.png']
     
     def get_relative_files(folder, extensions):
@@ -113,7 +116,8 @@ def populate_json(json_path, dataset_path, split="train"):
         "train": {
             "rgb_left": get_relative_files(os.path.join(dataset_path, 'train/left'), IMG_EXTENSIONS),
             "rgb_right": get_relative_files(os.path.join(dataset_path, 'train/right'), IMG_EXTENSIONS),
-            "top_seg": get_relative_files(os.path.join(dataset_path, 'train/seg-masks-mono'), ['.png'])
+            # "top_seg": get_relative_files(os.path.join(dataset_path, 'train/seg-masks-mono'), ['.png']),
+            "top_seg": get_relative_files(os.path.join(dataset_path, 'train/cropped-seg-masks-mono'), ['.png'])
         },
         "test": {
             "rgb_left": [],
@@ -185,9 +189,9 @@ if __name__ == "__main__":
 
     # CASE => 2
     # Populate the json file with the file paths of the images in the dataset.
-    # json_path = 'datasets/dataset.json'
-    # dataset_path = 'datasets'
-    # populate_json(json_path, dataset_path)
+    json_path = 'datasets/dataset.json'
+    dataset_path = 'datasets'
+    populate_json(json_path, dataset_path)
 
     # # CASE => 3
     # # Convert an RGB segmentation mask to a single channel image.
@@ -200,3 +204,12 @@ if __name__ == "__main__":
     # segmentation_mask = 'datasets/train/bev-segmented/1__left.disp.png'
     # num_labels = get_unique_labels_from_rgb_mask(segmentation_mask)
     # print(f"Number of unique labels: {num_labels}")
+
+    # CASE => 5
+    # Resize segmentation masks in the input folder and save them to the output folder.
+    # input_folder = 'datasets/train/cropped-seg-masks-mono'
+    # output_folder = 'datasets/train/cropped-seg-masks-mono'
+    # new_size = (480,480)
+    # resize_segmentation_masks(input_folder, output_folder, new_size, labels=[0, 1, 2, 3, 4, 5])
+
+

@@ -14,6 +14,7 @@ import json
 import inspect 
 import glob
 
+from helpers import get_logger
 
 from pytorch_propane.data_utils import ComposeDatasetDict 
 from pytorch_propane.registry import registry
@@ -157,10 +158,16 @@ class SegLoader(data.Dataset):
         self.explicit_mask = explicit_mask
         self.resize = resize
         self.do_transpose = do_transpose
-        
+
+        self.logger = get_logger("seg_loader")
+
     def __getitem__(self, index):
         
         seg_img = cv2.imread( self.f_list[index] , cv2.IMREAD_UNCHANGED)
+
+        self.logger.info(f"=================")
+        self.logger.info(f"seg_img.shape: {seg_img.shape}")
+        self.logger.info(f"=================\n")
 
         if len( seg_img.shape ) == 3 :
             seg_img = seg_img[: , : , 2 ]
@@ -175,6 +182,9 @@ class SegLoader(data.Dataset):
         
         seg_img = torch.from_numpy( seg_img ).long()
         
+        self.logger.info(f"=================")
+        self.logger.info(f"seg_img.shape: {seg_img.shape}")
+        self.logger.info(f"=================\n")
         
         if self.mask_segs:
             if not self.explicit_mask is None:
@@ -182,7 +192,10 @@ class SegLoader(data.Dataset):
                 seg_img[mask<0.5] = -100
             else:
                 seg_img[seg_img<0.5] = -100
-                
+
+        self.logger.info(f"=================")
+        self.logger.info(f"seg_img.shape: {seg_img.shape}")
+        self.logger.info(f"=================\n")
         return seg_img
 
     def __len__(self):

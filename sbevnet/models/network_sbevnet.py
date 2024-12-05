@@ -1,5 +1,3 @@
-
-
 from __future__ import print_function
 import argparse
 import os
@@ -140,10 +138,6 @@ class BEVSegHead(nn.Module):
 
         
     def forward(self , fea ):
-        
-        # self.logger.warning(f"=================")
-        # self.logger.warning(f"[BEVSegHead] --> forward()")
-        # self.logger.warning(f"=================\n")
         
         fea = self.unet( fea )
         fea = self.dres_2d_seg_1(fea) + fea

@@ -26,7 +26,7 @@ def train_sbevnet():
 
         # segmentation and heatmap parameters
         'n_classes_seg': 5,
-        'n_hmap': 100,
+        'n_hmap': 480,
         'xmin': 1,
         'xmax': 39,
         'ymin': -19,
