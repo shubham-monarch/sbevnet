@@ -7,9 +7,69 @@ import glob
 import json
 import logging
 import sys
-import coloredlogs  
+import coloredlogs 
+import numpy as np
+import cv2
+
+def get_unique_labels_from_rgb_mask(segmentation_mask: str) -> int:
+    '''Read an RGB segmentation mask and detect number of unique labels based on RGB values.'''
+    
+    # Read RGB segmentation mask
+    mask = cv2.imread(segmentation_mask, cv2.IMREAD_UNCHANGED)
+    
+    if mask.ndim != 3 or mask.shape[2] != 3:
+        raise ValueError("Input segmentation mask must be an RGB image with 3 channels.")
+        
+    # Reshape to Nx3 array where N is number of pixels
+    pixels = mask.reshape(-1, 3)
+    
+    # Find unique RGB combinations with tolerance for similar values
+    tolerance = 10  # RGB values within this range will be considered the same
+    
+    # Sort pixels to process similar values together
+    sorted_pixels = pixels[np.lexsort((pixels[:,2], pixels[:,1], pixels[:,0]))]
+    
+    # Initialize list with first pixel
+    unique_labels = [sorted_pixels[0]]
+    
+    # Group similar values
+    for pixel in sorted_pixels:
+        # Check if pixel is significantly different from all existing labels
+        is_new_label = True
+        for label in unique_labels:
+            if np.all(np.abs(pixel - label) <= tolerance):
+                is_new_label = False
+                break
+        if is_new_label:
+            unique_labels.append(pixel)
+    
+    unique_labels = np.array(unique_labels)
+    num_labels = len(unique_labels)
+    
+    return num_labels
+    # return num_labels, unique_labels
 
 
+
+def convert_rgb_to_single_channel(segmentation_mask: str) -> np.ndarray:
+    ''' Convert an RGB segmentation mask to a single channel image.'''
+
+    segmentation_mask = cv2.imread(segmentation_mask, cv2.IMREAD_UNCHANGED)
+
+    if segmentation_mask.ndim != 3 or segmentation_mask.shape[2] != 3:
+        raise ValueError("Input segmentation mask must be an RGB image with 3 channels.")
+
+    # Convert the RGB image to a single channel image by encoding the segmentation mask
+    single_channel_mask = segmentation_mask[:, :, 0] * 256 * 256 + segmentation_mask[:, :, 1] * 256 + segmentation_mask[:, :, 2]
+
+    # Calculate the number of unique classes in the RGB and single channel masks
+    num_classes_rgb = len(np.unique(segmentation_mask.reshape(-1, 3), axis=0))
+    num_classes_single_channel = len(np.unique(single_channel_mask))
+
+    print(f"Number of segmentation classes in RGB image: {num_classes_rgb}")
+    print(f"Number of segmentation classes in single channel image: {num_classes_single_channel}")
+
+    return single_channel_mask
 
 
 def get_logger(name, level=logging.INFO):
@@ -120,3 +180,15 @@ if __name__ == "__main__":
     # json_path = 'datasets/dataset.json'
     # dataset_path = 'datasets'
     # populate_json(json_path, dataset_path)
+
+    # # CASE => 3
+    # # Convert an RGB segmentation mask to a single channel image.
+    # segmentation_mask = 'datasets/train/bev-segmented/1__left.disp.png'
+    # single_channel_mask = convert_rgb_to_single_channel(segmentation_mask)
+    # # print(f"single_channel_mask.shape: {single_channel_mask.shape}")
+
+    # CASE => 4
+    # Get the number of unique labels from an RGB segmentation mask.
+    segmentation_mask = 'datasets/train/bev-segmented/1__left.disp.png'
+    num_labels = get_unique_labels_from_rgb_mask(segmentation_mask)
+    print(f"Number of unique labels: {num_labels}")

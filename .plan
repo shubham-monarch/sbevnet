@@ -7,5 +7,7 @@
 - migrate to recommended pytorch / vision version
 - figure out the co-ordinate system
 
-
+- fix bev_segmented dataset
+- convert bev_segmented to single channel 
 - fix num_workers for train_loader
+- fix transpose=True for SegLoader

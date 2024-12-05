@@ -83,34 +83,57 @@ if __name__ == '__main__':
     
     logger = get_logger('debug')
     
+    
     composed_dataset_ = sbevnet_dataset(
         json_path='datasets/dataset.json',
         dataset_split='train',
         do_ipm_rgb=params['do_ipm_rgb'],
         do_ipm_feats=params['do_ipm_feats'],
         fixed_cam_confs=params['fixed_cam_confs'],
-        do_mask=False,
-        do_top_seg=True,
-        zero_mask=False,
+        do_mask=params['do_mask'],
+        do_top_seg=params['do_top_seg'],
+        zero_mask=params['zero_mask'],
         image_w=params['image_w'],
         image_h=params['image_h']
     )
 
+    for idx, item in enumerate(composed_dataset_):
+        # logger.info(f"Index: {idx}, Item: {item}")
+        logger.warning(f"=================")
+        logger.warning(f"idx: {idx}")
+        logger.warning(f"=================\n")
+        
+        logger.info(f"=================")
+        logger.info(f"type(item): {type(item)}")
+        logger.info(f"=================\n")
 
+        logger.info(f"=================")
+        for k, v in item.items():
+            if k == 'top_seg':
+                logger.info(f"{k} --> {type(v)} {v.shape}")
+        logger.info(f"=================\n")
 
-    logger.info(f"=================")
-    logger.info(f"type(composed_dataset_): {type(composed_dataset_)}")
-    logger.info(f"=================\n")
-    
-    data_loader = DataLoader(
-        composed_dataset_,
-        batch_size=params['batch_size'],
-        shuffle=True,
-        num_workers=4,
-        pin_memory=True
-    )
-    
-    for batch in data_loader:
-        logger.info(f"type(batch): {type(batch)}")
-        # logger.info(f"batch: {batch}")
         break
+    
+    
+    
+    
+    
+    
+    
+    # logger.info(f"=================")
+    # logger.info(f"type(composed_dataset_): {type(composed_dataset_)}")
+    # logger.info(f"=================\n")
+    
+    # data_loader = DataLoader(
+    #     composed_dataset_,
+    #     batch_size=params['batch_size'],
+    #     shuffle=True,
+    #     num_workers=4,
+    #     pin_memory=True
+    # )
+    
+    # for batch in data_loader:
+    #     logger.info(f"type(batch): {type(batch)}")
+    #     # logger.info(f"batch: {batch}")
+    #     break

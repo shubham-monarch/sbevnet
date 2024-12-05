@@ -171,9 +171,9 @@ def train_sbevnet():
                 # Ensure target is on the same device
                 target = data['top_seg'].to(device)
 
-                logger.warning(f"=================")
-                logger.warning(f"[train_sbevnet] --> before loss")
-                logger.warning(f"=================\n")
+                # logger.warning(f"=================")
+                # logger.warning(f"[train_sbevnet] --> before loss")
+                # logger.warning(f"=================\n")
                 
                 logger.info(f"=================")
                 logger.info(f"output['top_seg'].shape: {output['top_seg'].shape}")
@@ -182,9 +182,9 @@ def train_sbevnet():
 
                 loss = criterion(output['top_seg'], target)
 
-                logger.warning(f"=================")
-                logger.warning(f"[train_sbevnet] --> after loss")
-                logger.warning(f"=================\n")
+                # logger.warning(f"=================")
+                # logger.warning(f"[train_sbevnet] --> after loss")
+                # logger.warning(f"=================\n")
 
 
                 # Backward pass and optimize
