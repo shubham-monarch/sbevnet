@@ -10,6 +10,39 @@ import sys
 import coloredlogs 
 import numpy as np
 import cv2
+import yaml
+
+def get_label_colors_from_yaml(yaml_path=None):
+    """Read label colors from Mavis.yaml config file."""
+    
+    with open(yaml_path, 'r') as f:
+        config = yaml.safe_load(f)
+        
+    # Get BGR colors directly from yaml color_map
+    label_colors_bgr = config['color_map']
+    
+    # Convert BGR to RGB by reversing color channels
+    label_colors_rgb = {
+        label: color[::-1] 
+        for label, color in label_colors_bgr.items()
+    }
+    
+    return label_colors_bgr, label_colors_rgb
+        
+
+def mono_to_rgb_mask(mono_mask: np.ndarray, yaml_path: str = "Mavis.yaml") -> np.ndarray:
+    """Convert single channel segmentation mask to RGB using label mapping from a YAML file."""
+    
+    label_colors_bgr, _ = get_label_colors_from_yaml(yaml_path)
+    
+    H, W = mono_mask.shape
+    rgb_mask = np.zeros((H, W, 3), dtype=np.uint8)
+    
+    for label_id, rgb_value in label_colors_bgr.items():
+        mask = mono_mask == label_id
+        rgb_mask[mask] = rgb_value
+        
+    return rgb_mask
 
 
 def resize_segmentation_masks(
@@ -129,8 +162,6 @@ def populate_json(json_path, dataset_path, split="train"):
     with open(json_path, 'w') as f:
         json.dump(data, f, indent=4)
 
-
-
 def restructure_dataset(src_folder, target_folder):
     '''Restructure the train-dataset into left, right, and bev-segmented folders.'''
     
@@ -179,6 +210,35 @@ def restructure_dataset(src_folder, target_folder):
                     shutil.copy(os.path.join(root, file), os.path.join(seg_masks_rgb_folder, new_filename))
                 pbar.update(1)
 
+def convert_mono_to_rgb_masks(src_folder: str, dst_folder: str, yaml_path: str = "Mavis.yaml"):
+    '''Convert all mono segmentation masks in source folder to RGB masks using color mapping from YAML.'''
+    
+    # Create destination folder if it doesn't exist
+    os.makedirs(dst_folder, exist_ok=True)
+    
+    # Get all mono mask files
+    mono_masks = get_files_from_folder(src_folder, ['.png'])
+    
+    # Process each mask
+    for mono_mask_path in tqdm(mono_masks, desc="Converting mono to RGB masks"):
+        try:
+            # Read mono mask
+            mono_mask = cv2.imread(mono_mask_path, cv2.IMREAD_UNCHANGED)
+            if mono_mask is None:
+                raise ValueError(f"Failed to read mask: {mono_mask_path}")
+                
+            # Convert to RGB
+            rgb_mask = mono_to_rgb_mask(mono_mask, yaml_path)
+            
+            # Save with same filename in destination folder
+            filename = os.path.basename(mono_mask_path)
+            dst_path = os.path.join(dst_folder, filename)
+            cv2.imwrite(dst_path, rgb_mask)
+            
+        except Exception as e:
+            print(f"Error processing {mono_mask_path}: {str(e)}")
+            continue
+
 if __name__ == "__main__":
     pass    
     # CASE => 1
@@ -187,11 +247,11 @@ if __name__ == "__main__":
     # target_folder = 'train-data-organized'
     # restructure_dataset(src_folder, target_folder)
 
-    # CASE => 2
-    # Populate the json file with the file paths of the images in the dataset.
-    json_path = 'datasets/dataset.json'
-    dataset_path = 'datasets'
-    populate_json(json_path, dataset_path)
+    # # CASE => 2
+    # # Populate the json file with the file paths of the images in the dataset.
+    # json_path = 'datasets/dataset.json'
+    # dataset_path = 'datasets'
+    # populate_json(json_path, dataset_path)
 
     # # CASE => 3
     # # Convert an RGB segmentation mask to a single channel image.
@@ -212,4 +272,8 @@ if __name__ == "__main__":
     # new_size = (480,480)
     # resize_segmentation_masks(input_folder, output_folder, new_size, labels=[0, 1, 2, 3, 4, 5])
 
-
+    # CASE => 6
+    # Convert all mono segmentation masks to RGB masks.
+    src_folder = 'debug/cropped-seg-masks-mono'
+    dst_folder = 'debug/cropped-seg-masks-rgb'
+    convert_mono_to_rgb_masks(src_folder, dst_folder)

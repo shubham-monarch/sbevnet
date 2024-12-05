@@ -3,18 +3,24 @@
 + fix train.py
 + train trimmed model
 + convert / visualize top_seg file in rgb
-- visualize models 
-- migrate to recommended pytorch / vision version
-- figure out the co-ordinate system
-
-- importance of transpse
-- fix preprocessing 
+* visualize models 
+* migrate to recommended pytorch / vision version
 + fix bev_segmented dataset
 + convert bev_segmented to single channel 
+
+
+- fix poor results
+
+- why is segmented-bev not centered in GT data? 
+- fix preprocessing
 - fix num_workers for train_loader
 - fix transpose=True for SegLoader
+- importance of transpse
+- figure out the co-ordinate system
 
-- visualise cropped-seg-masks-mono in rgb
-- eval on the trained model
-- generate square shaped top_seg
-- multiple training dicts
+
+
++ visualise cropped-seg-masks-mono in rgb
++ eval on the trained model
+- generate square shaped top_seg train-data
+- provision for multiple training log folders
