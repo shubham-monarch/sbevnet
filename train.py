@@ -20,13 +20,13 @@ def train_sbevnet():
     params = {
         
         # image dimensions
-        'image_w': 640,
-        'image_h': 480,
+        'image_w': 1920,
+        'image_h': 1080,
         'max_disp': 64,
 
         # segmentation and heatmap parameters
         'n_classes_seg': 6,
-        'n_hmap': 480,
+        'n_hmap': 400,
         'xmin': 1,
         'xmax': 39,
         'ymin': -19,

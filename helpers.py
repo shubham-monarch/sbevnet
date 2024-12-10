@@ -247,11 +247,11 @@ if __name__ == "__main__":
     # target_folder = 'train-data-organized'
     # restructure_dataset(src_folder, target_folder)
 
-    # # CASE => 2
-    # # Populate the json file with the file paths of the images in the dataset.
-    # json_path = 'datasets/dataset.json'
-    # dataset_path = 'datasets'
-    # populate_json(json_path, dataset_path)
+    # CASE => 2
+    # Populate the json file with the file paths of the images in the dataset.
+    json_path = 'datasets/dataset.json'
+    dataset_path = 'datasets'
+    populate_json(json_path, dataset_path)
 
     # # CASE => 3
     # # Convert an RGB segmentation mask to a single channel image.
@@ -274,6 +274,6 @@ if __name__ == "__main__":
 
     # CASE => 6
     # Convert all mono segmentation masks to RGB masks.
-    src_folder = 'debug/cropped-seg-masks-mono'
-    dst_folder = 'debug/cropped-seg-masks-rgb'
-    convert_mono_to_rgb_masks(src_folder, dst_folder)
+    # src_folder = 'debug/cropped-seg-masks-mono'
+    # dst_folder = 'debug/cropped-seg-masks-rgb'
+    # convert_mono_to_rgb_masks(src_folder, dst_folder)
