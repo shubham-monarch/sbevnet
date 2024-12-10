@@ -10,7 +10,13 @@ import torch.nn.functional as F
 mapping_cache = {}
 
 
-def get_grid_one( cam_conf , img_h , img_w , n_hmap , xmax , xmin , ymax , ymin  , max_disp , camera_ext_x , camera_ext_y   ):
+def get_grid_one( cam_conf , 
+                 img_h , img_w , 
+                 n_hmap , 
+                 xmax , xmin , ymax , ymin  , 
+                 max_disp , 
+                 camera_ext_x , camera_ext_y   ):
+    
     remap_normed_inv = np.zeros((n_hmap , n_hmap , 2 ))
     assert len(cam_conf) == 4 
     f , cx , cy , tx = cam_conf
