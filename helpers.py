@@ -11,6 +11,47 @@ import coloredlogs
 import numpy as np
 import cv2
 import yaml
+import torch.utils.data as data
+from torch.utils.data import Dataset, DataLoader
+
+
+class ComposeDatasetDict(data.Dataset):
+
+    "TO take a dictionary of datasets and return a dataset which produces elements as a dictionalry "
+    
+    def __init__(self , data_loaders ,ret_double=False ):
+        self.data_loaders = data_loaders
+        self.logger = get_logger('ComposeDatasetDict')
+        
+        self.logger.warning(f"=================")
+        for k in self.data_loaders:
+            self.logger.warning(f"{k} --> {len(self.data_loaders[k])}")
+        self.logger.warning(f"=================\n") 
+        
+        # make sure all the datasets are of the same size!! 
+        for k in self.data_loaders:
+            l = len( self.data_loaders[k])
+            break 
+        for k in self.data_loaders:
+            assert l == len( self.data_loaders[k] ) , "The sizes of the datasets do not match! "+k  
+            # print( l , k , )
+        
+        self.ret_double = ret_double 
+        
+    def __getitem__(self, index):
+        ret = {}
+        for k in self.data_loaders:
+            ret[k] = self.data_loaders[k].__getitem__(index)
+
+        if self.ret_double:
+            return ret , ret 
+        else:
+            return ret 
+
+    def __len__(self):
+        for k in self.data_loaders:
+            return len(self.data_loaders[k]) 
+
 
 def get_label_colors_from_yaml(yaml_path=None):
     """Read label colors from Mavis.yaml config file."""
@@ -149,8 +190,8 @@ def populate_json(json_path, dataset_path, split="train"):
         "train": {
             "rgb_left": get_relative_files(os.path.join(dataset_path, 'train/left'), IMG_EXTENSIONS),
             "rgb_right": get_relative_files(os.path.join(dataset_path, 'train/right'), IMG_EXTENSIONS),
-            # "top_seg": get_relative_files(os.path.join(dataset_path, 'train/seg-masks-mono'), ['.png']),
-            "top_seg": get_relative_files(os.path.join(dataset_path, 'train/cropped-seg-masks-mono'), ['.png'])
+            "top_seg": get_relative_files(os.path.join(dataset_path, 'train/seg-masks-mono'), ['.png']),
+            # "top_seg": get_relative_files(os.path.join(dataset_path, 'train/cropped-seg-masks-mono'), ['.png'])
         },
         "test": {
             "rgb_left": get_relative_files(os.path.join(dataset_path, 'test/left'), IMG_EXTENSIONS),
@@ -247,11 +288,11 @@ if __name__ == "__main__":
     # target_folder = 'train-data-organized'
     # restructure_dataset(src_folder, target_folder)
 
-    # # CASE => 2
-    # # Populate the json file with the file paths of the images in the dataset.
-    # json_path = 'datasets/dataset.json'
-    # dataset_path = 'datasets'
-    # populate_json(json_path, dataset_path)
+    # CASE => 2
+    # Populate the json file with the file paths of the images in the dataset.
+    json_path = 'datasets/dataset.json'
+    dataset_path = 'datasets'
+    populate_json(json_path, dataset_path)
 
     # # CASE => 3
     # # Convert an RGB segmentation mask to a single channel image.
@@ -274,6 +315,6 @@ if __name__ == "__main__":
 
     # CASE => 6
     # Convert all mono segmentation masks to RGB masks.
-    src_folder = 'debug/cropped-seg-masks-mono'
-    dst_folder = 'debug/cropped-seg-masks-rgb'
-    convert_mono_to_rgb_masks(src_folder, dst_folder)
+    # src_folder = 'debug/cropped-seg-masks-mono'
+    # dst_folder = 'debug/cropped-seg-masks-rgb'
+    # convert_mono_to_rgb_masks(src_folder, dst_folder)

@@ -14,7 +14,13 @@ class ComposeDatasetDict(data.Dataset):
     
     def __init__(self , data_loaders ,ret_double=False ):
         self.data_loaders = data_loaders
-
+        self.logger = get_logger('ComposeDatasetDict')
+        
+        self.logger.warning(f"=================")
+        for k in self.data_loaders:
+            self.logger.warning(f"len(self.data_loaders[k]): {len(self.data_loaders[k])}")
+        self.logger.warning(f"=================\n") 
+        
         # make sure all the datasets are of the same size!! 
         for k in self.data_loaders:
             l = len( self.data_loaders[k])

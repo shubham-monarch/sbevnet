@@ -16,7 +16,8 @@ import glob
 
 from helpers import get_logger
 
-from pytorch_propane.data_utils import ComposeDatasetDict 
+# from pytorch_propane.data_utils import ComposeDatasetDict 
+from helpers import ComposeDatasetDict
 from pytorch_propane.registry import registry
 
 
