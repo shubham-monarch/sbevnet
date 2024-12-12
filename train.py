@@ -7,6 +7,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 import logging
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 from sbevnet.models.network_sbevnet import SBEVNet
 from sbevnet.data_utils.bev_dataset import sbevnet_dataset
@@ -219,11 +220,32 @@ def train_sbevnet():
         # Save latest checkpoint
         torch.save(checkpoint, os.path.join(save_dir, 'latest_checkpoint.pth'))
         
+
+
         # Save best model
         if avg_epoch_loss < best_loss:
             best_loss = avg_epoch_loss
             torch.save(checkpoint, os.path.join(save_dir, 'best_model.pth'))
             logger.info(f'New best model saved with loss: {best_loss:.4f}')
+
+        
+        # Plot loss vs epoch graph
+        if not hasattr(train_sbevnet, 'losses'):
+            train_sbevnet.losses = []
+        train_sbevnet.losses.append(avg_epoch_loss)
+
+        # Create the plot
+        plt.figure(figsize=(10,6))
+        plt.plot(range(1, len(train_sbevnet.losses) + 1), train_sbevnet.losses, 'b-', label='Training Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.title('Training Loss vs Epoch')
+        plt.legend()
+        plt.grid(True)
+        
+        # Save plot
+        plt.savefig(os.path.join(save_dir, 'loss_plot.png'))
+        plt.close()
 
 if __name__ == '__main__':
     train_sbevnet() 

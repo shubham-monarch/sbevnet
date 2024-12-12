@@ -1,7 +1,10 @@
 [keys]
+======================
 + --> done
 * --> dropped
 - --> to-do
+======================
+
 
 + prepare train-data => [left, right, top_seg, top_ipm] 
 + generate dataset.json
@@ -13,17 +16,13 @@
 + fix bev_segmented dataset
 + convert bev_segmented to single channel 
 
-- fix poor results
-
-- use 2 classes => void + canopy
+* use 2 classes => void + canopy
 
 + fix GT seg-mask resolution across files
 * why are there huge black patches in GT? 
 + why is segmented-bev not centered in GT? 
-- fix model preprocessing step
 - fix num_workers for train_loader
 - fix transpose=True for SegLoader
-- importance of transpse
 - figure out the co-ordinate system
 
 - utility to generate bev frames to s3
@@ -33,6 +32,18 @@
 + generate square shaped top_seg train-data
 - provision for multiple training log folders
 
-
+- scale cx, cy, fx, fy
+- why is loss not dropping?
+- fix model preprocessing step
+- importance of transpose
 - passing camera orientation
-- how can y-min be negative? 
++ how can y-min be negative? 
+- plot epoch loss
+- decide on the the epoch count
+- increase batch size
+- figure out learning rate stretegy -> [use crestereo]
+- fix input segmentation masks
+
+
+- check evaluation 
+- check mono --> rgb seg-mask conversion in evaluate_model.py

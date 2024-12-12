@@ -154,7 +154,9 @@ def evaluate_sbevnet():
         pin_memory=True
     )
     
-    logger.info(f'Test dataset size: {len(test_dataset)}')
+    logger.warning(f'=================')    
+    logger.warning(f'Test dataset size: {len(test_dataset)}')
+    logger.warning(f'=================\n')
     
     # Class names for logging
     class_names = {
@@ -182,18 +184,52 @@ def evaluate_sbevnet():
                         data[key] = [item.to(device) if isinstance(item, torch.Tensor) else item 
                                    for item in data[key]]
                 
+                logger.info(f"=================")
+                logger.info(f"batch_idx: {batch_idx}")
+                logger.info(f"=================\n")
+
+                # if batch_idx > 20: 
+                #     break
+
                 # Forward pass
                 output = network(data)
                 
                 # Get predictions
                 pred = output['top_seg'].argmax(1)  # [B, H, W]
+                
+                logger.info(f"=================")
+                logger.info(f"pred.shape: {pred.shape}")
+                logger.info(f"=================\n")
+                
+                # # 20 random pred values
+                # logger.info(f"=================")
+                # logger.info(f"20 random pred values:")
+                # random_indices = torch.randint(0, pred.numel(), (20,))
+                # logger.info(pred.flatten()[random_indices].tolist())
+                # logger.info(f"=================\n")
+                
+                # pred = output['top_seg']  # [B, H, W]
+                
+                logger.warning(f"=================")
+                logger.warning(f"pred.shape: {pred.shape}")
+                logger.warning(f"=================\n")
+                
+                # # 20 random pred values
+                # logger.warning(f"=================")
+                # logger.warning(f"20 random pred values:")
+                # random_indices = torch.randint(0, pred.numel(), (20,))
+                # logger.warning(pred.flatten()[random_indices].tolist())
+                # logger.warning(f"=================\n")
+                
+                # break
+                
                 target = data['top_seg']  # [B, H, W]
                 
-                # Calculate IoU for this batch
-                ious = calculate_iou(pred, target, params['n_classes_seg'])
-                for i in range(params['n_classes_seg']):
-                    total_ious[i] += ious[i]
-                total_samples += 1
+                # # Calculate IoU for this batch
+                # ious = calculate_iou(pred, target, params['n_classes_seg'])
+                # for i in range(params['n_classes_seg']):
+                #     total_ious[i] += ious[i]
+                # total_samples += 1
                 
                 # Save predictions
                 for i in range(pred.size(0)):
@@ -212,16 +248,16 @@ def evaluate_sbevnet():
                 logger.error(f'Error in batch {batch_idx}: {str(e)}')
                 continue
     
-    # Calculate and log final metrics
-    mean_ious = [iou / total_samples for iou in total_ious]
-    mean_iou = sum(mean_ious) / len(mean_ious)
+    # # Calculate and log final metrics
+    # mean_ious = [iou / total_samples for iou in total_ious]
+    # mean_iou = sum(mean_ious) / len(mean_ious)
     
-    logger.info("Evaluation Results:")
-    logger.info("-" * 50)
-    for cls_id, iou in enumerate(mean_ious):
-        logger.info(f"Class {class_names[cls_id]}: IoU = {iou:.4f}")
-    logger.info("-" * 50)
-    logger.info(f"Mean IoU: {mean_iou:.4f}")
+    # logger.info("Evaluation Results:")
+    # logger.info("-" * 50)
+    # for cls_id, iou in enumerate(mean_ious):
+    #     logger.info(f"Class {class_names[cls_id]}: IoU = {iou:.4f}")
+    # logger.info("-" * 50)
+    # logger.info(f"Mean IoU: {mean_iou:.4f}")
 
 if __name__ == '__main__':
     evaluate_sbevnet() 
