@@ -99,7 +99,8 @@ def evaluate_sbevnet():
     os.makedirs(pred_dir, exist_ok=True)
     
     # initialize network
-    device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
     
     logger.warning(f'==============')
     logger.warning(f'Using device: {device}')
@@ -190,9 +191,9 @@ def evaluate_sbevnet():
                         data[key] = [item.to(device) if isinstance(item, torch.Tensor) else item 
                                    for item in data[key]]
                 
-                logger.info(f"=================")
-                logger.info(f"batch_idx: {batch_idx}")
-                logger.info(f"=================\n")
+                # logger.info(f"=================")
+                # logger.info(f"batch_idx: {batch_idx}")
+                # logger.info(f"=================\n")
 
                 # if batch_idx > 20: 
                 #     break
@@ -203,9 +204,9 @@ def evaluate_sbevnet():
                 # get predictions
                 pred = output['top_seg'].argmax(1)  # [B, H, W]
                 
-                logger.info(f"=================")
-                logger.info(f"pred.shape: {pred.shape}")
-                logger.info(f"=================\n")
+                # logger.info(f"=================")
+                # logger.info(f"pred.shape: {pred.shape}")
+                # logger.info(f"=================\n")
                 
                 # # 20 random pred values
                 # logger.info(f"=================")
@@ -216,9 +217,9 @@ def evaluate_sbevnet():
                 
                 # pred = output['top_seg']  # [B, H, W]
                 
-                logger.warning(f"=================")
-                logger.warning(f"pred.shape: {pred.shape}")
-                logger.warning(f"=================\n")
+                # logger.warning(f"=================")
+                # logger.warning(f"pred.shape: {pred.shape}")
+                # logger.warning(f"=================\n")
                 
                 # # 20 random pred values
                 # logger.warning(f"=================")

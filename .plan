@@ -41,6 +41,8 @@ why is loss not dropping?
 - disparity scaling
 - handle image resizing effect on disparity
 
+- why is loss different (or decreasing faster) in distributed-training?
+
 - stereo rectification 
 - z / y swap
 - fix model preprocessing step
@@ -50,13 +52,15 @@ why is loss not dropping?
 + how can y-min be negative? 
 
 - enable saving of intermediate epochs 
-- plot epoch loss
++ plot epoch loss
 - decide on the the epoch count
 + increase batch size
 - figure out learning rate stretegy -> [use crestereo]
 - enable multi-gpu training
+- fix logs in distributed training script
+- double check distributed-training script
 
-
+- check segmnetation loss function
 - fix input segmentation masks ->  probabilty distribution vs discrete
 - z-indices out-of-bounds error while bev_pcd -> bev_png
 - check evaluation 
