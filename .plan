@@ -35,11 +35,13 @@
 =================
 why is loss not dropping?
 ==================
-- scale cx, cy, fx, fy
++ scale cx, cy, fx, fy
 - check fx scaling
 - camera baseline scaling
 - disparity scaling
 - handle image resizing effect on disparity
+- review segmentation loss function calculations
+
 
 - why is loss different (or decreasing faster) in distributed-training?
 
@@ -58,10 +60,10 @@ why is loss not dropping?
 - figure out learning rate stretegy -> [use crestereo]
 
 
-- enable multi-gpu training
-- fix logs in distributed training script
-- double check distributed-training script
-- what exactly happens in distributed training? 
++ enable multi-gpu training
+* fix logs in distributed training script
+* double check distributed-training script
+* what exactly happens in distributed training? 
 
 - check segmnetation loss function
 - fix input segmentation masks ->  probabilty distribution vs discrete

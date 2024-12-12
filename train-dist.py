@@ -228,7 +228,7 @@ def train_sbevnet_distributed() -> None:
         'do_ipm_feats': False,
         'fixed_cam_confs': True,
         'batch_size': 2,  # Per GPU batch size
-        'num_epochs': 20,
+        'num_epochs': 100,
         'learning_rate': 0.001,
         'do_mask': False,
         'do_top_seg': True,
