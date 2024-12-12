@@ -17,6 +17,9 @@ from helpers import get_logger
 def train_sbevnet():
     logger = get_logger("train")
     
+    scale_x = float(640/1920)
+    scale_y = float(480/1080)
+
     # Training parameters
     params = {
         
@@ -38,9 +41,9 @@ def train_sbevnet():
         'ymax': 5,
         
         # camera parameters
-        'cx': 964.989,
-        'cy': 569.276,
-        'f': 1093.2768,
+        'cx': 964.989 * scale_x,
+        'cy': 569.276 * scale_y,
+        'f': 1093.2768 * scale_x,
         'tx': 0.13,
         'camera_ext_x': 0.0,
         'camera_ext_y': 0.0,
@@ -51,7 +54,7 @@ def train_sbevnet():
         'fixed_cam_confs': True,
         
         # training parameters
-        'batch_size': 1,
+        'batch_size': 2,
         'num_epochs': 20,
         'learning_rate': 0.001,
 

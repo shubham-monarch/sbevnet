@@ -91,13 +91,19 @@ def evaluate_sbevnet():
         'zero_mask': False
     }
     
-    # Create output directory for predictions
+    # mkdir predictions
     pred_dir = 'predictions'
+
+    # predictions directory must be empty
+    assert not (os.path.exists(pred_dir) and os.listdir(pred_dir)), "Predictions directory must be empty"
     os.makedirs(pred_dir, exist_ok=True)
     
-    # Initialize network
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    logger.info(f'Using device: {device}')
+    # initialize network
+    device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
+    
+    logger.warning(f'==============')
+    logger.warning(f'Using device: {device}')
+    logger.warning(f'==============\n')
     
     network = SBEVNet(
         image_w=params['image_w'],
@@ -120,7 +126,7 @@ def evaluate_sbevnet():
         fixed_cam_confs=params['fixed_cam_confs']
     ).to(device)
     
-    # Load checkpoint
+    # load checkpoint
     if os.path.exists(params['checkpoint_path']):
         checkpoint = torch.load(params['checkpoint_path'], map_location=device)
         network.load_state_dict(checkpoint['model_state_dict'])
@@ -129,10 +135,10 @@ def evaluate_sbevnet():
         logger.error(f"No checkpoint found at {params['checkpoint_path']}")
         return
     
-    # Set network to evaluation mode
+    # set network to evaluation mode
     network.eval()
     
-    # Load test dataset
+    # load test dataset
     test_dataset = sbevnet_dataset(
         json_path='datasets/dataset.json',
         dataset_split='test',
@@ -158,7 +164,7 @@ def evaluate_sbevnet():
     logger.warning(f'Test dataset size: {len(test_dataset)}')
     logger.warning(f'=================\n')
     
-    # Class names for logging
+    # class names for logging
     class_names = {
         0: "background",
         1: "road",
@@ -168,15 +174,15 @@ def evaluate_sbevnet():
         5: "vehicle"
     }
     
-    # Initialize metrics storage
+    # initialize metrics storage
     total_ious = [0] * params['n_classes_seg']
     total_samples = 0
     
-    # Evaluation loop
+    # evaluation loop
     with torch.no_grad():
         for batch_idx, data in enumerate(tqdm(test_loader, desc="Evaluating")):
             try:
-                # Move data to device
+                # move data to device
                 for key in data:
                     if isinstance(data[key], torch.Tensor):
                         data[key] = data[key].to(device)
@@ -191,10 +197,10 @@ def evaluate_sbevnet():
                 # if batch_idx > 20: 
                 #     break
 
-                # Forward pass
+                # forward pass
                 output = network(data)
                 
-                # Get predictions
+                # get predictions
                 pred = output['top_seg'].argmax(1)  # [B, H, W]
                 
                 logger.info(f"=================")

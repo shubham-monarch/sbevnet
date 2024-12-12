@@ -13,7 +13,7 @@ import cv2
 import yaml
 import torch.utils.data as data
 from torch.utils.data import Dataset, DataLoader
-
+import torch
 
 class ComposeDatasetDict(data.Dataset):
 
@@ -163,6 +163,22 @@ def get_logger(name, level=logging.INFO):
 
     return logger    
 
+def print_available_gpus():
+    """Print information about available CUDA GPUs"""
+    logger = get_logger('print_available_gpus')
+    if torch.cuda.is_available():
+        num_gpus = torch.cuda.device_count()
+        device_ids = [f"GPU {i}" for i in range(num_gpus)]
+        
+        logger.info(f"===============")
+        logger.info(f"Available GPUs and their IDs: {device_ids}")
+        for device_id in device_ids:
+            logger.info(device_id)
+        logger.info(f"===============\n")
+    
+    else:
+        logger.info("No GPUs available.")
+
 
 def get_files_from_folder(folder, extensions):
     '''Get all files with the given extensions from the folder.'''
@@ -289,9 +305,9 @@ if __name__ == "__main__":
 
     # CASE => 2
     # Populate the json file with the file paths of the images in the dataset.
-    json_path = 'datasets/dataset.json'
-    dataset_path = 'datasets'
-    populate_json(json_path, dataset_path)
+    # json_path = 'datasets/dataset.json'
+    # dataset_path = 'datasets'
+    # populate_json(json_path, dataset_path)
 
     # # CASE => 3
     # # Convert an RGB segmentation mask to a single channel image.
@@ -317,3 +333,7 @@ if __name__ == "__main__":
     # src_folder = 'debug/cropped-seg-masks-mono'
     # dst_folder = 'debug/cropped-seg-masks-rgb'
     # convert_mono_to_rgb_masks(src_folder, dst_folder)
+
+    # CASE => 7
+    # Print information about available CUDA GPUs.
+    print_available_gpus()

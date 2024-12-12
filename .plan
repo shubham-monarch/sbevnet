@@ -32,18 +32,32 @@
 + generate square shaped top_seg train-data
 - provision for multiple training log folders
 
+=================
+why is loss not dropping?
+==================
 - scale cx, cy, fx, fy
-- why is loss not dropping?
+- check fx scaling
+- camera baseline scaling
+- disparity scaling
+- handle image resizing effect on disparity
+
+- stereo rectification 
+- z / y swap
 - fix model preprocessing step
 - importance of transpose
+
 - passing camera orientation
 + how can y-min be negative? 
+
+- enable saving of intermediate epochs 
 - plot epoch loss
 - decide on the the epoch count
-- increase batch size
++ increase batch size
 - figure out learning rate stretegy -> [use crestereo]
-- fix input segmentation masks
+- enable multi-gpu training
 
 
+- fix input segmentation masks ->  probabilty distribution vs discrete
+- z-indices out-of-bounds error while bev_pcd -> bev_png
 - check evaluation 
 - check mono --> rgb seg-mask conversion in evaluate_model.py
