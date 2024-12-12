@@ -144,24 +144,30 @@ def convert_rgb_to_single_channel(segmentation_mask: str) -> np.ndarray:
     return single_channel_mask
 
 
-def get_logger(name, level=logging.INFO):
-    '''Get a logger with colored output'''
-    
-    logging.basicConfig(level=level)
+def get_logger(name: str, rank: int = 0) -> logging.Logger:
+    """Create a logger that only logs on rank 0 by default."""
     logger = logging.getLogger(name)
-    logger.propagate = False
-    formatter = logging.Formatter(
-        fmt="%(asctime)s %(message)s", datefmt="%Y/%m/%d %H:%M:%S"
-    )
-    consoleHandler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter(
-        fmt="\x1b[32m%(asctime)s\x1b[0m %(message)s", datefmt="%Y/%m/%d %H:%M:%S"
-    )
-    consoleHandler.setFormatter(formatter)
-    logger.handlers = [consoleHandler]
-    coloredlogs.install(level=level, logger=logger, force=True)
-
-    return logger    
+    
+    if not logger.handlers:
+        formatter = logging.Formatter(
+            '%(asctime)s | %(levelname)s | %(message)s',
+            datefmt='%Y-%m-%d,%H:%M:%S'
+        )
+        
+        # Console handler
+        ch = logging.StreamHandler()
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
+        
+        # # File handler
+        # fh = logging.FileHandler(f'training_{rank}.log')
+        # fh.setFormatter(formatter)
+        # logger.addHandler(fh)
+        
+        logger.setLevel(logging.INFO)
+        coloredlogs.install(level=logging.INFO, logger=logger, force=True)
+        
+    return logger
 
 def print_available_gpus():
     """Print information about available CUDA GPUs"""

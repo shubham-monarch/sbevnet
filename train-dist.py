@@ -34,17 +34,19 @@ def train(rank: int, world_size: int, params: dict) -> None:
     """Training function for each process."""
     try:
         setup(rank, world_size)
-        logger = get_logger(f"train_rank_{rank}")
+        logger = get_logger("train", rank)
         
-        # Set the device for the current process
+        # Only log on rank 0 for most messages
+        is_main_process = rank == 0
+        
         torch.cuda.set_device(rank)
         
         # Create save directory
         save_dir = 'checkpoints'
-        if rank == 0:
+        if is_main_process:
             os.makedirs(save_dir, exist_ok=True)
         
-        # Initialize network
+        # Initialize network and move to device
         network = SBEVNet(
             image_w=params['image_w'],
             image_h=params['image_h'],
@@ -65,6 +67,9 @@ def train(rank: int, world_size: int, params: dict) -> None:
             do_ipm_feats=params['do_ipm_feats'],
             fixed_cam_confs=params['fixed_cam_confs']
         ).to(rank)
+        
+        # Wait for all processes to sync up
+        dist.barrier()
         
         # Wrap model with DDP
         network = DDP(network, device_ids=[rank])
@@ -98,7 +103,7 @@ def train(rank: int, world_size: int, params: dict) -> None:
             sampler=train_sampler
         )
         
-        if rank == 0:
+        if is_main_process:
             logger.info(f'Training dataset size: {len(train_dataset)}')
         
         # Training loop
@@ -106,12 +111,12 @@ def train(rank: int, world_size: int, params: dict) -> None:
         losses = []
 
         for epoch in range(params['num_epochs']):
-            train_sampler.set_epoch(epoch)  # Important for proper shuffling
+            train_sampler.set_epoch(epoch)
             network.train()
             epoch_loss = 0.0
             
-            if rank == 0:
-                logger.warning(f'Epoch: {epoch}')
+            if is_main_process:
+                pbar = tqdm(total=len(train_loader), desc=f'Epoch {epoch+1}')
             
             for batch_idx, data in enumerate(train_loader):
                 try:
@@ -138,19 +143,27 @@ def train(rank: int, world_size: int, params: dict) -> None:
                     
                     epoch_loss += loss.item()
                     
-                    if rank == 0 and batch_idx % 10 == 0:
-                        logger.info(f'Epoch {epoch+1}, Batch {batch_idx+1} - Loss: {loss.item():.4f}')
+                    # Update progress bar only on main process
+                    if is_main_process:
+                        pbar.set_postfix({'loss': f'{loss.item():.4f}'})
+                        pbar.update()
                     
                 except Exception as e:
                     logger.error(f'Error in batch {batch_idx}: {str(e)}')
                     continue
+            
+            if is_main_process:
+                pbar.close()
+            
+            # Synchronize processes before computing metrics
+            dist.barrier()
             
             # Calculate average epoch loss across all processes
             epoch_loss = torch.tensor(epoch_loss / len(train_loader), device=rank)
             dist.all_reduce(epoch_loss, op=dist.ReduceOp.SUM)
             avg_epoch_loss = epoch_loss.item() / world_size
             
-            if rank == 0:
+            if is_main_process:
                 logger.info(f'Epoch {epoch+1} - Average Loss: {avg_epoch_loss:.4f}')
                 losses.append(avg_epoch_loss)
                 
@@ -182,13 +195,11 @@ def train(rank: int, world_size: int, params: dict) -> None:
                 plt.savefig(os.path.join(save_dir, 'loss_plot.png'))
                 plt.close()
 
-        if rank == 0:
-            logger.info("Cleaned up distributed training")
     except KeyboardInterrupt:
         logger.info("Caught keyboard interrupt, cleaning up...")
     finally:
         cleanup()
-        if rank == 0:
+        if is_main_process:
             logger.info("Cleaned up distributed training")
 
 

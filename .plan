@@ -56,9 +56,12 @@ why is loss not dropping?
 - decide on the the epoch count
 + increase batch size
 - figure out learning rate stretegy -> [use crestereo]
+
+
 - enable multi-gpu training
 - fix logs in distributed training script
 - double check distributed-training script
+- what exactly happens in distributed training? 
 
 - check segmnetation loss function
 - fix input segmentation masks ->  probabilty distribution vs discrete
