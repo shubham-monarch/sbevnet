@@ -188,10 +188,9 @@ def populate_json(json_path, dataset_path, split="train"):
     
     data = {
         "train": {
-            "rgb_left": get_relative_files(os.path.join(dataset_path, 'train/left'), IMG_EXTENSIONS),
-            "rgb_right": get_relative_files(os.path.join(dataset_path, 'train/right'), IMG_EXTENSIONS),
-            "top_seg": get_relative_files(os.path.join(dataset_path, 'train/seg-masks-mono'), ['.png']),
-            # "top_seg": get_relative_files(os.path.join(dataset_path, 'train/cropped-seg-masks-mono'), ['.png'])
+            "rgb_left": get_relative_files(os.path.join(dataset_path, 'train-640x480/left'), IMG_EXTENSIONS),
+            "rgb_right": get_relative_files(os.path.join(dataset_path, 'train-640x480/right'), IMG_EXTENSIONS),
+            "top_seg": get_relative_files(os.path.join(dataset_path, 'train-640x480/seg-masks-mono'), ['.png']),
         },
         "test": {
             "rgb_left": get_relative_files(os.path.join(dataset_path, 'test/left'), IMG_EXTENSIONS),
@@ -281,7 +280,7 @@ def convert_mono_to_rgb_masks(src_folder: str, dst_folder: str, yaml_path: str =
             continue
 
 if __name__ == "__main__":
-    pass    
+    # pass    
     # CASE => 1
     # Restructure the train-dataset into left, right, and bev-segmented folders.
     # src_folder = 'train-data'

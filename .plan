@@ -30,5 +30,9 @@
 
 + visualise cropped-seg-masks-mono in rgb
 + eval on the trained model
-- generate square shaped top_seg train-data
++ generate square shaped top_seg train-data
 - provision for multiple training log folders
+
+
+- passing camera orientation
+- how can y-min be negative? 

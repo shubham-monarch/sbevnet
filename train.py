@@ -20,17 +20,21 @@ def train_sbevnet():
     params = {
         
         # image dimensions
-        'image_w': 1920,
-        'image_h': 1080,
+        'image_w': 640,
+        'image_h': 480,
         'max_disp': 64,
 
         # segmentation and heatmap parameters
         'n_classes_seg': 6,
         'n_hmap': 400,
-        'xmin': 1,
-        'xmax': 39,
-        'ymin': -19,
-        'ymax': 19,
+        
+        # depth range (in meters)
+        'xmin': 0,
+        'xmax': 10,
+        
+        # horizontal range (in meters)
+        'ymin': -5,
+        'ymax': 5,
         
         # camera parameters
         'cx': 964.989,
@@ -141,7 +145,9 @@ def train_sbevnet():
         logger.warning(f'==================\n')
         
         for batch_idx, data in enumerate(train_loader):
-
+            # if batch_idx > 00:
+            #     break
+            
             logger.info(f'==================')
             logger.info(f'batch_idx: {batch_idx}')
             logger.info(f'==================\n')

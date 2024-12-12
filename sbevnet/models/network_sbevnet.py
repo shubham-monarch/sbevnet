@@ -70,7 +70,7 @@ class CostVolRefine(nn.Module):
 class StereoBEVFeats(nn.Module):
     def __init__(self , img_h , n_ch=32 , reduce_mode='concat'):
         super(StereoBEVFeats, self).__init__()
-
+        self.logger = get_logger("stereo_bev_feats")
         self.reduce_mode = reduce_mode
 
         if reduce_mode == 'concat':
@@ -91,6 +91,10 @@ class StereoBEVFeats(nn.Module):
         
     def forward(self , cost0 , sys_confs  , cam_confs ):
         
+        # self.logger.warning(f"=================")
+        # self.logger.warning(f"StereoBEVFeats ==> forward()")
+        # self.logger.warning(f"=================\n")
+
         fea = cost0
         fea = fea.permute(0 , 1 , 3 , 4 , 2 )
         fea = fea.contiguous()
@@ -101,10 +105,28 @@ class StereoBEVFeats(nn.Module):
         else:
             assert False 
         
+        # self.logger.info(f"=================")
+        # self.logger.info(f"fea.shape: {fea.shape}")
+        # self.logger.info(f"=================\n")
+
         fea = self.dres4_2d_top( fea )
+
+        # self.logger.info(f"=================")
+        # self.logger.info(f"fea.shape: {fea.shape}")
+        # self.logger.info(f"=================\n")
+
         fea = self.seg_up( fea )
+
+        # self.logger.info(f"=================")
+        # self.logger.info(f"fea.shape: {fea.shape}")
+        # self.logger.info(f"=================\n")
+
         fea = self.dres4_2d_top_2( fea )
         
+        # self.logger.info(f"=================")
+        # self.logger.info(f"fea.shape: {fea.shape}")
+        # self.logger.info(f"=================\n")
+
         fea = pt_costvol_to_hmap( fea , cam_confs , sys_confs=sys_confs  )
         
         return fea 
@@ -288,8 +310,14 @@ class SBEVNet(nn.Module):
         cost = build_cost_volume(refimg_fea , targetimg_fea , self.maxdisp  )
        
         cost0 = self.cost_vol_refine(cost)
+
+        # self.logger.info(f"=================")
+        # self.logger.info(f"cost0.shape: {cost0.shape}")
+        # self.logger.info(f"=================\n")
         
         fea = self.ster_bev_feats(cost0 , sys_confs=self.sys_confs ,cam_confs=cam_confs )
+
+
 
         if self.do_ipm_rgb:
             fea = torch.cat( [ fea ,  img_ipm ] , dim=1 )

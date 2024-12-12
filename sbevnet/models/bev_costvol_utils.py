@@ -6,6 +6,9 @@ from torch.autograd import Variable
 import numpy as np
 import torch.nn.functional as F
 
+from helpers import get_logger
+
+logger = get_logger("bev_costvol_utils")
 
 mapping_cache = {}
 
@@ -25,6 +28,11 @@ def get_grid_one( cam_conf ,
     cy = float( cy )
     tx = float( tx )
     
+    # logger.warning(f"=================")
+    # logger.warning(f"(x_min, x_max) = {(xmin, xmax)}")
+    # logger.warning(f"(y_min, y_max) = {(ymin, ymax)}")
+    # logger.warning(f"=================")
+    
     
     key = str(f) + str(cx) + str(cy) + str(tx)
     
@@ -32,13 +40,55 @@ def get_grid_one( cam_conf ,
 
         for X in range(n_hmap):
             for Y in range(n_hmap):
-                # x: 
-                k = ((( f  / (((xmax-xmin)*X/n_hmap + xmin - camera_ext_x)/tx ) ))) / ( max_disp/2) - 1 
-                # y:
-                j = ((( f  / (((xmax-xmin)*X/n_hmap + xmin -camera_ext_x )/tx ) )*(((ymax-ymin)*Y/n_hmap + ymin - camera_ext_y )/tx) + cx)/(img_w/2) ) - 1 
-
-                remap_normed_inv[ Y ,X, 0 ] = k # depth is along x lol
-                remap_normed_inv[ Y , X  , 1 ] = j
+                # logger.warning(f"=================")
+                # logger.warning(f"(X, Y) = {(X, Y)}")
+                # logger.warning(f"=================\n")
+                
+                # # x: [depth]
+                # k = ((( f  / (((xmax-xmin)*X/n_hmap + xmin - camera_ext_x)/tx ) ))) / ( max_disp/2) - 1 
+                
+                # Calculate t1 term
+                t1 = 10 - ((xmax-xmin)*X/n_hmap + xmin)
+                
+                try:
+                    # Term 1: Depth scaling
+                    term1 = f / ((t1 - camera_ext_x)/tx)
+                    # Term 2: Disparity normalization 
+                    term2 = term1 / (max_disp/2)
+                    # Term 3: Final offset
+                    k = term2 - 1
+                except ZeroDivisionError:
+                    logger.info(f"=================")
+                    logger.info("x calculations => ")
+                    logger.info(f"t1 = {t1}")
+                    logger.info(f"camera_ext_x = {camera_ext_x}")
+                    logger.info(f"tx = {tx}")
+                    logger.info(f"max_disp = {max_disp}")
+                    logger.info(f"=================\n")
+                    raise
+                
+                try:
+                    # Term 1: Depth scaling
+                    term1 = f / ((t1 - camera_ext_x)/tx)
+                    # Term 2: Horizontal offset 
+                    term2 = (((ymax-ymin)*Y/n_hmap + ymin - camera_ext_y)/tx)
+                    # Term 3: Image coordinate normalization
+                    j = ((term1 * term2 + cx)/(img_w/2)) - 1
+                except ZeroDivisionError:
+                    logger.warning(f"=================")
+                    logger.warning("y calculations => ")
+                    logger.warning(f"t1 = {t1}")
+                    logger.warning(f"camera_ext_x = {camera_ext_x}") 
+                    logger.warning(f"tx = {tx}")
+                    logger.warning(f"img_w = {img_w}")
+                    logger.warning(f"=================\n")
+                    raise
+               
+                # break
+            # break
+        
+        remap_normed_inv[ Y ,X, 0 ] = k # depth is along x lol
+        remap_normed_inv[ Y , X  , 1 ] = j
 
         mapping_cache[key] = remap_normed_inv
     
