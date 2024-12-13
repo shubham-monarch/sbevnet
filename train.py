@@ -56,7 +56,7 @@ def train_sbevnet():
         # training parameters
         'batch_size': 2,
         'num_epochs': 20,
-        'learning_rate': 0.001,
+        'learning_rate': 0.0001,
 
         # dataset parameters
         'do_mask': False,
@@ -139,8 +139,8 @@ def train_sbevnet():
     best_loss = float('inf')
     
 
-    for epoch in range(params['num_epochs']):
-    # for epoch in range(1):
+    # for epoch in range(params['num_epochs']):
+    for epoch in range(1):
         network.train()
         epoch_loss = 0
 
@@ -149,8 +149,8 @@ def train_sbevnet():
         logger.warning(f'==================\n')
         
         for batch_idx, data in enumerate(train_loader):
-            # if batch_idx > 00:
-            #     break
+            if batch_idx > 0:
+                break
             
             logger.info(f'==================')
             logger.info(f'batch_idx: {batch_idx}')

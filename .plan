@@ -40,33 +40,44 @@ why is loss not dropping?
 - camera baseline scaling
 - disparity scaling
 - handle image resizing effect on disparity
-- review segmentation loss function calculations
++ review segmentation loss function calculations
++ fix loss calculations
+- improve loss calculations
+- fix segmentation module
++ segmentation module output should be discrete
+- changing disparity channel count in costvol calculations
+- fix model image pre-processing step
+- flip GT seg-mask in z-direction
+- importance of transpose
+
+
+
 
 
 - why is loss different (or decreasing faster) in distributed-training?
 
 - stereo rectification 
 - z / y swap
-- fix model preprocessing step
-- importance of transpose
-
 - passing camera orientation
 + how can y-min be negative? 
 
-- enable saving of intermediate epochs 
+* enable saving of intermediate epochs 
 + plot epoch loss
 - decide on the the epoch count
 + increase batch size
 - figure out learning rate stretegy -> [use crestereo]
+- fix output dimensions (480 * 480)
 
+- check loss function 
+- improve loss function
+
+
+- z-indices out-of-bounds error while bev_pcd -> bev_png
+- check mono --> rgb seg-mask conversion in evaluate_model.py
+- fix z vs 10-z 
+- generate 500 frames
 
 + enable multi-gpu training
 * fix logs in distributed training script
 * double check distributed-training script
 * what exactly happens in distributed training? 
-
-- check segmnetation loss function
-- fix input segmentation masks ->  probabilty distribution vs discrete
-- z-indices out-of-bounds error while bev_pcd -> bev_png
-- check evaluation 
-- check mono --> rgb seg-mask conversion in evaluate_model.py

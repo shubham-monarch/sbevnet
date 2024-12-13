@@ -202,33 +202,19 @@ def evaluate_sbevnet():
                 output = network(data)
                 
                 # get predictions
+                pred = output['top_seg']  # [B, H, W]
+
+                logger.info(f"=================")
+                logger.info(f"pred.shape: {pred.shape}")
+                logger.info(f"=================\n")
+                
                 pred = output['top_seg'].argmax(1)  # [B, H, W]
-                
-                # logger.info(f"=================")
-                # logger.info(f"pred.shape: {pred.shape}")
-                # logger.info(f"=================\n")
-                
-                # # 20 random pred values
-                # logger.info(f"=================")
-                # logger.info(f"20 random pred values:")
-                # random_indices = torch.randint(0, pred.numel(), (20,))
-                # logger.info(pred.flatten()[random_indices].tolist())
-                # logger.info(f"=================\n")
-                
-                # pred = output['top_seg']  # [B, H, W]
-                
-                # logger.warning(f"=================")
-                # logger.warning(f"pred.shape: {pred.shape}")
-                # logger.warning(f"=================\n")
-                
-                # # 20 random pred values
-                # logger.warning(f"=================")
-                # logger.warning(f"20 random pred values:")
-                # random_indices = torch.randint(0, pred.numel(), (20,))
-                # logger.warning(pred.flatten()[random_indices].tolist())
-                # logger.warning(f"=================\n")
-                
-                # break
+
+                logger.info(f"=================")
+                logger.info(f"pred.shape: {pred.shape}")
+                logger.info(f"=================\n")
+
+                break
                 
                 target = data['top_seg']  # [B, H, W]
                 

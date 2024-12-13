@@ -1,13 +1,16 @@
 #! /usr/bin/env python3
 
-from sbevnet.data_utils.bev_dataset import sbevnet_dataset
-from helpers import get_logger
-# from pytorch_propane.data_utils import ComposeDatasetDict
+
 
 import torch
 import torch.utils.data as data
 from torch.utils.data import Dataset, DataLoader
-    
+import numpy as np
+import cv2
+
+from evaluate_model import get_colored_segmentation_image
+from helpers import get_logger
+
 class ComposeDatasetDict(data.Dataset):
 
     "TO take a dictionary of datasets and return a dataset which produces elements as a dictionalry "
@@ -45,101 +48,19 @@ class ComposeDatasetDict(data.Dataset):
         for k in self.data_loaders:
             return len(self.data_loaders[k]) 
 
-params = {
-    
-    # image dimensions
-    'image_w': 640,
-    'image_h': 480,
-    'max_disp': 64,
-
-    # segmentation and heatmap parameters
-    'n_classes_seg': 5,
-    'n_hmap': 100,
-    'xmin': 1,
-    'xmax': 39,
-    'ymin': -19,
-    'ymax': 19,
-    
-    # camera parameters
-    'cx': 256,
-    'cy': 144,
-    'f': 179.2531,
-    'tx': 0.2,
-    'camera_ext_x': 0.9,
-    'camera_ext_y': -0.1,
-
-    # additional parameters for SBEVNet
-    'do_ipm_rgb': False,
-    'do_ipm_feats': False,
-    'fixed_cam_confs': True,
-    
-    # training parameters
-    'batch_size': 1,
-    'num_epochs': 20,
-    'learning_rate': 0.001,
-
-    # dataset parameters
-    'do_mask': False,
-    'do_top_seg': True,
-    'zero_mask': False
-}
-    
+ 
 
 if __name__ == '__main__':
     
     logger = get_logger('debug')
     
-    
-    composed_dataset_ = sbevnet_dataset(
-        json_path='datasets/dataset.json',
-        dataset_split='train',
-        do_ipm_rgb=params['do_ipm_rgb'],
-        do_ipm_feats=params['do_ipm_feats'],
-        fixed_cam_confs=params['fixed_cam_confs'],
-        do_mask=params['do_mask'],
-        do_top_seg=params['do_top_seg'],
-        zero_mask=params['zero_mask'],
-        image_w=params['image_w'],
-        image_h=params['image_h']
-    )
+    seg_mask_mono_path = 'datasets/test-640x480/seg-masks-mono/4__seg-mask-mono.png'
+    seg_mask_mono = cv2.imread(seg_mask_mono_path, cv2.IMREAD_GRAYSCALE)
 
-    for idx, item in enumerate(composed_dataset_):
-        # logger.info(f"Index: {idx}, Item: {item}")
-        logger.warning(f"=================")
-        logger.warning(f"idx: {idx}")
-        logger.warning(f"=================\n")
-        
-        logger.info(f"=================")
-        logger.info(f"type(item): {type(item)}")
-        logger.info(f"=================\n")
+    logger.info(f"=================")
+    logger.info(f"seg_mask_mono.shape: {seg_mask_mono.shape}")
+    logger.info(f"=================\n")
 
-        logger.info(f"=================")
-        for k, v in item.items():
-            if k == 'top_seg':
-                logger.info(f"{k} --> {type(v)} {v.shape}")
-        logger.info(f"=================\n")
-
-        break
+    seg_mask_rgb = get_colored_segmentation_image(seg_mask_mono, 'Mavis.yaml')
     
-    
-    
-    
-    
-    
-    
-    # logger.info(f"=================")
-    # logger.info(f"type(composed_dataset_): {type(composed_dataset_)}")
-    # logger.info(f"=================\n")
-    
-    # data_loader = DataLoader(
-    #     composed_dataset_,
-    #     batch_size=params['batch_size'],
-    #     shuffle=True,
-    #     num_workers=4,
-    #     pin_memory=True
-    # )
-    
-    # for batch in data_loader:
-    #     logger.info(f"type(batch): {type(batch)}")
-    #     # logger.info(f"batch: {batch}")
-    #     break
+    cv2.imwrite('seg_mask_rgb.png', seg_mask_rgb)

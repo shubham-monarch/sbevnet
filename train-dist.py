@@ -12,6 +12,7 @@ from torch.utils.data.distributed import DistributedSampler
 import logging
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from sbevnet.models.network_sbevnet import SBEVNet
 from sbevnet.data_utils.bev_dataset import sbevnet_dataset
@@ -78,6 +79,17 @@ def train(rank: int, world_size: int, params: dict) -> None:
         criterion = nn.NLLLoss2d(ignore_index=-100).to(rank)
         optimizer = optim.Adam(network.parameters(), lr=params['learning_rate'])
         
+        # Add scheduler - only on main process since we'll use its loss
+        if is_main_process:
+            scheduler = ReduceLROnPlateau(
+                optimizer,
+                mode='min',
+                factor=0.5,
+                patience=5,
+                verbose=True,
+                min_lr=1e-6
+            )
+
         # Load datasets
         train_dataset = sbevnet_dataset(
             json_path='datasets/dataset.json',
@@ -106,9 +118,10 @@ def train(rank: int, world_size: int, params: dict) -> None:
         if is_main_process:
             logger.info(f'Training dataset size: {len(train_dataset)}')
         
-        # Training loop
-        best_loss = float('inf')
+        # Initialize lists for tracking
         losses = []
+        learning_rates = []
+        best_loss = float('inf')
 
         for epoch in range(params['num_epochs']):
             train_sampler.set_epoch(epoch)
@@ -165,17 +178,60 @@ def train(rank: int, world_size: int, params: dict) -> None:
             
             if is_main_process:
                 logger.info(f'Epoch {epoch+1} - Average Loss: {avg_epoch_loss:.4f}')
-                losses.append(avg_epoch_loss)
+                # Step scheduler with the average loss
+                scheduler.step(avg_epoch_loss)
                 
-                # Save checkpoint
+                # Get current learning rate
+                current_lr = optimizer.param_groups[0]['lr']
+                
+                # Append values to lists
+                losses.append(avg_epoch_loss)
+                learning_rates.append(current_lr)
+                
+                # Create figure with two y-axes
+                fig, ax1 = plt.subplots(figsize=(10,6))
+                
+                # Plot loss on primary y-axis
+                color = 'tab:blue'
+                ax1.set_xlabel('Epoch')
+                ax1.set_ylabel('Loss', color=color)
+                ax1.plot(range(1, len(losses) + 1), losses, color=color, label='Training Loss')
+                ax1.tick_params(axis='y', labelcolor=color)
+                
+                # Create secondary y-axis and plot learning rate
+                ax2 = ax1.twinx()
+                color = 'tab:orange'
+                ax2.set_ylabel('Learning Rate', color=color)
+                ax2.plot(range(1, len(learning_rates) + 1), learning_rates, 
+                        color=color, label='Learning Rate', linestyle='--')
+                ax2.tick_params(axis='y', labelcolor=color)
+                
+                # Add title and grid
+                plt.title('Training Loss and Learning Rate vs Epoch')
+                ax1.grid(True, alpha=0.3)
+                
+                # Add combined legend
+                lines1, labels1 = ax1.get_legend_handles_labels()
+                lines2, labels2 = ax2.get_legend_handles_labels()
+                ax2.legend(lines1 + lines2, labels1 + labels2, loc='upper right')
+                
+                # Adjust layout and save
+                plt.tight_layout()
+                plt.savefig(os.path.join(save_dir, 'training_plot.png'))
+                plt.close()
+
+                # Save checkpoint with both histories
                 checkpoint = {
                     'epoch': epoch,
                     'model_state_dict': network.module.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
+                    'scheduler_state_dict': scheduler.state_dict(),
                     'loss': avg_epoch_loss,
+                    'losses': losses,
+                    'learning_rates': learning_rates  # Save learning rate history
                 }
                 
-                # Save latest checkpoint
+                # Save checkpoint with scheduler state
                 torch.save(checkpoint, os.path.join(save_dir, 'latest_checkpoint.pth'))
                 
                 # Save best model
@@ -183,17 +239,6 @@ def train(rank: int, world_size: int, params: dict) -> None:
                     best_loss = avg_epoch_loss
                     torch.save(checkpoint, os.path.join(save_dir, 'best_model.pth'))
                     logger.info(f'New best model saved with loss: {best_loss:.4f}')
-                
-                # Plot loss curve
-                plt.figure(figsize=(10,6))
-                plt.plot(range(1, len(losses) + 1), losses, 'b-', label='Training Loss')
-                plt.xlabel('Epoch')
-                plt.ylabel('Loss')
-                plt.title('Training Loss vs Epoch')
-                plt.legend()
-                plt.grid(True)
-                plt.savefig(os.path.join(save_dir, 'loss_plot.png'))
-                plt.close()
 
     except KeyboardInterrupt:
         logger.info("Caught keyboard interrupt, cleaning up...")
@@ -208,28 +253,44 @@ def train_sbevnet_distributed() -> None:
     scale_x = float(640/1920)
     scale_y = float(480/1080)
 
+    # Training parameters
     params = {
+        # image dimensions
         'image_w': 640,
         'image_h': 480,
         'max_disp': 64,
+
+        # segmentation and heatmap parameters
         'n_classes_seg': 6,
         'n_hmap': 400,
+        
+        # depth range (in meters)
         'xmin': 0,
         'xmax': 10,
+        
+        # horizontal range (in meters)
         'ymin': -5,
         'ymax': 5,
+        
+        # camera parameters
         'cx': 964.989 * scale_x,
         'cy': 569.276 * scale_y,
         'f': 1093.2768 * scale_x,
         'tx': 0.13,
         'camera_ext_x': 0.0,
         'camera_ext_y': 0.0,
+
+        # additional parameters for SBEVNet
         'do_ipm_rgb': False,
         'do_ipm_feats': False,
         'fixed_cam_confs': True,
+        
+        # training parameters
         'batch_size': 2,  # Per GPU batch size
         'num_epochs': 100,
-        'learning_rate': 0.001,
+        'learning_rate': 0.0001,
+
+        # dataset parameters
         'do_mask': False,
         'do_top_seg': True,
         'zero_mask': False

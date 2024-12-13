@@ -88,8 +88,9 @@ class StereoBEVFeats(nn.Module):
         self.seg_up = nn.UpsamplingBilinear2d(scale_factor=4 )
 
 
-        
+    # cost0: [B, C, D, H, W] ==> [2, 64, 16, 120, 160]
     def forward(self , cost0 , sys_confs  , cam_confs ):
+    
         
         # self.logger.warning(f"=================")
         # self.logger.warning(f"StereoBEVFeats ==> forward()")
@@ -99,6 +100,7 @@ class StereoBEVFeats(nn.Module):
         fea = fea.permute(0 , 1 , 3 , 4 , 2 )
         fea = fea.contiguous()
         if self.reduce_mode == 'concat':
+            # fea = fea.view( fea.size(0) , fea.size(1)*fea.size(2) , fea.size(3) , fea.size(4) )
             fea = fea.view( fea.size(0) , fea.size(1)*fea.size(2) , fea.size(3) , fea.size(4) )
         elif self.reduce_mode == "sum":
             fea = fea.sum( 2 )
@@ -123,9 +125,9 @@ class StereoBEVFeats(nn.Module):
 
         fea = self.dres4_2d_top_2( fea )
         
-        # self.logger.info(f"=================")
-        # self.logger.info(f"fea.shape: {fea.shape}")
-        # self.logger.info(f"=================\n")
+        # self.logger.warning(f"=================")
+        # self.logger.warning(f"[2d cost-volume] fea.shape: {fea.shape}")
+        # self.logger.warning(f"=================\n")
 
         fea = pt_costvol_to_hmap( fea , cam_confs , sys_confs=sys_confs  )
         
@@ -166,9 +168,22 @@ class BEVSegHead(nn.Module):
         fea = self.dres_2d_seg_2(fea) + fea
         fea = self.dres_2d_seg_3(fea) + fea
         
-        fea1 = self.classify_seg(fea)
-        pred_seg2 = F.log_softmax(fea1)
-        return pred_seg2 
+        # fea1 = self.classify_seg(fea)
+        # pred_seg2 = F.log_softmax(fea1)
+        # return pred_seg2 
+    
+        # Get logits from classification layer
+        logits = self.classify_seg(fea)
+        
+        # Apply log_softmax along the channel dimension (dim=1)
+        # This gives us (batch_size, n_classes, H, W) tensor of log probabilities
+        log_probs = F.log_softmax(logits, dim=1)
+        return log_probs
+
+        # logits = self.classify_seg(fea)
+        # # Get direct class predictions (indices from 1-6)
+        # pred_seg = torch.argmax(logits, dim=1, keepdim=True) 
+        # return pred_seg
         
 
         
@@ -273,9 +288,15 @@ class SBEVNet(nn.Module):
         # self.logger.info(f"=================")
         # self.logger.info(f"CKPT-1")
         # self.logger.info(f"=================\n")
-    
+
+        # left: [B, C, H, W]
         left = imgs[0]
         right = imgs[1]
+
+        # self.logger.warning(f"=================")
+        # self.logger.warning(f"left.shape: {left.shape}")
+        # self.logger.warning(f"right.shape: {right.shape}")
+        # self.logger.warning(f"=================\n")
 
         # self.logger.info(f"=================")
         # self.logger.info(f"CKPT-2")
@@ -298,22 +319,33 @@ class SBEVNet(nn.Module):
             ipm_m = data['ipm_feats_m']
             assert ipm_m.shape[-1] == 3*3 + 2 
             assert len(ipm_m.shape) == 2 
-                        
+
+        # refimg_fea: [B, C, H, W] ==> [2, 32,120,160]
         refimg_fea     = self.feature_extraction(left)
         targetimg_fea  = self.feature_extraction(right)
 
+        # self.logger.warning(f"=================")
+        # self.logger.warning(f"refimg_fea.shape: {refimg_fea.shape}")
+        # self.logger.warning(f"targetimg_fea.shape: {targetimg_fea.shape}")
+        # self.logger.warning(f"=================\n")
         
+
         if self.do_ipm_feats:
             feat_ipm = warp_p_scale( refimg_fea , ipm_m , self.sys_confs  )
         
-       
+        # cost: [B, C, D , H, W] ==> [2, 64, 16, 120, 160]
         cost = build_cost_volume(refimg_fea , targetimg_fea , self.maxdisp  )
-       
+
+        # self.logger.warning(f"=================")
+        # self.logger.warning(f"[cost-volume] cost.shape: {cost.shape}")
+        # self.logger.warning(f"=================\n")
+
+        # cost: [B, C, D, H, W] ==> [2, 32, 16, 120, 160]
         cost0 = self.cost_vol_refine(cost)
 
-        # self.logger.info(f"=================")
-        # self.logger.info(f"cost0.shape: {cost0.shape}")
-        # self.logger.info(f"=================\n")
+        # self.logger.warning(f"=================")
+        # self.logger.warning(f"[reduced cost-volume] cost0.shape: {cost0.shape}")
+        # self.logger.warning(f"=================\n")
         
         fea = self.ster_bev_feats(cost0 , sys_confs=self.sys_confs ,cam_confs=cam_confs )
 
