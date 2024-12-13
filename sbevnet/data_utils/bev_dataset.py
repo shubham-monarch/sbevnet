@@ -20,7 +20,7 @@ from helpers import get_logger
 from helpers import ComposeDatasetDict
 from pytorch_propane.registry import registry
 
-
+logger = get_logger("bev_dataset")
 
 IMG_EXTENSIONS = [
     '.jpg',
@@ -289,7 +289,12 @@ def sbevnet_dataset(
         mask = None 
 
     mask_imgs=(zero_mask or do_mask)
-        
+    
+    logger.warning(f"=================")
+    logger.warning(f"mask_segs is None: {mask_imgs is None}")
+    logger.warning(f"explicit_mask is None: {mask is None}")
+    logger.warning(f"=================\n")
+
     if do_top_seg:
         # sub_datasets['top_seg'] = SegLoader(jj[dataset_split]["top_seg"]  ,mask_segs=mask_imgs , explicit_mask=mask , resize=None , do_transpose=True  )
         sub_datasets['top_seg'] = SegLoader(jj[dataset_split]["top_seg"]  ,mask_segs=mask_imgs , explicit_mask=mask , resize=None , do_transpose=False  )

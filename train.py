@@ -8,6 +8,9 @@ from torch.utils.data import DataLoader
 import logging
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import json
+from typing import Dict, Any
+import yaml
 
 from sbevnet.models.network_sbevnet import SBEVNet
 from sbevnet.data_utils.bev_dataset import sbevnet_dataset
@@ -20,49 +23,16 @@ def train_sbevnet():
     scale_x = float(640/1920)
     scale_y = float(480/1080)
 
-    # Training parameters
-    params = {
-        
-        # image dimensions
-        'image_w': 640,
-        'image_h': 480,
-        'max_disp': 64,
+    
+    with open('configs/train.yaml', 'r') as file:
+        params = yaml.safe_load(file)
 
-        # segmentation and heatmap parameters
-        'n_classes_seg': 6,
-        'n_hmap': 400,
-        
-        # depth range (in meters)
-        'xmin': 0,
-        'xmax': 10,
-        
-        # horizontal range (in meters)
-        'ymin': -5,
-        'ymax': 5,
-        
-        # camera parameters
-        'cx': 964.989 * scale_x,
-        'cy': 569.276 * scale_y,
-        'f': 1093.2768 * scale_x,
-        'tx': 0.13,
-        'camera_ext_x': 0.0,
-        'camera_ext_y': 0.0,
+    scale_x = float(640 / 1920)
+    scale_y = float(480 / 1080)
 
-        # additional parameters for SBEVNet
-        'do_ipm_rgb': False,
-        'do_ipm_feats': False,
-        'fixed_cam_confs': True,
-        
-        # training parameters
-        'batch_size': 2,
-        'num_epochs': 20,
-        'learning_rate': 0.0001,
-
-        # dataset parameters
-        'do_mask': False,
-        'do_top_seg': True,
-        'zero_mask': False
-    }
+    params['cx'] *= scale_x
+    params['cy'] *= scale_y
+    params['f'] *= scale_x
     
     # Create save directory
     save_dir = 'checkpoints'

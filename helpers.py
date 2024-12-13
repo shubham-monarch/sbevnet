@@ -14,6 +14,8 @@ import yaml
 import torch.utils.data as data
 from torch.utils.data import Dataset, DataLoader
 import torch
+import random
+
 
 class ComposeDatasetDict(data.Dataset):
 
@@ -51,6 +53,7 @@ class ComposeDatasetDict(data.Dataset):
     def __len__(self):
         for k in self.data_loaders:
             return len(self.data_loaders[k]) 
+
 
 
 def get_label_colors_from_yaml(yaml_path=None):
@@ -224,85 +227,32 @@ def populate_json(json_path, dataset_path, split="train"):
     with open(json_path, 'w') as f:
         json.dump(data, f, indent=4)
 
-def restructure_dataset(src_folder, target_folder):
-    '''Restructure the train-dataset into left, right, and bev-segmented folders.'''
+
+def print_unique_ids_in_mask(mask_path: str) -> None:
+    '''Print the number of unique IDs in a single channel segmentation mask.'''
     
-    # Create the target folder if it doesn't exist
-    os.makedirs(target_folder, exist_ok=True)
-
-    # Define the target subfolders
-    left_folder = os.path.join(target_folder, 'left')
-    right_folder = os.path.join(target_folder, 'right')
-    seg_masks_mono_folder = os.path.join(target_folder, 'seg-masks-mono')
-    seg_masks_rgb_folder = os.path.join(target_folder, 'seg-masks-rgb')
-
-
-    # Create the target subfolders if they don't exist
-    os.makedirs(left_folder, exist_ok=True)
-    os.makedirs(right_folder, exist_ok=True)
-    os.makedirs(seg_masks_mono_folder, exist_ok=True)
-    os.makedirs(seg_masks_rgb_folder, exist_ok=True)
-
-
-    # Count total files for progress bar
-    total_files = sum(len(files) for _, _, files in os.walk(src_folder))
-
-    with tqdm(total=total_files, desc="Organizing Images") as pbar:
-        for root, dirs, files in os.walk(src_folder):
-            for file in files:
-                if file.endswith('_left.jpg'):
-                    # Use the directory name as a prefix to prevent overwriting
-                    prefix = os.path.basename(root)
-                    new_filename = f"{prefix}_{file}"
-                    shutil.copy(os.path.join(root, file), os.path.join(left_folder, new_filename))
-                elif file.endswith('_right.jpg'):
-                    # Use the directory name as a prefix to prevent overwriting
-                    prefix = os.path.basename(root)
-                    new_filename = f"{prefix}_{file}"
-                    shutil.copy(os.path.join(root, file), os.path.join(right_folder, new_filename))
-                elif file.endswith('-mono.png'):
-                    # Use the directory name as a prefix to prevent overwriting
-                    prefix = os.path.basename(root)
-                    new_filename = f"{prefix}_{file}"
-                    shutil.copy(os.path.join(root, file), os.path.join(seg_masks_mono_folder, new_filename))
-                elif file.endswith('-rgb.png'):
-                    # Use the directory name as a prefix to prevent overwriting
-                    prefix = os.path.basename(root)
-                    new_filename = f"{prefix}_{file}"
-                    shutil.copy(os.path.join(root, file), os.path.join(seg_masks_rgb_folder, new_filename))
-                pbar.update(1)
-
-def convert_mono_to_rgb_masks(src_folder: str, dst_folder: str, yaml_path: str = "Mavis.yaml"):
-    '''Convert all mono segmentation masks in source folder to RGB masks using color mapping from YAML.'''
+    logger = get_logger('print_unique_ids_in_mask')
     
-    # Create destination folder if it doesn't exist
-    os.makedirs(dst_folder, exist_ok=True)
+    # Read mask
+    mask = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
+    if mask is None:
+        raise ValueError(f"Failed to read mask: {mask_path}")
+        
+    # Get unique values
+    unique_ids = np.unique(mask)
     
-    # Get all mono mask files
-    mono_masks = get_files_from_folder(src_folder, ['.png'])
-    
-    # Process each mask
-    for mono_mask_path in tqdm(mono_masks, desc="Converting mono to RGB masks"):
-        try:
-            # Read mono mask
-            mono_mask = cv2.imread(mono_mask_path, cv2.IMREAD_UNCHANGED)
-            if mono_mask is None:
-                raise ValueError(f"Failed to read mask: {mono_mask_path}")
-                
-            # Convert to RGB
-            rgb_mask = mono_to_rgb_mask(mono_mask, yaml_path)
-            
-            # Save with same filename in destination folder
-            filename = os.path.basename(mono_mask_path)
-            dst_path = os.path.join(dst_folder, filename)
-            cv2.imwrite(dst_path, rgb_mask)
-            
-        except Exception as e:
-            print(f"Error processing {mono_mask_path}: {str(e)}")
-            continue
+    # logger.info(f"===============")
+    # logger.info(f"Found {len(unique_ids)} unique IDs in mask:")
+    # logger.info(f"IDs: {unique_ids}")
+    # logger.info(f"===============\n")
 
+    return len(unique_ids), unique_ids, mask.shape    
 if __name__ == "__main__":
-    # pass    
+    # pass
+    
+    logger = get_logger('main')
+
+
     # CASE => 1
     # Restructure the train-dataset into left, right, and bev-segmented folders.
     # src_folder = 'train-data'
@@ -342,4 +292,27 @@ if __name__ == "__main__":
 
     # CASE => 7
     # Print information about available CUDA GPUs.
-    print_available_gpus()
+    # print_available_gpus()
+
+    # CASE => 8
+    # Print the number of unique IDs in a single channel segmentation mask.
+    
+    seg_mask_mono_folder = 'datasets/test-640x480/seg-masks-mono'
+    
+    # Get a random mask path from the folder
+    mask_path = random.choice(glob.glob(os.path.join(seg_mask_mono_folder, '*.png')))
+    num_labels, unique_ids, mask_shape = print_unique_ids_in_mask(mask_path)
+
+    logger.info(f"===============")
+    logger.info(f"Mask file name: {os.path.basename(mask_path)}")
+    logger.info(f"Mask shape: {mask_shape}")
+    logger.info(f"Number of unique labels: {num_labels}")
+    logger.info(f"Unique IDs: {unique_ids}")
+    logger.info(f"===============\n")
+
+    # mask_path = 'predictions/pred_0_0.png'
+    # num_labels, unique_ids = print_unique_ids_in_mask(mask_path)
+    # logger.info(f"===============")
+    # logger.info(f"Number of unique labels: {num_labels}")
+    # logger.info(f"Unique IDs: {unique_ids}")
+    # logger.info(f"===============\n")
