@@ -214,7 +214,7 @@ def evaluate_sbevnet():
                 logger.info(f"pred.shape: {pred.shape}")
                 logger.info(f"=================\n")
 
-                break
+                
                 
                 target = data['top_seg']  # [B, H, W]
                 

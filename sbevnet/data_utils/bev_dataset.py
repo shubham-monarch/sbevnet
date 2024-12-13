@@ -291,7 +291,8 @@ def sbevnet_dataset(
     mask_imgs=(zero_mask or do_mask)
         
     if do_top_seg:
-        sub_datasets['top_seg'] = SegLoader(jj[dataset_split]["top_seg"]  ,mask_segs=mask_imgs , explicit_mask=mask , resize=None , do_transpose=True  )
+        # sub_datasets['top_seg'] = SegLoader(jj[dataset_split]["top_seg"]  ,mask_segs=mask_imgs , explicit_mask=mask , resize=None , do_transpose=True  )
+        sub_datasets['top_seg'] = SegLoader(jj[dataset_split]["top_seg"]  ,mask_segs=mask_imgs , explicit_mask=mask , resize=None , do_transpose=False  )
     
     
         
