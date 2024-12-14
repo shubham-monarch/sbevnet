@@ -20,6 +20,8 @@ def get_colored_segmentation_image(seg_arr: np.ndarray, config_path: str) -> np.
     with open(config_path, 'r') as file:
         config = yaml.safe_load(file)
 
+   
+
     color_map = config['color_map']
     output_height = seg_arr.shape[0]
     output_width = seg_arr.shape[1]
@@ -53,43 +55,20 @@ def calculate_iou(pred, target, n_classes):
 def evaluate_sbevnet():
     logger = get_logger("evaluate")
     
-    # Evaluation parameters
-    params = {
-        # image dimensions
-        'image_w': 640,
-        'image_h': 480,
-        'max_disp': 64,
+    import yaml
 
-        # segmentation and heatmap parameters
-        'n_classes_seg': 6,
-        'n_hmap': 480,
-        'xmin': 1,
-        'xmax': 39,
-        'ymin': -19,
-        'ymax': 19,
-        
-        # camera parameters
-        'cx': 964.989,
-        'cy': 569.276,
-        'f': 1093.2768,
-        'tx': 0.13,
-        'camera_ext_x': 0.0,
-        'camera_ext_y': 0.0,
+    with open('configs/train.yaml', 'r') as file:
+        params = yaml.safe_load(file)
 
-        # model parameters
-        'do_ipm_rgb': False,
-        'do_ipm_feats': False,
-        'fixed_cam_confs': True,
-        
-        # evaluation parameters
-        'batch_size': 1,
-        'checkpoint_path': 'checkpoints/best_model.pth',
-        
-        # dataset parameters
-        'do_mask': False,
-        'do_top_seg': True,
-        'zero_mask': False
-    }
+    scale_x = float(640 / 1920)
+    scale_y = float(480 / 1080)
+
+    params['cx'] *= scale_x
+    params['cy'] *= scale_y
+    params['f'] *= scale_x
+    
+    params['checkpoint_path'] = 'checkpoints/best_model.pth'
+    params['batch_size'] = 1
     
     # mkdir predictions
     pred_dir = 'predictions'

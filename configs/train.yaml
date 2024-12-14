@@ -30,7 +30,7 @@ fixed_cam_confs: true
 
 # training parameters
 batch_size: 2
-num_epochs: 20
+num_epochs: 100
 learning_rate: 0.0001
 
 # dataset parameters

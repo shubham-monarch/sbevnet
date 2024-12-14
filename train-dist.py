@@ -13,6 +13,7 @@ import logging
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+import yaml
 
 from sbevnet.models.network_sbevnet import SBEVNet
 from sbevnet.data_utils.bev_dataset import sbevnet_dataset
@@ -29,6 +30,37 @@ def setup(rank: int, world_size: int) -> None:
 def cleanup() -> None:
     """Clean up distributed training process group."""
     dist.destroy_process_group()
+
+
+def compute_class_weights(dataset: DataLoader, params: dict) -> torch.Tensor:
+    """compute inverse frequency class weights"""
+    logger = logging.getLogger("compute_class_weights")
+    
+    # count frequencies of each class
+    class_counts = torch.zeros(params['n_classes_seg'])
+    for data in dataset:
+        labels = data['top_seg']
+        for i in range(params['n_classes_seg']):
+            class_counts[i] += (labels == i).sum()
+    
+    # print counts for each class and total sum
+    total_samples = class_counts.sum()
+    
+    logger.warning(f"=================")
+    logger.warning(f"Class counts: {class_counts}, Total sum: {total_samples.item()}")
+    logger.warning(f"=================\n")
+    
+    # compute inverse frequency weights
+    class_weights = total_samples / (class_counts * params['n_classes_seg'])
+    
+    # normalize weights to have median of 1
+    class_weights = class_weights / class_weights.median()
+    
+    logger.warning(f"=================")
+    logger.warning(f"computed class weights: {class_weights}")
+    logger.warning(f"=================\n")
+    
+    return class_weights
 
 
 def train(rank: int, world_size: int, params: dict) -> None:
@@ -75,8 +107,19 @@ def train(rank: int, world_size: int, params: dict) -> None:
         # Wrap model with DDP
         network = DDP(network, device_ids=[rank])
         
-        # Define loss function and optimizer
-        criterion = nn.NLLLoss2d(ignore_index=-100).to(rank)
+        # Define loss function and optimizer    
+        # criterion = nn.NLLLoss2d(ignore_index=-100).to(rank)
+        
+        # class_weights = compute_class_weights(train_dataset, params).to(rank)
+        
+        class_weights = torch.tensor([0.1, 0.1, 0.1, 1.0, 10.0, 10.0]).to(rank)
+        # normalize
+        class_weights = class_weights / class_weights.sum()
+
+        
+        criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=-100).to(rank)
+
+
         optimizer = optim.Adam(network.parameters(), lr=params['learning_rate'])
         
         # Add scheduler - only on main process since we'll use its loss
@@ -250,51 +293,17 @@ def train(rank: int, world_size: int, params: dict) -> None:
 
 def train_sbevnet_distributed() -> None:
     """Main function to initialize distributed training."""
-    scale_x = float(640/1920)
-    scale_y = float(480/1080)
+   
 
-    # Training parameters
-    params = {
-        # image dimensions
-        'image_w': 640,
-        'image_h': 480,
-        'max_disp': 64,
+    with open('configs/train.yaml', 'r') as file:
+        params = yaml.safe_load(file)
 
-        # segmentation and heatmap parameters
-        'n_classes_seg': 6,
-        'n_hmap': 400,
-        
-        # depth range (in meters)
-        'xmin': 0,
-        'xmax': 10,
-        
-        # horizontal range (in meters)
-        'ymin': -5,
-        'ymax': 5,
-        
-        # camera parameters
-        'cx': 964.989 * scale_x,
-        'cy': 569.276 * scale_y,
-        'f': 1093.2768 * scale_x,
-        'tx': 0.13,
-        'camera_ext_x': 0.0,
-        'camera_ext_y': 0.0,
+    scale_x = float(640 / 1920)
+    scale_y = float(480 / 1080)
 
-        # additional parameters for SBEVNet
-        'do_ipm_rgb': False,
-        'do_ipm_feats': False,
-        'fixed_cam_confs': True,
-        
-        # training parameters
-        'batch_size': 2,  # Per GPU batch size
-        'num_epochs': 100,
-        'learning_rate': 0.0001,
-
-        # dataset parameters
-        'do_mask': False,
-        'do_top_seg': True,
-        'zero_mask': False
-    }
+    params['cx'] *= scale_x
+    params['cy'] *= scale_y
+    params['f'] *= scale_x
     
     world_size = torch.cuda.device_count()
     if world_size < 1:

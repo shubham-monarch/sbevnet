@@ -84,6 +84,13 @@ check segmentation [end to end]
 - toogle number of classes, 6 vs 5
 - add segmentation mask 
 - add hidden points mask
+- add visibility mask
+- ignoring void labels
+- check for degeneracy
+- weighted cross entropy loss
+- plot GT class-wise distribution
+- model is getting stuck at local minima, need to tune learning rate
+
 
 
 - z-indices out-of-bounds error while bev_pcd -> bev_png

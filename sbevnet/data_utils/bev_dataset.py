@@ -162,6 +162,16 @@ class SegLoader(data.Dataset):
 
         self.logger = get_logger("seg_loader")
 
+        self.logger.warning("=================")
+        self.logger.warning(
+            # f"Input args: f_list={self.f_list}, "
+            f"mask_segs={self.mask_segs}, "
+            f"explicit_mask={self.explicit_mask}, "
+            f"resize={self.resize}, "
+            f"do_transpose={self.do_transpose}"
+        )
+        self.logger.warning("=================\n")
+
     def __getitem__(self, index):
         
         seg_img = cv2.imread( self.f_list[index] , cv2.IMREAD_UNCHANGED)
@@ -192,7 +202,8 @@ class SegLoader(data.Dataset):
                 mask = load_mask(self.explicit_mask[index])
                 seg_img[mask<0.5] = -100
             else:
-                seg_img[seg_img<0.5] = -100
+                # seg_img[seg_img<0.5] = -100
+                seg_img[seg_img == 0] = -100
 
         # self.logger.info(f"=================")
         # self.logger.info(f"seg_img.shape: {seg_img.shape}")
@@ -259,6 +270,10 @@ def sbevnet_dataset(
 
     ):
     
+    # logger.warning(f"=================")
+    # logger.warning(f"do_mask: {do_mask}")
+    # logger.warning(f"zero_mask: {zero_mask}")
+    # logger.warning(f"=================\n")
 
     localss = locals()
     print( "dataset argsss : " ,  { arg: localss[arg] for arg in inspect.getfullargspec(sbevnet_dataset ).args if arg != 'self'}) 
@@ -288,12 +303,17 @@ def sbevnet_dataset(
     else:
         mask = None 
 
+    # logger.warning(f"=================")
+    # logger.warning(f"zero_mask: {zero_mask}")
+    # logger.warning(f"do_mask: {do_mask}")
+    # logger.warning(f"=================\n")
+
     mask_imgs=(zero_mask or do_mask)
     
-    logger.warning(f"=================")
-    logger.warning(f"mask_segs is None: {mask_imgs is None}")
-    logger.warning(f"explicit_mask is None: {mask is None}")
-    logger.warning(f"=================\n")
+    # logger.warning(f"=================")
+    # logger.warning(f"mask_imgs is None: {mask_imgs is None}")
+    # logger.warning(f"explicit_mask is None: {mask is None}")
+    # logger.warning(f"=================\n")
 
     if do_top_seg:
         # sub_datasets['top_seg'] = SegLoader(jj[dataset_split]["top_seg"]  ,mask_segs=mask_imgs , explicit_mask=mask , resize=None , do_transpose=True  )
