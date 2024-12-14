@@ -178,12 +178,12 @@ def populate_json(json_path, dataset_path, split="train"):
         "train": {
             "rgb_left": get_relative_files(os.path.join(dataset_path, 'train-640x480/left'), IMG_EXTENSIONS),
             "rgb_right": get_relative_files(os.path.join(dataset_path, 'train-640x480/right'), IMG_EXTENSIONS),
-            "top_seg": get_relative_files(os.path.join(dataset_path, 'train-640x480/seg-masks-mono'), ['.png']),
+            "top_seg": get_relative_files(os.path.join(dataset_path, 'train-640x480/seg-masks-mono-cropped'), ['.png']),
         },
         "test": {
             "rgb_left": get_relative_files(os.path.join(dataset_path, 'train-640x480/left'), IMG_EXTENSIONS),
             "rgb_right": get_relative_files(os.path.join(dataset_path, 'train-640x480/right'), IMG_EXTENSIONS),
-            "top_seg": get_relative_files(os.path.join(dataset_path, 'train-640x480/seg-masks-mono'), ['.png'])
+            "top_seg": get_relative_files(os.path.join(dataset_path, 'train-640x480/seg-masks-mono-cropped'), ['.png'])
         }
     }
 

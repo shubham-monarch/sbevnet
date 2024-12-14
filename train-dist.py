@@ -17,7 +17,7 @@ import yaml
 
 from sbevnet.models.network_sbevnet import SBEVNet
 from sbevnet.data_utils.bev_dataset import sbevnet_dataset
-from helpers import get_logger
+from helpers import get_logger, populate_json
 
 
 def setup(rank: int, world_size: int) -> None:
@@ -267,4 +267,12 @@ def train_sbevnet_distributed() -> None:
 
 
 if __name__ == '__main__':
-    train_sbevnet_distributed() 
+    
+    # populate json
+    json_path = 'datasets/dataset.json'
+    dataset_path = 'datasets'
+    populate_json(json_path, dataset_path)
+    
+   
+    
+    # train_sbevnet_distributed() 
