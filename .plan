@@ -87,11 +87,12 @@ check segmentation [end to end]
 - add visibility mask
 - ignoring void labels
 - check for degeneracy
-- weighted cross entropy loss
+-  weighted cross entropy loss
 - plot GT class-wise distribution
 - model is getting stuck at local minima, need to tune learning rate
-
-
+- add augmentation for minor classes
+- add focal loss function
+- reduce mask size from 400 * 400 to 200 * 200
 
 - z-indices out-of-bounds error while bev_pcd -> bev_png
 - check mono --> rgb seg-mask conversion in evaluate_model.py
