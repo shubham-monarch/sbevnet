@@ -219,29 +219,19 @@ def flip_mask(mask_path: str) -> np.ndarray:
     mask_i_mono = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
     mask_f_mono = cv2.flip(mask_i_mono, 0)
 
-    assert len(mask_i_mono.shape) == 2, f"Expected single channel mask, but got shape: {mask_i_mono.shape}"
-
-    mask_i_rgb = mono_to_rgb_mask(mask_i_mono)
-    mask_f_rgb = mono_to_rgb_mask(mask_f_mono)
-
-    # concatenate the original and flipped masks
-    # combined_mask = np.hstack((mask_i_rgb, mask_f_rgb))
-
-    # display the combined mask
-    # cv2.imwrite("masks_side_by_side.png", combined_mask)
-    
     return mask_f_mono
 
-def flip_masks(src_mono: str, dest_mono: str, dest_rgb: str) -> None:
-    '''Flip the mono / rgb masks in the source folder and save them to the destination folder.'''
+def flip_masks(src_mono: str, dest_mono: str) -> None:
+    '''Flip the mono masks in the source folder and save them to the destination folder.'''
+    
+    # assert not (os.path.exists(dest_mono) and os.listdir(dest_mono)), "Destination folder for mono masks is not empty"
+    # os.makedirs(dest_mono, exist_ok=True)
     
     masks = get_files_from_folder(src_mono, ['.png'])
     for mask_path in tqdm(masks):
         mask_flipped_mono = flip_mask(mask_path)
-        mask_flipped_rgb = mono_to_rgb_mask(mask_flipped_mono)
         
         cv2.imwrite(os.path.join(dest_mono, os.path.basename(mask_path)), mask_flipped_mono)
-        cv2.imwrite(os.path.join(dest_rgb, os.path.basename(mask_path).replace('-mono.png', '-rgb.png')), mask_flipped_rgb)
 
 
 def crop_resize_mask(mask_path: str) -> np.ndarray:
@@ -280,11 +270,24 @@ if __name__ == "__main__":
     
     logger = get_logger('main')
 
-    # CASE 11
+    # CASE 12
+    # crop + flip mono / rgb masks
     src_mono = 'datasets/train-640x480/seg-masks-mono'
     dest_mono = 'datasets/train-640x480/seg-masks-mono-cropped'
     dest_rgb = 'datasets/train-640x480/seg-masks-rgb-cropped'
+    
+    # resize mono / rgb masks
     crop_resize_masks(src_mono, dest_mono, dest_rgb)
+
+    # flip mono / rgb masks
+    flip_masks(dest_mono, dest_mono)
+    flip_masks(dest_rgb, dest_rgb)
+
+    # # CASE 11
+    # src_mono = 'datasets/train-640x480/seg-masks-mono'
+    # dest_mono = 'datasets/train-640x480/seg-masks-mono-cropped'
+    # dest_rgb = 'datasets/train-640x480/seg-masks-rgb-cropped'
+    # crop_resize_masks(src_mono, dest_mono, dest_rgb)
 
 
     # # CASE 10
