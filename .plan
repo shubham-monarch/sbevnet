@@ -93,6 +93,8 @@ check segmentation [end to end]
 - add augmentation for minor classes
 - add focal loss function
 - reduce mask size from 400 * 400 to 200 * 200
+- introduce a priority collapsing mechanism
+
 
 - z-indices out-of-bounds error while bev_pcd -> bev_png
 - check mono --> rgb seg-mask conversion in evaluate_model.py
