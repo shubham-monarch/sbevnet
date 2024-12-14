@@ -93,6 +93,7 @@ check segmentation [end to end]
 - add augmentation for minor classes
 - add focal loss function
 - reduce mask size from 400 * 400 to 200 * 200
+- flip mask for z-inversion 
 - introduce a priority collapsing mechanism
 - fix z vs 10-z 
 - baseline scaling

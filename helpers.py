@@ -89,43 +89,6 @@ def mono_to_rgb_mask(mono_mask: np.ndarray, yaml_path: str = "Mavis.yaml") -> np
     return rgb_mask
 
 
-def resize_segmentation_masks(
-    input_folder: str, 
-    output_folder: str, 
-    new_size: tuple, 
-    labels=[0, 1, 2, 3, 4, 5]
-):
-    '''Resize segmentation masks in the input folder and save them to the output folder.'''
-    
-    # Create output folder if it doesn't exist
-    os.makedirs(output_folder, exist_ok=True)
-    
-    # Get all mask files from the input folder
-    mask_files = get_files_from_folder(input_folder, ['.png', '.jpg', '.bmp'])
-    
-    for mask_file in tqdm(mask_files, desc="Resizing masks"):
-        # Read the mask
-        mask = cv2.imread(mask_file, cv2.IMREAD_UNCHANGED)
-        
-        if mask is None:
-            raise ValueError(f"Failed to read mask file: {mask_file}")
-        
-        # Resize the mask
-        resized_mask = cv2.resize(mask, new_size, interpolation=cv2.INTER_NEAREST)
-        
-        # Ensure the resized mask contains only the specified label values
-        unique_values = np.unique(resized_mask)
-        min_label, max_label = min(labels), max(labels)
-        resized_mask = np.clip(np.round(resized_mask), min_label, max_label)
-        
-        # Assert that the number of unique labels is less than the number of specified labels
-        assert len(unique_values) <= len(labels), f"Number of unique labels {len(unique_values)} is not less than {len(labels)}"
-
-        # Save the resized mask to the output folder
-        output_path = os.path.join(output_folder, os.path.basename(mask_file))
-        cv2.imwrite(output_path, resized_mask)
-
-
 def convert_rgb_to_single_channel(segmentation_mask: str) -> np.ndarray:
     ''' Convert an RGB segmentation mask to a single channel image.'''
 
@@ -247,11 +210,37 @@ def print_unique_ids_in_mask(mask_path: str) -> None:
     # logger.info(f"===============\n")
 
     return len(unique_ids), unique_ids, mask.shape    
+
+def flip_mask(mask_path: str) -> np.ndarray:
+    
+    '''Flip the single channel segmentation mask vertically.'''
+
+    # return cv2.flip(mask, 0)
+    mask_i_mono = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
+    mask_f_mono = cv2.flip(mask_i_mono, 0)
+
+    assert len(mask_i_mono.shape) == 2, f"Expected single channel mask, but got shape: {mask_i_mono.shape}"
+
+    mask_i_rgb = mono_to_rgb_mask(mask_i_mono)
+    mask_f_rgb = mono_to_rgb_mask(mask_f_mono)
+
+    # concatenate the original and flipped masks
+    combined_mask = np.hstack((mask_i_rgb, mask_f_rgb))
+
+    # display the combined mask
+    cv2.imwrite("masks_side_by_side.png", combined_mask)
+    
+    return mask_f_mono
+
 if __name__ == "__main__":
     # pass
     
     logger = get_logger('main')
 
+    # CASE =>9
+    mask_path = '/home/ubuntu/sbevnet/datasets/train-640x480/seg-masks-mono/19__seg-mask-mono.png'
+    mask_f = flip_mask(mask_path)
+    # cv2.imwrite('debug/mask_f.png', mask_f)
 
     # CASE => 1
     # Restructure the train-dataset into left, right, and bev-segmented folders.
@@ -294,21 +283,21 @@ if __name__ == "__main__":
     # Print information about available CUDA GPUs.
     # print_available_gpus()
 
-    # CASE => 8
-    # Print the number of unique IDs in a single channel segmentation mask.
+    # # CASE => 8
+    # # Print the number of unique IDs in a single channel segmentation mask.
     
-    seg_mask_mono_folder = 'datasets/test-640x480/seg-masks-mono'
+    # seg_mask_mono_folder = 'datasets/test-640x480/seg-masks-mono'
     
-    # Get a random mask path from the folder
-    mask_path = random.choice(glob.glob(os.path.join(seg_mask_mono_folder, '*.png')))
-    num_labels, unique_ids, mask_shape = print_unique_ids_in_mask(mask_path)
+    # # Get a random mask path from the folder
+    # mask_path = random.choice(glob.glob(os.path.join(seg_mask_mono_folder, '*.png')))
+    # num_labels, unique_ids, mask_shape = print_unique_ids_in_mask(mask_path)
 
-    logger.info(f"===============")
-    logger.info(f"Mask file name: {os.path.basename(mask_path)}")
-    logger.info(f"Mask shape: {mask_shape}")
-    logger.info(f"Number of unique labels: {num_labels}")
-    logger.info(f"Unique IDs: {unique_ids}")
-    logger.info(f"===============\n")
+    # logger.info(f"===============")
+    # logger.info(f"Mask file name: {os.path.basename(mask_path)}")
+    # logger.info(f"Mask shape: {mask_shape}")
+    # logger.info(f"Number of unique labels: {num_labels}")
+    # logger.info(f"Unique IDs: {unique_ids}")
+    # logger.info(f"===============\n")
 
     # mask_path = 'predictions/pred_0_0.png'
     # num_labels, unique_ids = print_unique_ids_in_mask(mask_path)
