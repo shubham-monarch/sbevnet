@@ -225,22 +225,79 @@ def flip_mask(mask_path: str) -> np.ndarray:
     mask_f_rgb = mono_to_rgb_mask(mask_f_mono)
 
     # concatenate the original and flipped masks
-    combined_mask = np.hstack((mask_i_rgb, mask_f_rgb))
+    # combined_mask = np.hstack((mask_i_rgb, mask_f_rgb))
 
     # display the combined mask
-    cv2.imwrite("masks_side_by_side.png", combined_mask)
+    # cv2.imwrite("masks_side_by_side.png", combined_mask)
     
     return mask_f_mono
+
+def flip_masks(src_mono: str, dest_mono: str, dest_rgb: str) -> None:
+    '''Flip the mono / rgb masks in the source folder and save them to the destination folder.'''
+    
+    masks = get_files_from_folder(src_mono, ['.png'])
+    for mask_path in tqdm(masks):
+        mask_flipped_mono = flip_mask(mask_path)
+        mask_flipped_rgb = mono_to_rgb_mask(mask_flipped_mono)
+        
+        cv2.imwrite(os.path.join(dest_mono, os.path.basename(mask_path)), mask_flipped_mono)
+        cv2.imwrite(os.path.join(dest_rgb, os.path.basename(mask_path).replace('-mono.png', '-rgb.png')), mask_flipped_rgb)
+
+
+def crop_resize_mask(mask_path: str) -> np.ndarray:
+    '''Crop and resize the mask from 400x400 to 200x200.'''
+    
+    mask = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
+    assert mask.shape == (400, 400), f"Expected mask shape to be (400, 400), but got {mask.shape}"
+    
+    h, w = mask.shape
+    mask_cropped = mask[200:400, 100:300]
+    
+    assert mask_cropped.shape == (200,200), f"Expected mask shape to be (200, 200), but got {mask_cropped.shape}"
+    return mask_cropped
+
+def crop_resize_masks(src_mono: str, dest_mono: str, dest_rgb: str) -> None:
+    '''Crop and resize the mono / rgb masks in the source folder and save them to the destination folder.'''
+    
+    assert not (os.path.exists(dest_mono) and os.listdir(dest_mono)), "Destination folder for mono masks is not empty"
+    assert not (os.path.exists(dest_rgb) and os.listdir(dest_rgb)), "Destination folder for RGB masks is not empty"
+
+    os.makedirs(dest_mono, exist_ok=True)
+    os.makedirs(dest_rgb, exist_ok=True)
+
+    masks = get_files_from_folder(src_mono, ['.png'])
+    
+    for mask_path in tqdm(masks):
+        mask_cropped_mono = crop_resize_mask(mask_path)
+        mask_cropped_rgb = mono_to_rgb_mask(mask_cropped_mono)
+        
+        cv2.imwrite(os.path.join(dest_mono, os.path.basename(mask_path)), mask_cropped_mono)
+        cv2.imwrite(os.path.join(dest_rgb, os.path.basename(mask_path).replace('-mono.png', '-rgb.png')), mask_cropped_rgb)
+
 
 if __name__ == "__main__":
     # pass
     
     logger = get_logger('main')
 
-    # CASE =>9
-    mask_path = '/home/ubuntu/sbevnet/datasets/train-640x480/seg-masks-mono/19__seg-mask-mono.png'
-    mask_f = flip_mask(mask_path)
-    # cv2.imwrite('debug/mask_f.png', mask_f)
+    # CASE 11
+    src_mono = 'datasets/train-640x480/seg-masks-mono'
+    dest_mono = 'datasets/train-640x480/seg-masks-mono-cropped'
+    dest_rgb = 'datasets/train-640x480/seg-masks-rgb-cropped'
+    crop_resize_masks(src_mono, dest_mono, dest_rgb)
+
+
+    # # CASE 10
+    # mask_path = '/home/ubuntu/sbevnet/datasets/train-640x480/seg-masks-mono/19__seg-mask-mono.png'
+    # mask_i = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
+    # mask_f = crop_resize_mask(mask_path)
+    # mask_f_rgb = mono_to_rgb_mask(mask_f)
+    # cv2.imwrite('debug/mask_cropped.png', mask_f_rgb)
+    
+    # # CASE 9
+    # mask_path = '/home/ubuntu/sbevnet/datasets/train-640x480/seg-masks-mono/19__seg-mask-mono.png'
+    # mask_f = flip_mask(mask_path)
+    # # cv2.imwrite('debug/mask_f.png', mask_f)
 
     # CASE => 1
     # Restructure the train-dataset into left, right, and bev-segmented folders.
