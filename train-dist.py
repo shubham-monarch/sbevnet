@@ -44,18 +44,20 @@ def compute_class_weights(dataset: DataLoader, params: dict) -> torch.Tensor:
             class_counts[i] += (labels == i).sum()
     
     # print counts for each class and total sum
-    total_samples = class_counts.sum()
+    # total_samples = class_counts.sum()
     
-    logger.warning(f"=================")
-    logger.warning(f"Class counts: {class_counts}, Total sum: {total_samples.item()}")
-    logger.warning(f"=================\n")
+    # logger.warning(f"=================")
+    # logger.warning(f"Class counts: {class_counts}, Total sum: {total_samples.item()}")
+    # logger.warning(f"=================\n")
     
-    # compute inverse frequency weights
-    class_weights = total_samples / (class_counts * params['n_classes_seg'])
+    # # compute inverse frequency weights
+    # class_weights = total_samples / (class_counts * params['n_classes_seg'])
     
-    # normalize weights to have median of 1
-    class_weights = class_weights / class_weights.median()
+    # # normalize weights to have median of 1
+    # class_weights = class_weights / class_weights.median()
     
+    class_weights = torch.tensor([10.0, 0.1, 0.1, 0.1, 10.0, 10.0])
+
     logger.warning(f"=================")
     logger.warning(f"computed class weights: {class_weights}")
     logger.warning(f"=================\n")
@@ -107,33 +109,14 @@ def train(rank: int, world_size: int, params: dict) -> None:
         # Wrap model with DDP
         network = DDP(network, device_ids=[rank])
         
-        # Define loss function and optimizer    
-        # criterion = nn.NLLLoss2d(ignore_index=-100).to(rank)
-        
-        # class_weights = compute_class_weights(train_dataset, params).to(rank)
-        
         class_weights = torch.tensor([0.1, 0.1, 0.1, 1.0, 10.0, 10.0]).to(rank)
         # normalize
         class_weights = class_weights / class_weights.sum()
-
-        
         criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=-100).to(rank)
-
-
-        optimizer = optim.Adam(network.parameters(), lr=params['learning_rate'])
         
-        # Add scheduler - only on main process since we'll use its loss
-        if is_main_process:
-            scheduler = ReduceLROnPlateau(
-                optimizer,
-                mode='min',
-                factor=0.5,
-                patience=5,
-                verbose=True,
-                min_lr=1e-6
-            )
+        # Fixed learning rate of 0.0001
+        optimizer = optim.Adam(network.parameters(), lr=0.0001)
 
-        # Load datasets
         train_dataset = sbevnet_dataset(
             json_path='datasets/dataset.json',
             dataset_split='train',
@@ -147,12 +130,11 @@ def train(rank: int, world_size: int, params: dict) -> None:
             image_h=params['image_h']
         )
 
-        # Use DistributedSampler
         train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
         train_loader = DataLoader(
             train_dataset,
             batch_size=params['batch_size'],
-            shuffle=False,  # Sampler handles shuffling
+            shuffle=False,
             num_workers=4,
             pin_memory=True,
             sampler=train_sampler
@@ -161,7 +143,6 @@ def train(rank: int, world_size: int, params: dict) -> None:
         if is_main_process:
             logger.info(f'Training dataset size: {len(train_dataset)}')
         
-        # Initialize lists for tracking
         losses = []
         learning_rates = []
         best_loss = float('inf')
@@ -221,63 +202,31 @@ def train(rank: int, world_size: int, params: dict) -> None:
             
             if is_main_process:
                 logger.info(f'Epoch {epoch+1} - Average Loss: {avg_epoch_loss:.4f}')
-                # Step scheduler with the average loss
-                scheduler.step(avg_epoch_loss)
-                
-                # Get current learning rate
-                current_lr = optimizer.param_groups[0]['lr']
-                
-                # Append values to lists
                 losses.append(avg_epoch_loss)
-                learning_rates.append(current_lr)
                 
-                # Create figure with two y-axes
-                fig, ax1 = plt.subplots(figsize=(10,6))
-                
-                # Plot loss on primary y-axis
-                color = 'tab:blue'
-                ax1.set_xlabel('Epoch')
-                ax1.set_ylabel('Loss', color=color)
-                ax1.plot(range(1, len(losses) + 1), losses, color=color, label='Training Loss')
-                ax1.tick_params(axis='y', labelcolor=color)
-                
-                # Create secondary y-axis and plot learning rate
-                ax2 = ax1.twinx()
-                color = 'tab:orange'
-                ax2.set_ylabel('Learning Rate', color=color)
-                ax2.plot(range(1, len(learning_rates) + 1), learning_rates, 
-                        color=color, label='Learning Rate', linestyle='--')
-                ax2.tick_params(axis='y', labelcolor=color)
-                
-                # Add title and grid
-                plt.title('Training Loss and Learning Rate vs Epoch')
-                ax1.grid(True, alpha=0.3)
-                
-                # Add combined legend
-                lines1, labels1 = ax1.get_legend_handles_labels()
-                lines2, labels2 = ax2.get_legend_handles_labels()
-                ax2.legend(lines1 + lines2, labels1 + labels2, loc='upper right')
-                
-                # Adjust layout and save
+                # Plot loss
+                plt.figure(figsize=(10,6))
+                plt.plot(range(1, len(losses) + 1), losses, 'b-', label='Training Loss')
+                plt.xlabel('Epoch')
+                plt.ylabel('Loss')
+                plt.title('Training Loss vs Epoch')
+                plt.grid(True, alpha=0.3)
+                plt.legend()
                 plt.tight_layout()
                 plt.savefig(os.path.join(save_dir, 'training_plot.png'))
                 plt.close()
 
-                # Save checkpoint with both histories
+                # Save checkpoint
                 checkpoint = {
                     'epoch': epoch,
                     'model_state_dict': network.module.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
-                    'scheduler_state_dict': scheduler.state_dict(),
                     'loss': avg_epoch_loss,
                     'losses': losses,
-                    'learning_rates': learning_rates  # Save learning rate history
                 }
                 
-                # Save checkpoint with scheduler state
                 torch.save(checkpoint, os.path.join(save_dir, 'latest_checkpoint.pth'))
                 
-                # Save best model
                 if avg_epoch_loss < best_loss:
                     best_loss = avg_epoch_loss
                     torch.save(checkpoint, os.path.join(save_dir, 'best_model.pth'))

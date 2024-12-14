@@ -94,11 +94,14 @@ check segmentation [end to end]
 - add focal loss function
 - reduce mask size from 400 * 400 to 200 * 200
 - introduce a priority collapsing mechanism
+- fix z vs 10-z 
+- baseline scaling
+- train on smaller mask dimensions ( 5m * 5m)
+
 
 
 - z-indices out-of-bounds error while bev_pcd -> bev_png
 - check mono --> rgb seg-mask conversion in evaluate_model.py
-- fix z vs 10-z 
 - generate 500 frames
 
 + enable multi-gpu training
