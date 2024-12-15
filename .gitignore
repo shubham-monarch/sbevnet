@@ -9,6 +9,8 @@ datasets/*
 *.swp
 checkpoints/**
 
+*.svo
+
 debug/*
 
 .cursorrules

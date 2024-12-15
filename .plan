@@ -21,22 +21,22 @@
 + fix GT seg-mask resolution across files
 * why are there huge black patches in GT? 
 + why is segmented-bev not centered in GT? 
-- fix num_workers for train_loader
+* fix num_workers for train_loader
 - fix transpose=True for SegLoader
-- figure out the co-ordinate system
++ figure out the co-ordinate system
 
-- utility to generate bev frames to s3
++ utility to generate bev frames to s3
 
 + visualise cropped-seg-masks-mono in rgb
 + eval on the trained model
 + generate square shaped top_seg train-data
 - provision for multiple training log folders
 
-=================
+======================
 why is loss not dropping?
-==================
+======================
 + scale cx, cy, fx, fy
-- check fx scaling
+- check fx vs fy scaling scaling
 - camera baseline scaling
 - disparity scaling
 - handle image resizing effect on disparity
@@ -45,9 +45,9 @@ why is loss not dropping?
 - improve loss calculations
 - fix segmentation module
 + segmentation module output should be discrete
-- changing disparity channel count in costvol calculations
+* changing disparity channel count in costvol calculations
 - fix model image pre-processing step
-- flip GT seg-mask in z-direction
++ flip GT seg-mask in z-direction
 - importance of transpose
 
 
@@ -55,7 +55,7 @@ why is loss not dropping?
 + why is loss different (or decreasing faster) in distributed-training?
 
 - stereo rectification 
-- z / y swap
++ z / y swap
 - passing camera orientation
 + how can y-min be negative? 
 
@@ -69,19 +69,19 @@ why is loss not dropping?
 check segmentation [end to end]
 ======================
 
-- check end to end
 + fix predicted mask dimensions (480 * 480)
 - transpose
 + fix SegLoader
 - fix pytorch version
-- check loss function 
++ check loss function 
 - improve loss function
 - [debug] check pid-output with unet output
-- regenerate GT data with less black / blue regions
-- get rid of ground points in GT
+- [debug] check with camera-intrinsics / baseline scaling
+* regenerate GT data with less black / blue regions
+* get rid of ground points in GT
 + check unet implementation
-- establish correspondance with eval files and dataset files
 - toogle number of classes, 6 vs 5
+- establish correspondance with eval files and dataset files
 - add segmentation mask 
 - add hidden points mask
 - add visibility mask
@@ -98,8 +98,16 @@ check segmentation [end to end]
 + fix z vs 10-z 
 - baseline scaling
 + train on smaller mask dimensions ( 5m * 5m)
-- generate video eval data
+- augment minor classes (increase contrast etc, see chat-gpt project)
+- parametrize scale factor
 
+======================
+demo video
+======================
+- generate video eval script
+- augment minor classes
+- check metric accuracy
+- plot stem points on a plot to check metric accuracy 
 
 - z-indices out-of-bounds error while bev_pcd -> bev_png
 - check mono --> rgb seg-mask conversion in evaluate_model.py

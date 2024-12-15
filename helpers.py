@@ -15,6 +15,9 @@ import torch.utils.data as data
 from torch.utils.data import Dataset, DataLoader
 import torch
 import random
+import shutil
+import pyzed.sl as sl
+
 
 
 class ComposeDatasetDict(data.Dataset):
@@ -175,16 +178,28 @@ def populate_json(json_path, dataset_path, split="train"):
         return [os.path.relpath(file, dataset_path) for file in files]
     
     data = {
+        
         "train": {
-            "rgb_left": get_relative_files(os.path.join(dataset_path, 'train-640x480/left'), IMG_EXTENSIONS),
-            "rgb_right": get_relative_files(os.path.join(dataset_path, 'train-640x480/right'), IMG_EXTENSIONS),
-            "top_seg": get_relative_files(os.path.join(dataset_path, 'train-640x480/seg-masks-mono-cropped'), ['.png']),
+            "rgb_left": get_relative_files(os.path.join(dataset_path, 'left'), IMG_EXTENSIONS),
+            "rgb_right": get_relative_files(os.path.join(dataset_path, 'right'), IMG_EXTENSIONS),
+            "top_seg": get_relative_files(os.path.join(dataset_path, 'seg-masks-mono-cropped'), ['.png']),
         },
         "test": {
-            "rgb_left": get_relative_files(os.path.join(dataset_path, 'train-640x480/left'), IMG_EXTENSIONS),
-            "rgb_right": get_relative_files(os.path.join(dataset_path, 'train-640x480/right'), IMG_EXTENSIONS),
-            "top_seg": get_relative_files(os.path.join(dataset_path, 'train-640x480/seg-masks-mono-cropped'), ['.png'])
+            "rgb_left": get_relative_files(os.path.join(dataset_path, 'left'), IMG_EXTENSIONS),
+            "rgb_right": get_relative_files(os.path.join(dataset_path, 'right'), IMG_EXTENSIONS),
+            "top_seg": get_relative_files(os.path.join(dataset_path, 'seg-masks-mono-cropped'), ['.png'])
         }
+        
+        # "train": {
+        #     "rgb_left": get_relative_files(os.path.join(dataset_path, 'train-640x480/left'), IMG_EXTENSIONS),
+        #     "rgb_right": get_relative_files(os.path.join(dataset_path, 'train-640x480/right'), IMG_EXTENSIONS),
+        #     "top_seg": get_relative_files(os.path.join(dataset_path, 'train-640x480/seg-masks-mono-cropped'), ['.png']),
+        # },
+        # "test": {
+        #     "rgb_left": get_relative_files(os.path.join(dataset_path, 'train-640x480/left'), IMG_EXTENSIONS),
+        #     "rgb_right": get_relative_files(os.path.join(dataset_path, 'train-640x480/right'), IMG_EXTENSIONS),
+        #     "top_seg": get_relative_files(os.path.join(dataset_path, 'train-640x480/seg-masks-mono-cropped'), ['.png'])
+        # }
     }
 
     with open(json_path, 'w') as f:
@@ -264,24 +279,103 @@ def crop_resize_masks(src_mono: str, dest_mono: str, dest_rgb: str) -> None:
         cv2.imwrite(os.path.join(dest_mono, os.path.basename(mask_path)), mask_cropped_mono)
         cv2.imwrite(os.path.join(dest_rgb, os.path.basename(mask_path).replace('-mono.png', '-rgb.png')), mask_cropped_rgb)
 
+def generate_dataset_from_svo(svo_path: str, dataset_path: str) -> None:
+    '''Generate a dataset from an SVO file.'''
+    
+    logger = get_logger('generate_dataset_from_svo')
+
+    assert not (os.path.exists(dataset_path) and os.listdir(dataset_path)), "Destination folder for dataset must be empty"
+
+    filepath = os.path.abspath(svo_path)
+    dir_path = os.path.abspath(dataset_path)
+
+    logger.info(f"===============")
+    logger.info(f"svo_file: {filepath}")
+    logger.info(f"===============\n")
+
+    input_type = sl.InputType()
+    input_type.set_from_svo_file(filepath)
+
+    init = sl.InitParameters(input_t=input_type, svo_real_time_mode=False)
+    init.coordinate_units = sl.UNIT.METER   
+
+    zed = sl.Camera()
+    status = zed.open(init)
+    
+    if status != sl.ERROR_CODE.SUCCESS:
+        logger.error(f"===============")
+        logger.error(f"Failed to open the camera")
+        logger.error(f"===============\n")
+        exit()
+
+    runtime_parameters = sl.RuntimeParameters()
+    image = sl.Mat()
+    image_r = sl.Mat()
+
+    logger.info(f"===============") 
+    logger.info(f"Trying to delete the {dir_path} directory")
+    logger.info(f"===============\n")
+    
+    try:
+        shutil.rmtree(dir_path)
+        logger.info(f"Cleared the {dir_path} directory!")
+    except OSError as e:
+        logger.warning("Warning: %s : %s" % (dir_path, e.strerror))
+    
+    left_folder = os.path.join(dir_path, 'left')
+    right_folder = os.path.join(dir_path, 'right')
+    
+    os.makedirs(left_folder, exist_ok=True)
+    os.makedirs(right_folder, exist_ok=True)
+
+    for frame_idx in tqdm(range(0, 400, 2)):   
+        if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:  
+            zed.set_svo_position(frame_idx)    
+           
+            zed.retrieve_image(image, sl.VIEW.LEFT)
+            zed.retrieve_image(image_r, sl.VIEW.RIGHT)
+            
+            image.write(os.path.join(left_folder, f'{frame_idx:04d}.jpg'))
+            image_r.write(os.path.join(right_folder, f'{frame_idx:04d}.jpg'))
+        
+        else:    
+            logger.error(f"===============")
+            logger.error(f"Failed to grab frame")
+            logger.error(f"===============\n")
+            
+            exit(1)
+    
+    zed.close()
+    
+    logger.info(f"===============")
+    logger.info(f"Extracted images from {svo_path} to {dataset_path}")
+    logger.info(f"===============\n")
+
 
 if __name__ == "__main__":
     # pass
     
     logger = get_logger('main')
 
-    # CASE 12
-    # crop + flip mono / rgb masks
-    src_mono = 'datasets/train-640x480/seg-masks-mono'
-    dest_mono = 'datasets/train-640x480/seg-masks-mono-cropped'
-    dest_rgb = 'datasets/train-640x480/seg-masks-rgb-cropped'
-    
-    # resize mono / rgb masks
-    crop_resize_masks(src_mono, dest_mono, dest_rgb)
+    # CASE 13
+    # generate a dataset from an SVO file
+    # svo_path = "front_2024-06-04-10-39-57.svo"
+    # dataset_path = "datasets/sample-svo"
+    # generate_dataset_from_svo(svo_path, dataset_path)
+    # populate_json('datasets/dataset.json', 'datasets/sample-svo')
 
-    # flip mono / rgb masks
-    flip_masks(dest_mono, dest_mono)
-    flip_masks(dest_rgb, dest_rgb)
+    # # CASE 12
+    # # crop + flip mono / rgb masks
+    # src_mono = 'datasets/train-640x480/seg-masks-mono'
+    # dest_mono = 'datasets/train-640x480/seg-masks-mono-cropped'
+    # dest_rgb = 'datasets/train-640x480/seg-masks-rgb-cropped'
+    
+    # # resize mono / rgb masks
+    # crop_resize_masks(src_mono, dest_mono, dest_rgb)
+
+    # # flip mono / rgb masks
+    # flip_masks(dest_mono, dest_mono)
+    # flip_masks(dest_rgb, dest_rgb)
 
     # # CASE 11
     # src_mono = 'datasets/train-640x480/seg-masks-mono'
