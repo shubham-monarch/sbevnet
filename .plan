@@ -70,16 +70,16 @@ check segmentation [end to end]
 ======================
 
 - check end to end
-- fix output dimensions (480 * 480)
++ fix predicted mask dimensions (480 * 480)
 - transpose
-- fix SegLoader
++ fix SegLoader
 - fix pytorch version
 - check loss function 
 - improve loss function
 - [debug] check pid-output with unet output
 - regenerate GT data with less black / blue regions
 - get rid of ground points in GT
-- check unet implementation
++ check unet implementation
 - establish correspondance with eval files and dataset files
 - toogle number of classes, 6 vs 5
 - add segmentation mask 
@@ -87,18 +87,18 @@ check segmentation [end to end]
 - add visibility mask
 - ignoring void labels
 - check for degeneracy
--  weighted cross entropy loss
++  weighted cross entropy loss
 - plot GT class-wise distribution
-- model is getting stuck at local minima, need to tune learning rate
++ model is getting stuck at local minima, need to tune learning rate
 - add augmentation for minor classes
 - add focal loss function
-- reduce mask size from 400 * 400 to 200 * 200
-- flip mask for z-inversion 
++ reduce mask size from 400 * 400 to 200 * 200
++ flip mask for z-inversion 
 - introduce a priority collapsing mechanism
-- fix z vs 10-z 
++ fix z vs 10-z 
 - baseline scaling
-- train on smaller mask dimensions ( 5m * 5m)
-
++ train on smaller mask dimensions ( 5m * 5m)
+- generate video eval data
 
 
 - z-indices out-of-bounds error while bev_pcd -> bev_png
