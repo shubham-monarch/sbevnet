@@ -268,11 +268,10 @@ def train_sbevnet_distributed() -> None:
 
 if __name__ == '__main__':
     
-    # populate json
+    # update json
     json_path = 'datasets/dataset.json'
     dataset_path = 'datasets'
     populate_json(json_path, dataset_path)
     
-   
     
-    # train_sbevnet_distributed() 
+    train_sbevnet_distributed() 

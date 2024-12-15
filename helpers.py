@@ -235,15 +235,15 @@ def flip_masks(src_mono: str, dest_mono: str) -> None:
 
 
 def crop_resize_mask(mask_path: str) -> np.ndarray:
-    '''Crop and resize the mask from 400x400 to 200x200.'''
+    '''Crop and resize the mask from 400x400 to 256x256.'''
     
     mask = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
     assert mask.shape == (400, 400), f"Expected mask shape to be (400, 400), but got {mask.shape}"
     
     h, w = mask.shape
-    mask_cropped = mask[200:400, 100:300]
+    mask_cropped = mask[144:400, 72:328]
     
-    assert mask_cropped.shape == (200,200), f"Expected mask shape to be (200, 200), but got {mask_cropped.shape}"
+    assert mask_cropped.shape == (256,256), f"Expected mask shape to be (256, 256), but got {mask_cropped.shape}"
     return mask_cropped
 
 def crop_resize_masks(src_mono: str, dest_mono: str, dest_rgb: str) -> None:

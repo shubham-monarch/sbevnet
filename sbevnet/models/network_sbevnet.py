@@ -143,6 +143,14 @@ class BEVSegHead(nn.Module):
         
         self.logger = get_logger("bev_seg_head")
         
+        # self.logger.info(f'=================')
+        # self.logger.info(f'Input parameters for BEVSegHead:')
+        # self.logger.info(f'nnn: {nnn}')
+        # self.logger.info(f'n_classes_seg: {n_classes_seg}')
+        # self.logger.info(f'bev_size: {bev_size}')
+        # self.logger.info(f'=================\n')
+
+
         self.dres_2d_seg_1 = nn.Sequential(convbn( nnn  ,  nnn , 3, 1, 1 , 1 ),
                                    nn.ReLU(inplace=True),
                                    convbn( nnn ,  nnn , 3, 1, 1 , 1 )) 
@@ -162,12 +170,36 @@ class BEVSegHead(nn.Module):
 
         
     def forward(self , fea ):
+
+        # self.logger.warning(f'=================')
+        # self.logger.warning(f'BEVSegHead --> forward()')
+        # self.logger.warning(f'Input fea.shape: {fea.shape}')
+        # self.logger.warning(f'=================\n')
         
         fea = self.unet( fea )
+
+        # self.logger.warning(f'=================')
+        # self.logger.warning(f'CKPT-1')
+        # self.logger.warning(f'=================\n')
+
         fea = self.dres_2d_seg_1(fea) + fea
-        fea = self.dres_2d_seg_2(fea) + fea
-        fea = self.dres_2d_seg_3(fea) + fea
         
+        # self.logger.warning(f'=================')
+        # self.logger.warning(f'CKPT-2')
+        # self.logger.warning(f'=================\n')
+
+        fea = self.dres_2d_seg_2(fea) + fea
+        
+        # self.logger.warning(f'=================')
+        # self.logger.warning(f'CKPT-3')
+        # self.logger.warning(f'=================\n')
+
+        fea = self.dres_2d_seg_3(fea) + fea
+
+        # self.logger.warning(f'=================')
+        # self.logger.warning(f'CKPT-4')
+        # self.logger.warning(f'=================\n')
+
         # fea1 = self.classify_seg(fea)
         # pred_seg2 = F.log_softmax(fea1)
         # return pred_seg2 
@@ -175,9 +207,18 @@ class BEVSegHead(nn.Module):
         # Get logits from classification layer
         logits = self.classify_seg(fea)
         
+        # self.logger.warning(f'=================')
+        # self.logger.warning(f'CKPT-5')
+        # self.logger.warning(f'=================\n')
+        
         # Apply log_softmax along the channel dimension (dim=1)
         # This gives us (batch_size, n_classes, H, W) tensor of log probabilities
         log_probs = F.log_softmax(logits, dim=1)
+        
+        # self.logger.warning(f'=================')
+        # self.logger.warning(f'CKPT-6')
+        # self.logger.warning(f'=================\n')
+
         return log_probs
 
         # logits = self.classify_seg(fea)
