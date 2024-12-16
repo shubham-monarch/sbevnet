@@ -357,18 +357,55 @@ def generate_dataset_from_svo(svo_path: str, dataset_path: str, size: Tuple[int,
     logger.info(f"Extracted images from {svo_path} to {dataset_path}")
     logger.info(f"===============\n")
 
+import numpy as np
+import matplotlib.pyplot as plt
+
+def plot_segmentation_classes(mask: np.ndarray) -> None:
+    """
+    Reads a single channel segmentation mask and plots (x,y) coordinates of each unique class.
+    """
+    # get unique classes
+    unique_classes = np.unique(mask)
+    
+    # create a plot
+    plt.figure(figsize=(10, 6))
+    
+    for class_id in unique_classes:
+        # get coordinates of the pixels belonging to the class
+        y_coords, x_coords = np.where(mask == class_id)
+        
+        # plot the points
+        plt.scatter(x_coords, y_coords, label=f'Class {class_id}', alpha=0.5)
+    
+    plt.title('Segmentation Classes')
+    plt.xlabel('X Coordinate')
+    plt.ylabel('Y Coordinate')
+    plt.legend()
+    plt.gca().invert_yaxis()  # invert y axis to match image coordinates
+    plt.savefig('segmentation_classes_plot.png')  # save plot to disk
+    plt.close()  # close the plot to free memory
+
 
 if __name__ == "__main__":
     # pass
     
     logger = get_logger('main')
 
-    # CASE 13
-    # generate a dataset from an SVO file
-    svo_path = "front_2024-06-04-10-39-57.svo"
-    dataset_path = "datasets/sample-svo"
-    generate_dataset_from_svo(svo_path, dataset_path, size=(640, 480))
-    populate_json('datasets/dataset.json', 'datasets')
+    # CASE 14
+    # plot segmentation classes
+    mask_path = 'datasets/train-640x480/seg-masks-mono-cropped/58__seg-mask-mono.png'
+    mask = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
+    # flip the mask in the y-direction
+    mask_ = np.flip(mask, axis=0)
+    plot_segmentation_classes(mask_)
+
+
+    # # CASE 13
+    # # generate a dataset from an SVO file
+    # svo_path = "front_2024-06-04-10-39-57.svo"
+    # dataset_path = "datasets/sample-svo"
+    # generate_dataset_from_svo(svo_path, dataset_path, size=(640, 480))
+    # populate_json('datasets/dataset.json', 'datasets')
 
     # # CASE 12
     # # crop + flip mono / rgb masks

@@ -64,7 +64,6 @@ why is loss not dropping?
 ======================
 check segmentation [end to end]
 ======================
-
 + fix predicted mask dimensions (480 * 480)
 - transpose
 + fix SegLoader
@@ -98,6 +97,12 @@ check segmentation [end to end]
 - parametrize scale factor
 - z-indices out-of-bounds error while bev_pcd -> bev_png
 + check mono --> rgb seg-mask conversion in evaluate_model.py
+
+======================
+improve model baseline
+======================
+- fix black patches
+
 
 ======================
 improve training
