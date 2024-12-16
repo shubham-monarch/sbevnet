@@ -1,8 +1,8 @@
 [keys]
 ======================
-+ --> done
-* --> dropped
-- --> to-do
+[+] --> [done]
+[*]--> [dropped]
+[-] --> [to-do]
 ======================
 
 
@@ -32,6 +32,17 @@
 + generate square shaped top_seg train-data
 - provision for multiple training log folders
 
+
+======================
+fix model input
+======================
++ flip GT seg-mask in z-direction
+- stereo rectification 
++ z / y swap
+- passing camera orientation
++ how can y-min be negative? 
+- generate 500 frames
+
 ======================
 why is loss not dropping?
 ======================
@@ -47,23 +58,8 @@ why is loss not dropping?
 + segmentation module output should be discrete
 * changing disparity channel count in costvol calculations
 - fix model image pre-processing step
-+ flip GT seg-mask in z-direction
 - importance of transpose
 
-
-
-+ why is loss different (or decreasing faster) in distributed-training?
-
-- stereo rectification 
-+ z / y swap
-- passing camera orientation
-+ how can y-min be negative? 
-
-* enable saving of intermediate epochs 
-+ plot epoch loss
-- decide on the the epoch count
-+ increase batch size
-- figure out learning rate stretegy -> [use crestereo]
 
 ======================
 check segmentation [end to end]
@@ -100,20 +96,33 @@ check segmentation [end to end]
 + train on smaller mask dimensions ( 5m * 5m)
 - augment minor classes (increase contrast etc, see chat-gpt project)
 - parametrize scale factor
+- z-indices out-of-bounds error while bev_pcd -> bev_png
++ check mono --> rgb seg-mask conversion in evaluate_model.py
+
+======================
+improve training
+======================
+* enable saving of intermediate epochs 
++ plot epoch loss
+- decide on the the epoch count
++ increase batch size
+- figure out learning rate stretegy -> [use crestereo]
 
 ======================
 demo video
 ======================
-- generate video eval script
++ generate video eval script
 - augment minor classes
 - check metric accuracy
 - plot stem points on a plot to check metric accuracy 
+- refactoring
 
-- z-indices out-of-bounds error while bev_pcd -> bev_png
-- check mono --> rgb seg-mask conversion in evaluate_model.py
-- generate 500 frames
 
+======================
+enable distributed training
+======================
 + enable multi-gpu training
 * fix logs in distributed training script
 * double check distributed-training script
 * what exactly happens in distributed training? 
++ why is loss different (or decreasing faster) in distributed-training?

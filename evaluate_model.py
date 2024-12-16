@@ -69,7 +69,8 @@ def evaluate_sbevnet():
     
     params['checkpoint_path'] = 'checkpoints/best_model.pth'
     params['batch_size'] = 1
-    
+    params['do_top_seg'] = False
+
     # mkdir predictions
     pred_dir = 'predictions'
 
@@ -161,48 +162,31 @@ def evaluate_sbevnet():
     # evaluation loop
     with torch.no_grad():
         for batch_idx, data in enumerate(tqdm(test_loader, desc="Evaluating")):
+            # if batch_idx > 0:
+            #     break
+            
             try:
                 # move data to device
                 for key in data:
+                    # logger.info(f"=================")
+                    # logger.info(f"key: {key}")
+                    # logger.info(f"type: {type(data[key])}")
+                    # logger.info(f"=================\n")
                     if isinstance(data[key], torch.Tensor):
                         data[key] = data[key].to(device)
                     elif isinstance(data[key], list):
                         data[key] = [item.to(device) if isinstance(item, torch.Tensor) else item 
                                    for item in data[key]]
-                
-                # logger.info(f"=================")
-                # logger.info(f"batch_idx: {batch_idx}")
-                # logger.info(f"=================\n")
 
-                # if batch_idx > 20: 
-                #     break
+                
 
                 # forward pass
                 output = network(data)
                 
                 # get predictions
-                pred = output['top_seg']  # [B, H, W]
-
-                logger.info(f"=================")
-                logger.info(f"pred.shape: {pred.shape}")
-                logger.info(f"=================\n")
-                
+                pred = output['top_seg']  # [B, H, W]                
                 pred = output['top_seg'].argmax(1)  # [B, H, W]
 
-                logger.info(f"=================")
-                logger.info(f"pred.shape: {pred.shape}")
-                logger.info(f"=================\n")
-
-                
-                
-                target = data['top_seg']  # [B, H, W]
-                
-                # # Calculate IoU for this batch
-                # ious = calculate_iou(pred, target, params['n_classes_seg'])
-                # for i in range(params['n_classes_seg']):
-                #     total_ious[i] += ious[i]
-                # total_samples += 1
-                
                 # Save predictions
                 for i in range(pred.size(0)):
                     pred_np = pred[i].cpu().numpy()
@@ -215,21 +199,27 @@ def evaluate_sbevnet():
                     colored_pred = get_colored_segmentation_image(pred_np, config_path='Mavis.yaml')
                     colored_path = os.path.join(pred_dir, f'pred_{batch_idx}_{i}_color.png')
                     cv2.imwrite(colored_path, colored_pred)
-                
+
+                    left_idx = batch_idx * 2
+                    left_img_path = os.path.join('datasets/sample-svo/left', f'{left_idx:04d}.jpg')
+                    left_img = cv2.imread(left_img_path)
+                    if left_img is None:
+                        logger.error(f'Failed to read image at {left_img_path}')
+                        continue
+                    left_img_resized = cv2.resize(left_img, (256, 256), interpolation=cv2.INTER_LINEAR)
+                    combined_image = np.hstack((left_img_resized, cv2.flip(colored_pred, 0)))
+                    
+                    combined_dir = os.path.join(pred_dir, f'combined')
+                    os.makedirs(combined_dir, exist_ok=True)
+                    
+                    combined_path = os.path.join(combined_dir, f'pred_{batch_idx}_{i}.png')
+                    cv2.imwrite(combined_path, combined_image)
+            
             except Exception as e:
                 logger.error(f'Error in batch {batch_idx}: {str(e)}')
                 continue
     
-    # # Calculate and log final metrics
-    # mean_ious = [iou / total_samples for iou in total_ious]
-    # mean_iou = sum(mean_ious) / len(mean_ious)
-    
-    # logger.info("Evaluation Results:")
-    # logger.info("-" * 50)
-    # for cls_id, iou in enumerate(mean_ious):
-    #     logger.info(f"Class {class_names[cls_id]}: IoU = {iou:.4f}")
-    # logger.info("-" * 50)
-    # logger.info(f"Mean IoU: {mean_iou:.4f}")
+ 
 
 if __name__ == '__main__':
     evaluate_sbevnet() 

@@ -16,6 +16,7 @@ from torch.utils.data import Dataset, DataLoader
 import torch
 import random
 import shutil
+from typing import Tuple
 import pyzed.sl as sl
 
 
@@ -180,14 +181,14 @@ def populate_json(json_path, dataset_path, split="train"):
     data = {
         
         "train": {
-            "rgb_left": get_relative_files(os.path.join(dataset_path, 'left'), IMG_EXTENSIONS),
-            "rgb_right": get_relative_files(os.path.join(dataset_path, 'right'), IMG_EXTENSIONS),
-            "top_seg": get_relative_files(os.path.join(dataset_path, 'seg-masks-mono-cropped'), ['.png']),
+            "rgb_left": get_relative_files(os.path.join(dataset_path, 'sample-svo/left'), IMG_EXTENSIONS),
+            "rgb_right": get_relative_files(os.path.join(dataset_path, 'sample-svo/right'), IMG_EXTENSIONS),
+            "top_seg": get_relative_files(os.path.join(dataset_path, 'sample-svo/seg-masks-mono-cropped'), ['.png']),
         },
         "test": {
-            "rgb_left": get_relative_files(os.path.join(dataset_path, 'left'), IMG_EXTENSIONS),
-            "rgb_right": get_relative_files(os.path.join(dataset_path, 'right'), IMG_EXTENSIONS),
-            "top_seg": get_relative_files(os.path.join(dataset_path, 'seg-masks-mono-cropped'), ['.png'])
+            "rgb_left": get_relative_files(os.path.join(dataset_path, 'sample-svo/left'), IMG_EXTENSIONS),
+            "rgb_right": get_relative_files(os.path.join(dataset_path, 'sample-svo/right'), IMG_EXTENSIONS),
+            "top_seg": get_relative_files(os.path.join(dataset_path, 'sample-svo/seg-masks-mono-cropped'), ['.png'])
         }
         
         # "train": {
@@ -279,11 +280,12 @@ def crop_resize_masks(src_mono: str, dest_mono: str, dest_rgb: str) -> None:
         cv2.imwrite(os.path.join(dest_mono, os.path.basename(mask_path)), mask_cropped_mono)
         cv2.imwrite(os.path.join(dest_rgb, os.path.basename(mask_path).replace('-mono.png', '-rgb.png')), mask_cropped_rgb)
 
-def generate_dataset_from_svo(svo_path: str, dataset_path: str) -> None:
+def generate_dataset_from_svo(svo_path: str, dataset_path: str, size: Tuple[int, int]) -> None:
     '''Generate a dataset from an SVO file.'''
     
     logger = get_logger('generate_dataset_from_svo')
 
+    assert size is not None, "Size must be provided"
     assert not (os.path.exists(dataset_path) and os.listdir(dataset_path)), "Destination folder for dataset must be empty"
 
     filepath = os.path.abspath(svo_path)
@@ -309,7 +311,7 @@ def generate_dataset_from_svo(svo_path: str, dataset_path: str) -> None:
         exit()
 
     runtime_parameters = sl.RuntimeParameters()
-    image = sl.Mat()
+    image_l = sl.Mat()
     image_r = sl.Mat()
 
     logger.info(f"===============") 
@@ -332,11 +334,15 @@ def generate_dataset_from_svo(svo_path: str, dataset_path: str) -> None:
         if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:  
             zed.set_svo_position(frame_idx)    
            
-            zed.retrieve_image(image, sl.VIEW.LEFT)
+            zed.retrieve_image(image_l, sl.VIEW.LEFT)
             zed.retrieve_image(image_r, sl.VIEW.RIGHT)
-            
-            image.write(os.path.join(left_folder, f'{frame_idx:04d}.jpg'))
-            image_r.write(os.path.join(right_folder, f'{frame_idx:04d}.jpg'))
+
+            # resize images before writing to disk
+            image_l_resized = cv2.resize(image_l.get_data(), size)
+            image_r_resized = cv2.resize(image_r.get_data(), size)
+
+            cv2.imwrite(os.path.join(left_folder, f'{frame_idx:04d}.jpg'), image_l_resized)
+            cv2.imwrite(os.path.join(right_folder, f'{frame_idx:04d}.jpg'), image_r_resized)
         
         else:    
             logger.error(f"===============")
@@ -359,10 +365,10 @@ if __name__ == "__main__":
 
     # CASE 13
     # generate a dataset from an SVO file
-    # svo_path = "front_2024-06-04-10-39-57.svo"
-    # dataset_path = "datasets/sample-svo"
-    # generate_dataset_from_svo(svo_path, dataset_path)
-    # populate_json('datasets/dataset.json', 'datasets/sample-svo')
+    svo_path = "front_2024-06-04-10-39-57.svo"
+    dataset_path = "datasets/sample-svo"
+    generate_dataset_from_svo(svo_path, dataset_path, size=(640, 480))
+    populate_json('datasets/dataset.json', 'datasets')
 
     # # CASE 12
     # # crop + flip mono / rgb masks

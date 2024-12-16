@@ -270,10 +270,9 @@ def sbevnet_dataset(
 
     ):
     
-    # logger.warning(f"=================")
-    # logger.warning(f"do_mask: {do_mask}")
-    # logger.warning(f"zero_mask: {zero_mask}")
-    # logger.warning(f"=================\n")
+    logger.warning(f"=================")
+    logger.warning(f"do_top_seg: {do_top_seg}")
+    logger.warning(f"=================\n")
 
     localss = locals()
     print( "dataset argsss : " ,  { arg: localss[arg] for arg in inspect.getfullargspec(sbevnet_dataset ).args if arg != 'self'}) 
