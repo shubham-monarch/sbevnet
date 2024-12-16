@@ -1,11 +1,13 @@
-[keys]
+======================
+keys
 ======================
 [+] --> [done]
 [*]--> [dropped]
 [-] --> [to-do]
+
 ======================
-
-
+initial set-up
+======================
 + prepare train-data => [left, right, top_seg, top_ipm] 
 + generate dataset.json
 + fix train.py
@@ -22,7 +24,7 @@
 * why are there huge black patches in GT? 
 + why is segmented-bev not centered in GT? 
 * fix num_workers for train_loader
-- fix transpose=True for SegLoader
++ fix transpose=True for SegLoader
 + figure out the co-ordinate system
 
 + utility to generate bev frames to s3
@@ -30,97 +32,79 @@
 + visualise cropped-seg-masks-mono in rgb
 + eval on the trained model
 + generate square shaped top_seg train-data
-- provision for multiple training log folders
+* provision for multiple training log folders
 
 
 ======================
 fix model input
 ======================
 + flip GT seg-mask in z-direction
-- stereo rectification 
 + z / y swap
-- passing camera orientation
 + how can y-min be negative? 
-- generate 500 frames
+* generate 500 frames
+
 
 ======================
 why is loss not dropping?
 ======================
 + scale cx, cy, fx, fy
-- check fx vs fy scaling scaling
-- camera baseline scaling
-- disparity scaling
-- handle image resizing effect on disparity
 + review segmentation loss function calculations
 + fix loss calculations
-- improve loss calculations
-- fix segmentation module
++ fix segmentation module
 + segmentation module output should be discrete
 * changing disparity channel count in costvol calculations
-- fix model image pre-processing step
-- importance of transpose
++ importance of transpose
 
 
 ======================
-check segmentation [end to end]
+implement baseline model
 ======================
 + fix predicted mask dimensions (480 * 480)
-- transpose
++ transpose
 + fix SegLoader
-- fix pytorch version
+* fix pytorch version
 + check loss function 
-- improve loss function
-- [debug] check pid-output with unet output
+* [debug] check pid-output with unet output
 - [debug] check with camera-intrinsics / baseline scaling
 * regenerate GT data with less black / blue regions
 * get rid of ground points in GT
 + check unet implementation
 - toogle number of classes, 6 vs 5
 - establish correspondance with eval files and dataset files
-- add segmentation mask 
-- add hidden points mask
-- add visibility mask
++ add segmentation mask 
 - ignoring void labels
-- check for degeneracy
-+  weighted cross entropy loss
-- plot GT class-wise distribution
+* check for degeneracy
 + model is getting stuck at local minima, need to tune learning rate
-- add augmentation for minor classes
-- add focal loss function
 + reduce mask size from 400 * 400 to 200 * 200
 + flip mask for z-inversion 
-- introduce a priority collapsing mechanism
+* introduce a priority collapsing mechanism
 + fix z vs 10-z 
-- baseline scaling
 + train on smaller mask dimensions ( 5m * 5m)
-- augment minor classes (increase contrast etc, see chat-gpt project)
-- parametrize scale factor
-- z-indices out-of-bounds error while bev_pcd -> bev_png
+* z-indices out-of-bounds error while bev_pcd -> bev_png
 + check mono --> rgb seg-mask conversion in evaluate_model.py
 
-======================
-improve model baseline
-======================
-- fix black patches
 
 
 ======================
-improve training
+demo video
+======================
++ generate video eval script
+* augment minor classes
++ check metric accuracy
++ plot stem points on a plot to check metric accuracy 
+* refactoring
+
+
+
+======================
+tune training params
 ======================
 * enable saving of intermediate epochs 
 + plot epoch loss
 - decide on the the epoch count
 + increase batch size
 - figure out learning rate stretegy -> [use crestereo]
-
-======================
-demo video
-======================
-+ generate video eval script
-- augment minor classes
-- check metric accuracy
-- plot stem points on a plot to check metric accuracy 
-- refactoring
+- tune learning rate (refer crestereo)
 
 
 ======================
@@ -131,3 +115,49 @@ enable distributed training
 * double check distributed-training script
 * what exactly happens in distributed training? 
 + why is loss different (or decreasing faster) in distributed-training?
+
+
+
+======================
+aws based bev-generator
+======================
+- start aws based data-generation pipeline
+- index to track processed files
+- ipm rgb 
+- occlusion mask
+- add index.json
+
+======================
+improve model baseline
+======================
+- fix black patches
+- refactoring
+- parametrize intrinsics scaling factor
+- move mavis.yaml to config
+- add test.yaml, train.yaml and eval.yaml
+
+- stereo rectification 
+- add augmentation for minor classes
+- add hidden points mask
+- passing camera orientation
+
+- fix model image pre-processing step
+
+- add focal loss function
+- plot GT class-wise distribution
+- improve loss function
+- tune weighted cross entropy loss
+
+
+======================
+camera intrinsics scaling
+======================
+- write comparison script
+- establish camera intrinsics scaling params
+- camera baseline scaling
+- check fx vs fy scaling
+- disparity scaling
+- handle image resizing effect on disparity
+
+
+
