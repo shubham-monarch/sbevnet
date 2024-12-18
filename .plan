@@ -131,6 +131,8 @@ aws based bev-generator
 improve model baseline
 ======================
 - fix black patches
+- convert black to naviagble spaces
+- add visibility mask
 - refactoring
 - parametrize intrinsics scaling factor
 - move mavis.yaml to config
