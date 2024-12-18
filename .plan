@@ -117,15 +117,14 @@ enable distributed training
 + why is loss different (or decreasing faster) in distributed-training?
 
 
-
 ======================
 aws based bev-generator
 ======================
-- start aws based data-generation pipeline
-- index to track processed files
++ start aws based data-generation pipeline
++ index to track processed files
 - ipm rgb 
 - occlusion mask
-- add index.json
++ add index.json
 
 ======================
 improve model baseline
@@ -162,4 +161,20 @@ camera intrinsics scaling
 - handle image resizing effect on disparity
 
 
+======================
+data augmentation
+======================
+- increase contrast for minor classes
+- fill void with ground points
 
+
+======================
+testing infrastructure
+======================
+- figure out metrics
+- write testing class
+- figure out eval-results logging mechanism 
+- segmenent input data by class
+- introduce seeding mechanism
+- fix eval-video.py
+- fix eval-model.py
