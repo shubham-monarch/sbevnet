@@ -178,3 +178,11 @@ testing infrastructure
 - introduce seeding mechanism
 - fix eval-video.py
 - fix eval-model.py
+- check sbevnet utils
+- EvalClass 
+- integrate eval cases
+- metrics ?
+- train / eval / test split
+- processing bev-aws to bev-model pipeline
+- utility to classify dataset into [object / pole / vineyard ] heavy
+
