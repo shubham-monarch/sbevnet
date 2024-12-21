@@ -8,16 +8,17 @@ from typing import List
 
 from helpers import get_logger
 
-class GTHandler:
-    def __init__(self, gt_path: str):
-        self.path = gt_path
+class DataHandlerGT:
+    def __init__(self, src_dir: str, dst_dir: str):
         self.logger = get_logger("GTHandler")
-
+        self.src_dir = src_dir
+        self.dst_dir = dst_dir
+        
     def __copy_files(self, files: List[str], dest_dir: str, desc: str):
         '''Copy files to destination'''
         
         for f in tqdm(files, desc=desc):
-            src = os.path.join(self.path, f)
+            src = os.path.join(self.src_dir, f)
             dst = os.path.join(dest_dir, f)
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             shutil.copy2(src, dst)
@@ -28,9 +29,9 @@ class GTHandler:
         
         assert abs(train_ratio + val_ratio + test_ratio - 1.0) <= 1e-9, 'Train, validation and test ratios must sum to 1'
 
-        dir_train = os.path.join(os.path.dirname(self.path), "gt-train")
-        dir_val = os.path.join(os.path.dirname(self.path), "gt-val")
-        dir_test = os.path.join(os.path.dirname(self.path), "gt-test")
+        dir_train = os.path.join(self.dst_dir, "gt-train")
+        dir_val = os.path.join(self.dst_dir, "gt-val")
+        dir_test = os.path.join(self.dst_dir, "gt-test")
 
         if os.path.exists(dir_train): assert not os.listdir(dir_train), f'Expected {dir_train} to be empty, but it is not.'
         if os.path.exists(dir_val): assert not os.listdir(dir_val), f'Expected {dir_val} to be empty, but it is not.'
@@ -41,9 +42,9 @@ class GTHandler:
         os.makedirs(dir_test, exist_ok=True)
     
         all_files = []
-        for root, dirs, files in os.walk(self.path):
+        for root, dirs, files in os.walk(self.src_dir):
             for f in files:
-                rel_path = os.path.relpath(os.path.join(root, f), self.path)
+                rel_path = os.path.relpath(os.path.join(root, f), self.src_dir)
                 all_files.append(rel_path)
 
         random.shuffle(all_files)
@@ -64,16 +65,12 @@ class GTHandler:
         assert len(val_files) == n_val, f'Expected {n_val} validation files, but got {len(val_files)}'
         assert len(test_files) == n_files - n_train - n_val, f'Expected {n_files - n_train - n_val} test files, but got {len(test_files)}'
 
-    
 
-class DataHandler:
-    '''
-    Sample [N1 / N2 / N3] samples from [gt-train / gt-val / gt-test] 
-    for the model on each [train / val / test] run
-    '''
+class DataHandlerModel:
     
-    def __init__(self):
-        pass
+    def __init__(self, model_path: str):
+        self.path = model_path
+        self.logger = get_logger("ModelHandler")
 
     def load_data(self):
         pass
@@ -83,5 +80,5 @@ class DataHandler:
 
 
 if __name__ == "__main__":
-    gt_handler = GTHandler(gt_path="data/gt-dataset")
+    gt_handler = DataHandlerGT(src_dir="data/gt-dataset", dst_dir="data")
     gt_handler.split_into_train_val_test()
