@@ -1,9 +1,9 @@
-======================
-keys
-======================
-[+] --> [done]
-[*]--> [dropped]
-[-] --> [to-do]
+---------------------
+- --> TO-DO
++ --> DONE 
+* --> DROPPED  
+---------------------
+
 
 ======================
 initial set-up
@@ -202,3 +202,9 @@ test cases
 - plot train / val / test accuracy
 - run on 500 / 200 / 200
 - uplaod sample dataset to git
+
+
+======================
+sbevnet-data-manager.py
+======================
+- split bev-dataset into train-val-test
