@@ -197,7 +197,7 @@ test cases
 - w/o data augmentation
 
 
-- aws-data to model-data utility [train / eval / test]
+- generate [train / eval / test] from bev-dataset
 - plot  measure accuracy
 - plot train / val / test accuracy
 - run on 500 / 200 / 200
