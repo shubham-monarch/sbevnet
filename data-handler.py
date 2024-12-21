@@ -104,14 +104,15 @@ class DataHandlerModel:
         self.model_val = os.path.join(self.model, "val")
         self.model_test = os.path.join(self.model, "test")
 
+        
+    def sample_gt_data(self):
+        '''Sample n_train, n_val, and n_test samples from gt-train, gt-val, and gt-test folders'''
+        
         # model-train / model-val / model-test must be empty
         assert not (os.path.exists(self.model_train) and os.listdir(self.model_train)), "model_train must be empty"
         assert not (os.path.exists(self.model_val) and os.listdir(self.model_val)), "model_val must be empty"
         assert not (os.path.exists(self.model_test) and os.listdir(self.model_test)), "model_test must be empty"
 
-    def sample_gt_data(self):
-        '''Sample n_train, n_val, and n_test samples from gt-train, gt-val, and gt-test folders'''
-        
         gt_train_files = _get_all_files(self.gt_train)
         gt_val_files = _get_all_files(self.gt_val)
         gt_test_files = _get_all_files(self.gt_test)
@@ -125,8 +126,8 @@ class DataHandlerModel:
         _copy_files(sampled_test_files, self.gt_test, self.model_test, 'Sampling test files')
     
 
-    def raw_data_to_model_data(self, raw_data_dir = None, model_data_dir = None):
-        '''Process raw data and move to model-data folder'''
+    def generate_model_dataset(self, raw_data_dir = None, model_data_dir = None):
+        '''Generate [model-train / model-val / model-test] from [gt-train / gt-val / gt-test]'''
 
         assert raw_data_dir is not None, "raw_data_dir is required"
         assert model_data_dir is not None, "model_data_dir is required"        
