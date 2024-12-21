@@ -209,3 +209,6 @@ sbevnet-data-manager.py
 ======================
 - split bev-dataset into train-val-test
 - rename sbevnet module to model
+- flip masks
+- support for extra data-fields
+- resume error-free training
