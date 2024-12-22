@@ -6,7 +6,7 @@ import shutil
 from tqdm import tqdm
 from typing import List
 import cv2
-
+import json
 from helpers import get_logger, flip_mask, get_files_from_folder
 
 
@@ -203,6 +203,35 @@ class ModelDataHandler:
             mask_flipped_mono = flip_mask(mask_path)
             cv2.imwrite(os.path.join(dest_dir, os.path.basename(mask_path)), mask_flipped_mono)
 
+    def __populate_json(self, json_path, dataset_path):
+        '''Populate the json file with the file paths of the images in the dataset.'''
+        
+        if os.path.exists(json_path):
+            os.remove(json_path)
+        
+        IMG_EXTENSIONS = ['.jpg', '.png']
+        
+        def get_relative_files(folder, extensions):
+            '''Get all files with the given extensions from the folder and make their paths relative to dataset_path.'''
+            files = get_files_from_folder(folder, extensions)
+            return [os.path.relpath(file, dataset_path) for file in files]
+
+        data = {
+            
+            "train": {
+                "rgb_left": get_relative_files(os.path.join(self.model_train_dir, 'left'), IMG_EXTENSIONS),
+                "rgb_right": get_relative_files(os.path.join(self.model_train_dir, 'right'), IMG_EXTENSIONS),
+                "top_seg": get_relative_files(os.path.join(self.model_train_dir, 'seg-masks-mono'), ['.png']),
+            },
+            "test": {
+                "rgb_left": get_relative_files(os.path.join(self.model_test_dir, 'left'), IMG_EXTENSIONS),
+                "rgb_right": get_relative_files(os.path.join(self.model_test_dir, 'right'), IMG_EXTENSIONS),
+            }
+        }
+
+        with open(json_path, 'w') as f:
+            json.dump(data, f, indent=4)
+
     def generate_MODEL_train_test(self):
         self.__restructure_GT_folder(self.GT_train, self.model_train_dir, split='train')
         self.__restructure_GT_folder(self.GT_test, self.model_test_dir, split='test')
@@ -213,7 +242,8 @@ class ModelDataHandler:
         self.__flip_masks(os.path.join(self.model_train_dir, 'seg-masks-rgb'),\
                            os.path.join(self.model_train_dir, 'seg-masks-rgb'))
 
-
+        # populate json file
+        self.__populate_json(os.path.join(self.model_dir, 'dataset.json'), self.model_dir)
 
 if __name__ == "__main__":
     gt_handler = GTDataHandler(src_dir="data/GT", dst_dir="data")
