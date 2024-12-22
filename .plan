@@ -212,3 +212,4 @@ sbevnet-data-manager.py
 - flip masks
 - support for extra data-fields
 - resume error-free training
+- integrate generate.json

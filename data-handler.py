@@ -28,47 +28,64 @@ def _get_all_files(src_dir: str) -> List[str]:
         
         
 class DataHandlerGT:
-    def __init__(self, src_dir: str, dst_dir: str):
+    def __init__(self, src_dir: str, dst_dir: str,\
+                n_train: int, n_val: int, n_test: int):
+        
+        ''''
+        :param src_dir: path to gt-dataset
+        :param dst_dir: path to save split-train / split-val / split-test
+        :param n_train: number of training samples
+        :param n_val: number of validation samples
+        :param n_test: number of test samples
+        '''
+        
         self.logger = get_logger("GTHandler")
+        
         self.src_dir = src_dir
         self.dst_dir = dst_dir
+
+        self.n_train = n_train
+        self.n_val = n_val
+        self.n_test = n_test
+          
+        # [split-train / split-val / split-test] folders
+        self.split_train = os.path.join(self.dst_dir, "split-train")
+        self.split_val = os.path.join(self.dst_dir, "split-val")
+        self.split_test = os.path.join(self.dst_dir, "split-test")
         
-    def split_into_train_val_test(self, train_ratio: float = 0.7, val_ratio: float = 0.15, test_ratio: float = 0.15):
+
+    def split_into_train_val_test(self):
         '''gt-dataset -->  gt-train / gt-val / gt-test'''
         
-        assert abs(train_ratio + val_ratio + test_ratio - 1.0) <= 1e-9, 'Train, validation and test ratios must sum to 1'
+        if os.path.exists(self.split_train): assert not os.listdir(self.split_train), f'Expected {self.split_train} to be empty, but it is not.'
+        if os.path.exists(self.split_val): assert not os.listdir(self.split_val), f'Expected {self.split_val} to be empty, but it is not.'
+        if os.path.exists(self.split_test): assert not os.listdir(self.split_test), f'Expected {self.split_test} to be empty, but it is not.'
 
-        dir_train = os.path.join(self.dst_dir, "gt-train")
-        dir_val = os.path.join(self.dst_dir, "gt-val")
-        dir_test = os.path.join(self.dst_dir, "gt-test")
-
-        if os.path.exists(dir_train): assert not os.listdir(dir_train), f'Expected {dir_train} to be empty, but it is not.'
-        if os.path.exists(dir_val): assert not os.listdir(dir_val), f'Expected {dir_val} to be empty, but it is not.'
-        if os.path.exists(dir_test): assert not os.listdir(dir_test), f'Expected {dir_test} to be empty, but it is not.'
-        
-        os.makedirs(dir_train, exist_ok=True)
-        os.makedirs(dir_val, exist_ok=True) 
-        os.makedirs(dir_test, exist_ok=True)
+        os.makedirs(self.split_train, exist_ok=True)
+        os.makedirs(self.split_val, exist_ok=True) 
+        os.makedirs(self.split_test, exist_ok=True)
         
         all_files = _get_all_files(self.src_dir)
         random.shuffle(all_files)
 
-        n_files = len(all_files)
-        n_train = int(train_ratio * n_files)
-        n_val = int(val_ratio * n_files)
+        # n_files = len(all_files)
+        # n_train = int(self.train_ratio * n_files)
+        # n_val = int(self.val_ratio * n_files)
+        # n_test = int(self.test_ratio * n_files)
         
-        train_files = all_files[:n_train]
-        val_files = all_files[n_train:n_train+n_val]
-        test_files = all_files[n_train+n_val:]
+        train_files = all_files[:self.n_train]
+        val_files = all_files[self.n_train:self.n_train + self.n_val]
+        test_files = all_files[self.n_train + self.n_val:self.n_train + self.n_val + self.n_test]
 
-        _copy_files(train_files, self.src_dir, dir_train, 'Copying training files')
-        _copy_files(val_files, self.src_dir, dir_val, 'Copying validation files')
-        _copy_files(test_files, self.src_dir, dir_test, 'Copying test files')
+        # copy files to split-train / split-val / split-test
+        _copy_files(train_files, self.src_dir, self.split_train, 'Copying training files')
+        _copy_files(val_files, self.src_dir, self.split_val, 'Copying validation files')
+        _copy_files(test_files, self.src_dir, self.split_test, 'Copying test files')
 
-        assert len(train_files) == n_train, f'Expected {n_train} training files, but got {len(train_files)}'
-        assert len(val_files) == n_val, f'Expected {n_val} validation files, but got {len(val_files)}'
-        assert len(test_files) == n_files - n_train - n_val, f'Expected {n_files - n_train - n_val} test files, but got {len(test_files)}'
-
+        assert len(train_files) == self.n_train, f'Expected {self.n_train} training files, but got {len(train_files)}'
+        assert len(val_files) == self.n_val, f'Expected {self.n_val} validation files, but got {len(val_files)}'
+        assert len(test_files) == self.n_test, f'Expected {self.n_test} test files, but got {len(test_files)}'
+      
 
 class DataHandlerModel:
     
@@ -105,28 +122,10 @@ class DataHandlerModel:
         self.model_test = os.path.join(self.model, "test")
 
         
-    def sample_gt_data(self):
-        '''Sample n_train, n_val, and n_test samples from gt-train, gt-val, and gt-test folders'''
-        
-        # model-train / model-val / model-test must be empty
-        assert not (os.path.exists(self.model_train) and os.listdir(self.model_train)), "model_train must be empty"
-        assert not (os.path.exists(self.model_val) and os.listdir(self.model_val)), "model_val must be empty"
-        assert not (os.path.exists(self.model_test) and os.listdir(self.model_test)), "model_test must be empty"
-
-        gt_train_files = _get_all_files(self.gt_train)
-        gt_val_files = _get_all_files(self.gt_val)
-        gt_test_files = _get_all_files(self.gt_test)
-
-        sampled_train_files = random.sample(gt_train_files, self.n_train)
-        sampled_val_files = random.sample(gt_val_files, self.n_val)
-        sampled_test_files = random.sample(gt_test_files, self.n_test)
-
-        _copy_files(sampled_train_files, self.gt_train, self.model_train, 'Sampling training files')
-        _copy_files(sampled_val_files, self.gt_val, self.model_val, 'Sampling validation files')
-        _copy_files(sampled_test_files, self.gt_test, self.model_test, 'Sampling test files')
+    
     
 
-    def generate_model_dataset(self, raw_data_dir = None, model_data_dir = None):
+    def generate_model_dataset(self, raw_data_dir: str, model_data_dir: str):
         '''Generate [model-train / model-val / model-test] from [gt-train / gt-val / gt-test]'''
 
         assert raw_data_dir is not None, "raw_data_dir is required"
@@ -140,20 +139,18 @@ class DataHandlerModel:
         # Create the target folder if it doesn't exist
         os.makedirs(model_data_dir, exist_ok=True)
 
-        # Define the target subfolders
-        left_folder = os.path.join(model_data_dir, 'left')
-        right_folder = os.path.join(model_data_dir, 'right')
-        seg_masks_mono_folder = os.path.join(model_data_dir, 'seg-masks-mono')
-        seg_masks_rgb_folder = os.path.join(model_data_dir, 'seg-masks-rgb')
-        cam_extrinsics_folder = os.path.join(model_data_dir, 'cam-extrinsics')
-
+        # model-dataset folders
+        left_folder = os.path.join(self.model_train, 'left')
+        right_folder = os.path.join(self.model_train, 'right')
+        seg_masks_mono_folder = os.path.join(self.model_train, 'seg-masks-mono')
+        seg_masks_rgb_folder = os.path.join(self.model_train, 'seg-masks-rgb')
+        
 
         # Create the target subfolders if they don't exist
         os.makedirs(left_folder, exist_ok=True)
         os.makedirs(right_folder, exist_ok=True)
         os.makedirs(seg_masks_mono_folder, exist_ok=True)
         os.makedirs(seg_masks_rgb_folder, exist_ok=True)
-        os.makedirs(cam_extrinsics_folder, exist_ok=True)
 
         # Count total files for progress bar
         total_files = 0
@@ -201,14 +198,17 @@ class DataHandlerModel:
 
 
 if __name__ == "__main__":
-    # gt_handler = DataHandlerGT(src_dir="data/dataset-gt", dst_dir="data")
-    # gt_handler.split_into_train_val_test()
+    gt_handler = DataHandlerGT(src_dir="data/dataset-gt", dst_dir="data/dataset-gt",\
+                               n_train=700, n_val=150, n_test=150)
+    
+    gt_handler.split_into_train_val_test()
 
-    model_handler = DataHandlerModel(gt_train="data/gt-train", 
-                                     gt_val="data/gt-val", 
-                                     gt_test="data/gt-test", 
-                                     n_train=700, 
-                                     n_val=150, 
-                                     n_test=150, 
-                                     model="data/model-dataset")
-    model_handler.sample_gt_data()
+    # model_handler = DataHandlerModel(gt_train="data/gt-train", 
+    #                                  gt_val="data/gt-val", 
+    #                                  gt_test="data/gt-test", 
+    #                                  n_train=700, 
+    #                                  n_val=150, 
+    #                                  n_test=150, 
+    #                                  model="data/model-dataset")
+    # # model_handler.sample_gt_data()
+    # model_handler.generate_model_dataset(raw_data_dir="data/raw-dataset", model_data_dir="data/model-dataset")
