@@ -68,11 +68,6 @@ class DataHandlerGT:
         all_files = _get_all_files(self.src_dir)
         random.shuffle(all_files)
 
-        # n_files = len(all_files)
-        # n_train = int(self.train_ratio * n_files)
-        # n_val = int(self.val_ratio * n_files)
-        # n_test = int(self.test_ratio * n_files)
-        
         train_files = all_files[:self.n_train]
         val_files = all_files[self.n_train:self.n_train + self.n_val]
         test_files = all_files[self.n_train + self.n_val:self.n_train + self.n_val + self.n_test]
@@ -90,25 +85,15 @@ class DataHandlerGT:
 class DataHandlerModel:
     
     def __init__(self,\
-                gt_train: str, gt_val: str, gt_test: str,\
-                n_train: int, n_val: int, n_test: int,\
-                model: str, 
-                ):
+                model: str,\
+                gt_train: str,gt_val: str, gt_test: str):
         '''
-        :param n_train: number of model training samples
-        :param n_val: number of model validation samples
-        :param n_test: number of model test samples
         :param model: path to model dataset folder
         :param gt_train: path to gt-train folder
         :param gt_val: path to gt-val folder
         :param gt_test: path to gt-test folder
         '''
         self.logger = get_logger("DataHandlerModel")        
-        
-        # num-train / num-val / num-test samples
-        self.n_train = n_train
-        self.n_val = n_val
-        self.n_test = n_test
         
         # gt folders
         self.gt_train = gt_train
@@ -121,31 +106,26 @@ class DataHandlerModel:
         self.model_val = os.path.join(self.model, "val")
         self.model_test = os.path.join(self.model, "test")
 
+
+    def generate_model_dataset(self):
         
-    
-    
+        # [model-train / model-val / model-test] folders should be empty
+        assert not (os.path.exists(self.model_train) and os.listdir(self.model_train)), "model_train must be empty"
+        assert not (os.path.exists(self.model_val) and os.listdir(self.model_val)), "model_val must be empty"
+        assert not (os.path.exists(self.model_test) and os.listdir(self.model_test)), "model_test must be empty"
 
-    def generate_model_dataset(self, raw_data_dir: str, model_data_dir: str):
-        '''Generate [model-train / model-val / model-test] from [gt-train / gt-val / gt-test]'''
+        
+        # create [model-train / model-val / model-test] folders
+        os.makedirs(self.model_train, exist_ok=True)
+        os.makedirs(self.model_val, exist_ok=True)
+        os.makedirs(self.model_test, exist_ok=True)
 
-        assert raw_data_dir is not None, "raw_data_dir is required"
-        assert model_data_dir is not None, "model_data_dir is required"        
-        assert not (os.path.exists(model_data_dir) and os.listdir(model_data_dir)), "model_data_dir must be empty"
-
-        self.logger.info(f"=========================")
-        self.logger.info(f"Processing raw data from {raw_data_dir} to {model_data_dir}")
-        self.logger.info(f"=========================\n")
-
-        # Create the target folder if it doesn't exist
-        os.makedirs(model_data_dir, exist_ok=True)
-
-        # model-dataset folders
+        # model-train folders
         left_folder = os.path.join(self.model_train, 'left')
         right_folder = os.path.join(self.model_train, 'right')
         seg_masks_mono_folder = os.path.join(self.model_train, 'seg-masks-mono')
         seg_masks_rgb_folder = os.path.join(self.model_train, 'seg-masks-rgb')
         
-
         # Create the target subfolders if they don't exist
         os.makedirs(left_folder, exist_ok=True)
         os.makedirs(right_folder, exist_ok=True)
@@ -154,7 +134,7 @@ class DataHandlerModel:
 
         # Count total files for progress bar
         total_files = 0
-        for root, dirs, files in os.walk(raw_data_dir):
+        for root, dirs, files in os.walk(self.gt_train):
             for file in files:
                 if file.endswith('left.jpg') or \
                    file.endswith('right.jpg') or \
@@ -168,7 +148,7 @@ class DataHandlerModel:
         self.logger.info(f"=========================\n")
 
         with tqdm(total=total_files, desc="Organizing Images") as pbar:
-            for root, dirs, files in os.walk(raw_data_dir):
+            for root, dirs, files in os.walk(self.gt_train):
                 # Get folder number from root path
                 folder_num = os.path.basename(root)
                 if not folder_num.isdigit():
@@ -191,10 +171,10 @@ class DataHandlerModel:
                         new_filename = f"{folder_num}__seg-mask-rgb.png"
                         shutil.copy(os.path.join(root, file), os.path.join(seg_masks_rgb_folder, new_filename))
                         pbar.update(1)
-                    elif file == 'cam_extrinsics.npy':
-                        new_filename = f"{folder_num}__cam-extrinsics.npy"
-                        shutil.copy(os.path.join(root, file), os.path.join(cam_extrinsics_folder, new_filename))
-                        pbar.update(1)
+                    # elif file == 'cam_extrinsics.npy':
+                    #     new_filename = f"{folder_num}__cam-extrinsics.npy"
+                    #     shutil.copy(os.path.join(root, file), os.path.join(cam_extrinsics_folder, new_filename))
+                    #     pbar.update(1)
 
 
 if __name__ == "__main__":
@@ -202,6 +182,12 @@ if __name__ == "__main__":
                                n_train=700, n_val=150, n_test=150)
     
     gt_handler.split_into_train_val_test()
+
+    model_handler = DataHandlerModel(gt_train="data/dataset-gt/split-train", 
+                                     gt_val="data/dataset-gt/split-val", 
+                                     gt_test="data/dataset-gt/split-test", 
+                                     model="data/model-dataset")
+    model_handler.generate_model_dataset()
 
     # model_handler = DataHandlerModel(gt_train="data/gt-train", 
     #                                  gt_val="data/gt-val", 

@@ -205,7 +205,7 @@ test cases
 
 
 ======================
-sbevnet-data-manager.py
+data-generator.py
 ======================
 - split bev-dataset into train-val-test
 - rename sbevnet module to model
@@ -213,3 +213,4 @@ sbevnet-data-manager.py
 - support for extra data-fields
 - resume error-free training
 - integrate generate.json
+- parametrize randomness / seeding
