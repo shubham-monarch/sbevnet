@@ -148,6 +148,7 @@ improve model baseline
 - plot GT class-wise distribution
 - improve loss function
 - tune weighted cross entropy loss
+- change z-min to 0.5 in GT-seg-mask
 
 
 ======================
@@ -207,11 +208,12 @@ test cases
 ======================
 data-generator.py
 ======================
-- split bev-dataset into train-val-test
++ split bev-dataset into train-val-test
 - rename sbevnet module to model
 - flip masks
 - support for extra data-fields
 - resume error-free training
 - integrate generate.json
 - parametrize randomness / seeding
-- clean GT-dataset -> remove incomplete leaf folders
++ clean GT-dataset -> remove incomplete leaf folders
+- generate gt data from z = 0.5 meters instead of z = 0m

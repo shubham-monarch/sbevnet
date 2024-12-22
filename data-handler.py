@@ -5,8 +5,9 @@ import random
 import shutil
 from tqdm import tqdm
 from typing import List
+import cv2
 
-from helpers import get_logger
+from helpers import get_logger, flip_mask, get_files_from_folder
 
 
 class GTDataHandler:
@@ -78,8 +79,7 @@ class GTDataHandler:
         self.logger.error(f"Removed {len(incomplete_folders)} incomplete folders")
         self.logger.error(f"Remaining folders: {len(leaf_folders) - len(incomplete_folders)}")
         self.logger.error(f"=========================\n")
-        
-      
+    
     def generate_GT_train_test(self, n_train: int, n_test: int) -> None:
         '''generate GT-train / GT-test folders'''
         
@@ -128,17 +128,18 @@ class ModelDataHandler:
         
         # model-dataset folders
         self.model_dir = model_dir
-        self.model_train = os.path.join(self.model_dir, "train")
-        self.model_test = os.path.join(self.model_dir, "test")
+        self.model_train_dir = os.path.join(self.model_dir, "train")
+        self.model_test_dir = os.path.join(self.model_dir, "test")
 
         self.logger.info(f"=========================")
         self.logger.info("Generating [MODEL-train / MODEL-test] from [GT-train / GT-test]...")
         self.logger.info(f"=========================\n")
 
-    def __restructure_GT_folder(self, GT_dir: str, MODEL_dir: str):
+    def __restructure_GT_folder(self, GT_dir: str, MODEL_dir: str, split = None):
         # [model-train / model-test] folders should be empty
         assert not (os.path.exists(MODEL_dir) and os.listdir(MODEL_dir)), "model_train must be empty"
-
+        assert split in ['train', 'test'], "split must be either train or test"
+        
         # create [model-train / model-test] folders
         os.makedirs(MODEL_dir, exist_ok=True)
 
@@ -185,20 +186,35 @@ class ModelDataHandler:
                         new_filename = f"{folder_num}__right.jpg"
                         shutil.copy(os.path.join(root, file), os.path.join(right_folder, new_filename))
                         pbar.update(1)
-                    elif file.endswith('-mono.png'):
+                    elif file.endswith('-mono.png') and split == 'train':
                         new_filename = f"{folder_num}__seg-mask-mono.png"
                         shutil.copy(os.path.join(root, file), os.path.join(seg_masks_mono_folder, new_filename))
                         pbar.update(1)
-                    elif file.endswith('-rgb.png'):
+                    elif file.endswith('-rgb.png') and split == 'train':
                         new_filename = f"{folder_num}__seg-mask-rgb.png"
                         shutil.copy(os.path.join(root, file), os.path.join(seg_masks_rgb_folder, new_filename))
                         pbar.update(1)
 
+    def __flip_masks(self, src_dir: str, dest_dir: str) -> None:
+        '''Flip the masks in the source folder and save them to the destination folder.'''
+        
+        masks = get_files_from_folder(src_dir, ['.png'])
+        for mask_path in tqdm(masks, desc="Flipping masks"):
+            mask_flipped_mono = flip_mask(mask_path)
+            cv2.imwrite(os.path.join(dest_dir, os.path.basename(mask_path)), mask_flipped_mono)
 
     def generate_MODEL_train_test(self):
-        self.__restructure_GT_folder(self.GT_train, self.model_train)
-        self.__restructure_GT_folder(self.GT_test, self.model_test)
-      
+        self.__restructure_GT_folder(self.GT_train, self.model_train_dir, split='train')
+        self.__restructure_GT_folder(self.GT_test, self.model_test_dir, split='test')
+
+        # flip mono / rgb masks in model-train
+        self.__flip_masks(os.path.join(self.model_train_dir, 'seg-masks-mono'),\
+                           os.path.join(self.model_train_dir, 'seg-masks-mono'))
+        self.__flip_masks(os.path.join(self.model_train_dir, 'seg-masks-rgb'),\
+                           os.path.join(self.model_train_dir, 'seg-masks-rgb'))
+
+
+
 if __name__ == "__main__":
     gt_handler = GTDataHandler(src_dir="data/GT", dst_dir="data")
     gt_handler.generate_GT_train_test(n_train=800, n_test=200)
