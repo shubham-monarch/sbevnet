@@ -63,6 +63,9 @@ class GTDataHandler:
         self.GT_train = os.path.join(self.dst_dir, "GT-train")
         self.GT_test = os.path.join(self.dst_dir, "GT-test")
         
+        self.logger.info(f"=========================")
+        self.logger.info("Processing GT-dataset!")
+        self.logger.info(f"=========================\n")
 
     def _copy_folders(self, folder_list: List[str], src_dir: str, dst_dir: str) -> None:
         '''Copy folders to destination directory'''
@@ -70,14 +73,14 @@ class GTDataHandler:
 
         assert not (os.path.exists(dst_dir) and os.listdir(dst_dir)), f"Destination directory must be empty!"
         
-        for folder in tqdm(folder_list, desc="Copying folders"):
+        for idx, folder in enumerate(tqdm(folder_list, desc="Copying folders"), 1):
             src = os.path.join(src_dir, folder)
-            dst = os.path.join(dst_dir, folder)
-            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            dst = os.path.join(dst_dir, str(idx))
+            os.makedirs(dst_dir, exist_ok=True)
             shutil.copytree(src, dst, dirs_exist_ok=True)
         
       
-    def generate_sample_train_test(self, n_train: int, n_test: int) -> None:
+    def generate_GT_train_test(self, n_train: int, n_test: int) -> None:
         '''generate GT-train / GT-test folders'''
         
         # assert [gt-train / gt-test] folders are empty
@@ -108,45 +111,39 @@ class ModelDataHandler:
     
     def __init__(self,\
                 model_dir: str,\
-                gt_train: str,gt_val: str, gt_test: str):
+                GT_train: str, GT_test: str):
         '''
         :param model_dir: path to model dataset folder
         :param gt_train: path to gt-train folder
-        :param gt_val: path to gt-val folder
         :param gt_test: path to gt-test folder
         '''
         self.logger = get_logger("DataHandlerModel")        
         
         # GT folders
-        self.gt_train = gt_train
-        self.gt_val = gt_val
-        self.gt_test = gt_test
-
+        self.GT_train = GT_train
+        self.GT_test = GT_test
+        
         # model-dataset folders
         self.model_dir = model_dir
         self.model_train = os.path.join(self.model_dir, "train")
-        self.model_val = os.path.join(self.model_dir, "val")
         self.model_test = os.path.join(self.model_dir, "test")
 
+        self.logger.info(f"=========================")
+        self.logger.info("Processing MODEL-dataset!")
+        self.logger.info(f"=========================\n")
 
-    def generate_model_dataset(self):
-        
-        # [model-train / model-val / model-test] folders should be empty
-        assert not (os.path.exists(self.model_train) and os.listdir(self.model_train)), "model_train must be empty"
-        assert not (os.path.exists(self.model_val) and os.listdir(self.model_val)), "model_val must be empty"
-        assert not (os.path.exists(self.model_test) and os.listdir(self.model_test)), "model_test must be empty"
+    def __restructure_GT_folder(self, GT_dir: str, MODEL_dir: str):
+        # [model-train / model-test] folders should be empty
+        assert not (os.path.exists(MODEL_dir) and os.listdir(MODEL_dir)), "model_train must be empty"
 
-        
-        # create [model-train / model-val / model-test] folders
-        os.makedirs(self.model_train, exist_ok=True)
-        os.makedirs(self.model_val, exist_ok=True)
-        os.makedirs(self.model_test, exist_ok=True)
+        # create [model-train / model-test] folders
+        os.makedirs(MODEL_dir, exist_ok=True)
 
         # model-train folders
-        left_folder = os.path.join(self.model_train, 'left')
-        right_folder = os.path.join(self.model_train, 'right')
-        seg_masks_mono_folder = os.path.join(self.model_train, 'seg-masks-mono')
-        seg_masks_rgb_folder = os.path.join(self.model_train, 'seg-masks-rgb')
+        left_folder = os.path.join(MODEL_dir, 'left')
+        right_folder = os.path.join(MODEL_dir, 'right')
+        seg_masks_mono_folder = os.path.join(MODEL_dir, 'seg-masks-mono')
+        seg_masks_rgb_folder = os.path.join(MODEL_dir, 'seg-masks-rgb')
         
         # Create the target subfolders if they don't exist
         os.makedirs(left_folder, exist_ok=True)
@@ -156,21 +153,21 @@ class ModelDataHandler:
 
         # Count total files for progress bar
         total_files = 0
-        for root, dirs, files in os.walk(self.gt_train):
+        for root, dirs, files in os.walk(GT_dir):
             for file in files:
                 if file.endswith('left.jpg') or \
                    file.endswith('right.jpg') or \
                    file.endswith('-mono.png') or \
-                   file.endswith('-rgb.png') or \
-                   file.endswith('cam-extrinsics.npy'):
+                   file.endswith('-rgb.png'):
                     total_files += 1
-        
+
         self.logger.info(f"=========================")
         self.logger.info(f"Total files: {total_files}") 
         self.logger.info(f"=========================\n")
 
+
         with tqdm(total=total_files, desc="Organizing Images") as pbar:
-            for root, dirs, files in os.walk(self.gt_train):
+            for root, dirs, files in os.walk(GT_dir):
                 # Get folder number from root path
                 folder_num = os.path.basename(root)
                 if not folder_num.isdigit():
@@ -193,20 +190,19 @@ class ModelDataHandler:
                         new_filename = f"{folder_num}__seg-mask-rgb.png"
                         shutil.copy(os.path.join(root, file), os.path.join(seg_masks_rgb_folder, new_filename))
                         pbar.update(1)
-                    # elif file == 'cam_extrinsics.npy':
-                    #     new_filename = f"{folder_num}__cam-extrinsics.npy"
-                    #     shutil.copy(os.path.join(root, file), os.path.join(cam_extrinsics_folder, new_filename))
-                    #     pbar.update(1)
 
 
+    def generate_MODEL_train_test(self):
+        self.__restructure_GT_folder(self.GT_train, self.model_train)
+        self.__restructure_GT_folder(self.GT_test, self.model_test)
+      
 if __name__ == "__main__":
     gt_handler = GTDataHandler(src_dir="data/GT", dst_dir="data")
-    gt_handler.generate_sample_train_test(n_train=800, n_test=200)
+    gt_handler.generate_GT_train_test(n_train=800, n_test=200)
 
-    # model_handler = ModelDataHandler(gt_train="data/GT-train", 
-    #                                  gt_val="data/GT-val", 
-    #                                  gt_test="data/GT-test", 
-    #                                  model_dir="data/model-dataset")
-    # model_handler.generate_model_dataset()
+    model_handler = ModelDataHandler(GT_train="data/GT-train", 
+                                     GT_test="data/GT-test", 
+                                     model_dir="data/model-dataset")
+    model_handler.generate_MODEL_train_test()
 
     
