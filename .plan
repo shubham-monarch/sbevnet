@@ -214,3 +214,4 @@ data-generator.py
 - resume error-free training
 - integrate generate.json
 - parametrize randomness / seeding
+- clean GT-dataset -> remove incomplete leaf folders

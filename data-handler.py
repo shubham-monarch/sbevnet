@@ -11,14 +11,12 @@ from helpers import get_logger
 
 
 def _get_leaf_folders(src_dir: str) -> List[str]:
-    """Get all leaf folders inside the given folder recursively and return as a list"""
+    """Get all leaf folders inside the given folder recursively and return their relative positions as a list"""
     leaf_folders = []
     for root, dirs, files in os.walk(src_dir):
         if not dirs: 
-            leaf_folders.append(root)
+            leaf_folders.append(os.path.relpath(root, src_dir))  
     return leaf_folders
-    
-        
 
 # def _copy_files(files: List[str], src_dir: str, dest_dir: str, desc: str):
 #     '''Copy files to destination'''
@@ -62,36 +60,48 @@ class GTDataHandler:
         self.dst_dir = dst_dir
 
         # [GT-train / GT-test] folders
-        self.gt_train = os.path.join(self.dst_dir, "GT-train")
-        self.gt_test = os.path.join(self.dst_dir, "GT-test")
+        self.GT_train = os.path.join(self.dst_dir, "GT-train")
+        self.GT_test = os.path.join(self.dst_dir, "GT-test")
         
 
+    def _copy_folders(self, folder_list: List[str], src_dir: str, dst_dir: str) -> None:
+        '''Copy folders to destination directory'''
+        logger = get_logger("_copy_folders")
+
+        assert not (os.path.exists(dst_dir) and os.listdir(dst_dir)), f"Destination directory must be empty!"
+        
+        for folder in tqdm(folder_list, desc="Copying folders"):
+            src = os.path.join(src_dir, folder)
+            dst = os.path.join(dst_dir, folder)
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+        
+      
     def generate_sample_train_test(self, n_train: int, n_test: int) -> None:
-        '''GT-dataset -->  GT-train / GT-test'''
+        '''generate GT-train / GT-test folders'''
         
         # assert [gt-train / gt-test] folders are empty
-        if os.path.exists(self.gt_train): assert not os.listdir(self.gt_train), f'Expected {self.gt_train} to be empty, but it is not.'
-        if os.path.exists(self.gt_test): assert not os.listdir(self.gt_test), f'Expected {self.gt_test} to be empty, but it is not.'
+        assert not (os.path.exists(self.GT_train) and os.listdir(self.GT_train)), f"GT-train must be empty!"
+        assert not (os.path.exists(self.GT_test) and os.listdir(self.GT_test)), f"GT-test must be empty!"
 
         leaf_folders = _get_leaf_folders(self.src_dir)
-        total_leaf_folders = len(leaf_folders)
-        assert total_leaf_folders > n_train + n_test, f'Expected at least {n_train + n_test} leaf folders, but got {total_leaf_folders}'
-
-        os.makedirs(self.gt_train, exist_ok=True)
-        os.makedirs(self.gt_test, exist_ok=True)
-        
         random.shuffle(leaf_folders)
+        
+        assert len(leaf_folders) > n_train + n_test, f'Expected at least {n_train + n_test} leaf folders, but got {len(leaf_folders)}'
 
+        os.makedirs(self.GT_train, exist_ok=True)
+        os.makedirs(self.GT_test, exist_ok=True)
+                
         train_folders = leaf_folders[:n_train]
         test_folders = leaf_folders[n_train:n_train + n_test]
-
-        # copy folders to gt-train / gt-test
-        _copy_folders(train_folders, self.gt_train)
-        _copy_folders(test_folders, self.gt_test)
+        
+        # copy folders to GT_train / GT_test 
+        self._copy_folders(train_folders, self.src_dir, self.GT_train)
+        self._copy_folders(test_folders, self.src_dir, self.GT_test)
 
         # assert number of folders in gt-train / gt-test
-        assert len(_get_leaf_folders(self.gt_train)) == n_train, f'Expected {n_train} training files, but got {len(_get_leaf_folders(self.gt_train))}'
-        assert len(_get_leaf_folders(self.gt_test)) == n_test, f'Expected {n_test} test files, but got {len(_get_leaf_folders(self.gt_test))}'
+        assert len(_get_leaf_folders(self.GT_train)) == n_train, f'Expected {n_train} training files, but got {len(_get_leaf_folders(self.GT_train))}'
+        assert len(_get_leaf_folders(self.GT_test)) == n_test, f'Expected {n_test} test files, but got {len(_get_leaf_folders(self.GT_test))}'
       
 
 class ModelDataHandler:
@@ -107,7 +117,7 @@ class ModelDataHandler:
         '''
         self.logger = get_logger("DataHandlerModel")        
         
-        # gt folders
+        # GT folders
         self.gt_train = gt_train
         self.gt_val = gt_val
         self.gt_test = gt_test
