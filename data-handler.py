@@ -5,17 +5,39 @@ import random
 import shutil
 from tqdm import tqdm
 from typing import List
+import boto3
 
 from helpers import get_logger
 
-def _copy_files(files: List[str], src_dir: str, dest_dir: str, desc: str):
-    '''Copy files to destination'''
+
+def _get_leaf_folders(src_dir: str) -> List[str]:
+    """Get all leaf folders inside the given folder recursively and return as a list"""
+    leaf_folders = []
+    for root, dirs, files in os.walk(src_dir):
+        if not dirs: 
+            leaf_folders.append(root)
+    return leaf_folders
     
-    for f in tqdm(files, desc=desc):
-        src = os.path.join(src_dir, f)
-        dst = os.path.join(dest_dir, f)
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
-        shutil.copy2(src, dst)
+        
+
+# def _copy_files(files: List[str], src_dir: str, dest_dir: str, desc: str):
+#     '''Copy files to destination'''
+    
+#     for f in tqdm(files, desc=desc):
+#         src = os.path.join(src_dir, f)
+#         dst = os.path.join(dest_dir, f)
+#         os.makedirs(os.path.dirname(dst), exist_ok=True)
+#         shutil.copy2(src, dst)
+
+def _copy_folders(folder_list: List[str], dst_dir: str):
+    '''Copy folders to destination directory'''
+    
+    for folder in tqdm(folder_list, desc="Copying folders"):
+        src = folder
+        dst = os.path.join(dst_dir, os.path.basename(folder))
+        shutil.copytree(src, dst, dirs_exist_ok=True)
+   
+
 
 def _get_all_files(src_dir: str) -> List[str]:
             all_files = []
@@ -28,15 +50,10 @@ def _get_all_files(src_dir: str) -> List[str]:
         
         
 class GTDataHandler:
-    def __init__(self, src_dir: str, dst_dir: str,\
-                n_train: int, n_val: int, n_test: int):
-        
-        ''''
-        :param src_dir: path to gt-dataset
-        :param dst_dir: path to save split-train / split-val / split-test
-        :param n_train: number of training samples
-        :param n_val: number of validation samples
-        :param n_test: number of test samples
+    def __init__(self, src_dir: str, dst_dir: str) -> None:
+        '''
+        :param src_dir: path to GT-dataset
+        :param dst_dir: path to save gt-train /  gt-test
         '''
         
         self.logger = get_logger("GTHandler")
@@ -44,51 +61,46 @@ class GTDataHandler:
         self.src_dir = src_dir
         self.dst_dir = dst_dir
 
-        self.n_train = n_train
-        self.n_val = n_val
-        self.n_test = n_test
-          
-        # [GT-train / GT-val / GT-test] folders
+        # [GT-train / GT-test] folders
         self.gt_train = os.path.join(self.dst_dir, "GT-train")
-        self.gt_val = os.path.join(self.dst_dir, "GT-val")
         self.gt_test = os.path.join(self.dst_dir, "GT-test")
         
 
-    def split_into_train_val_test(self):
-        '''gt-dataset -->  gt-train / gt-val / gt-test'''
+    def generate_sample_train_test(self, n_train: int, n_test: int) -> None:
+        '''GT-dataset -->  GT-train / GT-test'''
         
+        # assert [gt-train / gt-test] folders are empty
         if os.path.exists(self.gt_train): assert not os.listdir(self.gt_train), f'Expected {self.gt_train} to be empty, but it is not.'
-        if os.path.exists(self.gt_val): assert not os.listdir(self.gt_val), f'Expected {self.gt_val} to be empty, but it is not.'
         if os.path.exists(self.gt_test): assert not os.listdir(self.gt_test), f'Expected {self.gt_test} to be empty, but it is not.'
 
+        leaf_folders = _get_leaf_folders(self.src_dir)
+        total_leaf_folders = len(leaf_folders)
+        assert total_leaf_folders > n_train + n_test, f'Expected at least {n_train + n_test} leaf folders, but got {total_leaf_folders}'
+
         os.makedirs(self.gt_train, exist_ok=True)
-        os.makedirs(self.gt_val, exist_ok=True) 
         os.makedirs(self.gt_test, exist_ok=True)
         
-        all_files = _get_all_files(self.src_dir)
-        random.shuffle(all_files)
+        random.shuffle(leaf_folders)
 
-        train_files = all_files[:self.n_train]
-        val_files = all_files[self.n_train:self.n_train + self.n_val]
-        test_files = all_files[self.n_train + self.n_val:self.n_train + self.n_val + self.n_test]
+        train_folders = leaf_folders[:n_train]
+        test_folders = leaf_folders[n_train:n_train + n_test]
 
-        # copy files to split-train / split-val / split-test
-        _copy_files(train_files, self.src_dir, self.gt_train, 'Copying training files')
-        _copy_files(val_files, self.src_dir, self.gt_val, 'Copying validation files')
-        _copy_files(test_files, self.src_dir, self.gt_test, 'Copying test files')
+        # copy folders to gt-train / gt-test
+        _copy_folders(train_folders, self.gt_train)
+        _copy_folders(test_folders, self.gt_test)
 
-        assert len(train_files) == self.n_train, f'Expected {self.n_train} training files, but got {len(train_files)}'
-        assert len(val_files) == self.n_val, f'Expected {self.n_val} validation files, but got {len(val_files)}'
-        assert len(test_files) == self.n_test, f'Expected {self.n_test} test files, but got {len(test_files)}'
+        # assert number of folders in gt-train / gt-test
+        assert len(_get_leaf_folders(self.gt_train)) == n_train, f'Expected {n_train} training files, but got {len(_get_leaf_folders(self.gt_train))}'
+        assert len(_get_leaf_folders(self.gt_test)) == n_test, f'Expected {n_test} test files, but got {len(_get_leaf_folders(self.gt_test))}'
       
 
 class ModelDataHandler:
     
     def __init__(self,\
-                model: str,\
+                model_dir: str,\
                 gt_train: str,gt_val: str, gt_test: str):
         '''
-        :param model: path to model dataset folder
+        :param model_dir: path to model dataset folder
         :param gt_train: path to gt-train folder
         :param gt_val: path to gt-val folder
         :param gt_test: path to gt-test folder
@@ -101,10 +113,10 @@ class ModelDataHandler:
         self.gt_test = gt_test
 
         # model-dataset folders
-        self.model = model
-        self.model_train = os.path.join(self.model, "train")
-        self.model_val = os.path.join(self.model, "val")
-        self.model_test = os.path.join(self.model, "test")
+        self.model_dir = model_dir
+        self.model_train = os.path.join(self.model_dir, "train")
+        self.model_val = os.path.join(self.model_dir, "val")
+        self.model_test = os.path.join(self.model_dir, "test")
 
 
     def generate_model_dataset(self):
@@ -155,19 +167,19 @@ class ModelDataHandler:
                     continue
 
                 for file in files:
-                    if file == 'left.jpg':
-                        new_filename = f"{folder_num}__left.jpg"
+                    if file.endswith('left.jpg'):
+                        new_filename = f"{folder_num}__{file}"
                         shutil.copy(os.path.join(root, file), os.path.join(left_folder, new_filename))
                         pbar.update(1)
-                    elif file == 'right.jpg':
+                    elif file.endswith('right.jpg'):
                         new_filename = f"{folder_num}__right.jpg"
                         shutil.copy(os.path.join(root, file), os.path.join(right_folder, new_filename))
                         pbar.update(1)
-                    elif file == 'seg_mask_mono.png':
+                    elif file.endswith('-mono.png'):
                         new_filename = f"{folder_num}__seg-mask-mono.png"
                         shutil.copy(os.path.join(root, file), os.path.join(seg_masks_mono_folder, new_filename))
                         pbar.update(1)
-                    elif file == 'seg_mask_rgb.png':
+                    elif file.endswith('-rgb.png'):
                         new_filename = f"{folder_num}__seg-mask-rgb.png"
                         shutil.copy(os.path.join(root, file), os.path.join(seg_masks_rgb_folder, new_filename))
                         pbar.update(1)
@@ -178,15 +190,13 @@ class ModelDataHandler:
 
 
 if __name__ == "__main__":
-    gt_handler = GTDataHandler(src_dir="data/GT", dst_dir="data",\
-                               n_train=700, n_val=150, n_test=150)
-    
-    gt_handler.split_into_train_val_test()
+    gt_handler = GTDataHandler(src_dir="data/GT", dst_dir="data")
+    gt_handler.generate_sample_train_test(n_train=800, n_test=200)
 
-    # model_handler = ModelDataHandler(gt_train="data/dataset-gt/split-train", 
-    #                                  gt_val="data/dataset-gt/split-val", 
-    #                                  gt_test="data/dataset-gt/split-test", 
-    #                                  model="data/model-dataset")
+    # model_handler = ModelDataHandler(gt_train="data/GT-train", 
+    #                                  gt_val="data/GT-val", 
+    #                                  gt_test="data/GT-test", 
+    #                                  model_dir="data/model-dataset")
     # model_handler.generate_model_dataset()
 
     
