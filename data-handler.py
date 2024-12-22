@@ -27,7 +27,7 @@ def _get_all_files(src_dir: str) -> List[str]:
 
         
         
-class DataHandlerGT:
+class GTDataHandler:
     def __init__(self, src_dir: str, dst_dir: str,\
                 n_train: int, n_val: int, n_test: int):
         
@@ -48,22 +48,22 @@ class DataHandlerGT:
         self.n_val = n_val
         self.n_test = n_test
           
-        # [split-train / split-val / split-test] folders
-        self.split_train = os.path.join(self.dst_dir, "split-train")
-        self.split_val = os.path.join(self.dst_dir, "split-val")
-        self.split_test = os.path.join(self.dst_dir, "split-test")
+        # [GT-train / GT-val / GT-test] folders
+        self.gt_train = os.path.join(self.dst_dir, "GT-train")
+        self.gt_val = os.path.join(self.dst_dir, "GT-val")
+        self.gt_test = os.path.join(self.dst_dir, "GT-test")
         
 
     def split_into_train_val_test(self):
         '''gt-dataset -->  gt-train / gt-val / gt-test'''
         
-        if os.path.exists(self.split_train): assert not os.listdir(self.split_train), f'Expected {self.split_train} to be empty, but it is not.'
-        if os.path.exists(self.split_val): assert not os.listdir(self.split_val), f'Expected {self.split_val} to be empty, but it is not.'
-        if os.path.exists(self.split_test): assert not os.listdir(self.split_test), f'Expected {self.split_test} to be empty, but it is not.'
+        if os.path.exists(self.gt_train): assert not os.listdir(self.gt_train), f'Expected {self.gt_train} to be empty, but it is not.'
+        if os.path.exists(self.gt_val): assert not os.listdir(self.gt_val), f'Expected {self.gt_val} to be empty, but it is not.'
+        if os.path.exists(self.gt_test): assert not os.listdir(self.gt_test), f'Expected {self.gt_test} to be empty, but it is not.'
 
-        os.makedirs(self.split_train, exist_ok=True)
-        os.makedirs(self.split_val, exist_ok=True) 
-        os.makedirs(self.split_test, exist_ok=True)
+        os.makedirs(self.gt_train, exist_ok=True)
+        os.makedirs(self.gt_val, exist_ok=True) 
+        os.makedirs(self.gt_test, exist_ok=True)
         
         all_files = _get_all_files(self.src_dir)
         random.shuffle(all_files)
@@ -73,16 +73,16 @@ class DataHandlerGT:
         test_files = all_files[self.n_train + self.n_val:self.n_train + self.n_val + self.n_test]
 
         # copy files to split-train / split-val / split-test
-        _copy_files(train_files, self.src_dir, self.split_train, 'Copying training files')
-        _copy_files(val_files, self.src_dir, self.split_val, 'Copying validation files')
-        _copy_files(test_files, self.src_dir, self.split_test, 'Copying test files')
+        _copy_files(train_files, self.src_dir, self.gt_train, 'Copying training files')
+        _copy_files(val_files, self.src_dir, self.gt_val, 'Copying validation files')
+        _copy_files(test_files, self.src_dir, self.gt_test, 'Copying test files')
 
         assert len(train_files) == self.n_train, f'Expected {self.n_train} training files, but got {len(train_files)}'
         assert len(val_files) == self.n_val, f'Expected {self.n_val} validation files, but got {len(val_files)}'
         assert len(test_files) == self.n_test, f'Expected {self.n_test} test files, but got {len(test_files)}'
       
 
-class DataHandlerModel:
+class ModelDataHandler:
     
     def __init__(self,\
                 model: str,\
@@ -178,23 +178,15 @@ class DataHandlerModel:
 
 
 if __name__ == "__main__":
-    gt_handler = DataHandlerGT(src_dir="data/dataset-gt", dst_dir="data/dataset-gt",\
+    gt_handler = GTDataHandler(src_dir="data/GT", dst_dir="data",\
                                n_train=700, n_val=150, n_test=150)
     
     gt_handler.split_into_train_val_test()
 
-    model_handler = DataHandlerModel(gt_train="data/dataset-gt/split-train", 
-                                     gt_val="data/dataset-gt/split-val", 
-                                     gt_test="data/dataset-gt/split-test", 
-                                     model="data/model-dataset")
-    model_handler.generate_model_dataset()
-
-    # model_handler = DataHandlerModel(gt_train="data/gt-train", 
-    #                                  gt_val="data/gt-val", 
-    #                                  gt_test="data/gt-test", 
-    #                                  n_train=700, 
-    #                                  n_val=150, 
-    #                                  n_test=150, 
+    # model_handler = ModelDataHandler(gt_train="data/dataset-gt/split-train", 
+    #                                  gt_val="data/dataset-gt/split-val", 
+    #                                  gt_test="data/dataset-gt/split-test", 
     #                                  model="data/model-dataset")
-    # # model_handler.sample_gt_data()
-    # model_handler.generate_model_dataset(raw_data_dir="data/raw-dataset", model_data_dir="data/model-dataset")
+    # model_handler.generate_model_dataset()
+
+    
