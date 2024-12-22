@@ -5,48 +5,10 @@ import random
 import shutil
 from tqdm import tqdm
 from typing import List
-import boto3
 
 from helpers import get_logger
 
 
-def _get_leaf_folders(src_dir: str) -> List[str]:
-    """Get all leaf folders inside the given folder recursively and return their relative positions as a list"""
-    leaf_folders = []
-    for root, dirs, files in os.walk(src_dir):
-        if not dirs: 
-            leaf_folders.append(os.path.relpath(root, src_dir))  
-    return leaf_folders
-
-# def _copy_files(files: List[str], src_dir: str, dest_dir: str, desc: str):
-#     '''Copy files to destination'''
-    
-#     for f in tqdm(files, desc=desc):
-#         src = os.path.join(src_dir, f)
-#         dst = os.path.join(dest_dir, f)
-#         os.makedirs(os.path.dirname(dst), exist_ok=True)
-#         shutil.copy2(src, dst)
-
-def _copy_folders(folder_list: List[str], dst_dir: str):
-    '''Copy folders to destination directory'''
-    
-    for folder in tqdm(folder_list, desc="Copying folders"):
-        src = folder
-        dst = os.path.join(dst_dir, os.path.basename(folder))
-        shutil.copytree(src, dst, dirs_exist_ok=True)
-   
-
-
-def _get_all_files(src_dir: str) -> List[str]:
-            all_files = []
-            for root, dirs, files in os.walk(src_dir):
-                for f in files:
-                    rel_path = os.path.relpath(os.path.join(root, f), src_dir)
-                    all_files.append(rel_path)
-            return all_files
-
-        
-        
 class GTDataHandler:
     def __init__(self, src_dir: str, dst_dir: str) -> None:
         '''
@@ -59,18 +21,29 @@ class GTDataHandler:
         self.src_dir = src_dir
         self.dst_dir = dst_dir
 
+        # files required in each valid GT-dataset folder
+        self.key_files = ['left.jpg', 'right.jpg', 'seg-mask-mono.png', 'seg-mask-rgb.png']
+
         # [GT-train / GT-test] folders
         self.GT_train = os.path.join(self.dst_dir, "GT-train")
         self.GT_test = os.path.join(self.dst_dir, "GT-test")
         
         self.logger.info(f"=========================")
-        self.logger.info("Processing GT-dataset!")
+        self.logger.info("Generating [GT-train / GT-test] from GT-dataset...")
         self.logger.info(f"=========================\n")
 
-    def _copy_folders(self, folder_list: List[str], src_dir: str, dst_dir: str) -> None:
-        '''Copy folders to destination directory'''
-        logger = get_logger("_copy_folders")
+    def __get_leaf_folders(self, src_dir: str) -> List[str]:
+        '''Get all leaf folders inside the given folder recursively and return their relative positions as a list'''
+        leaf_folders = []
+        for root, dirs, files in os.walk(src_dir):
+            if not dirs: 
+                leaf_folders.append(os.path.relpath(root, src_dir))  
+        return leaf_folders
 
+
+    def __copy_folders(self, folder_list: List[str], src_dir: str, dst_dir: str) -> None:
+        '''Copy folders to destination directory'''
+        
         assert not (os.path.exists(dst_dir) and os.listdir(dst_dir)), f"Destination directory must be empty!"
         
         for idx, folder in enumerate(tqdm(folder_list, desc="Copying folders"), 1):
@@ -78,16 +51,46 @@ class GTDataHandler:
             dst = os.path.join(dst_dir, str(idx))
             os.makedirs(dst_dir, exist_ok=True)
             shutil.copytree(src, dst, dirs_exist_ok=True)
+
+    def __remove_incomplete_GT_folders(self):
+        '''Remove incomplete GT folders'''
+        
+        self.logger.info(f"=========================")
+        self.logger.info("Removing incomplete GT folders...")
+        self.logger.info(f"=========================\n")
+        
+        leaf_folders = self.__get_leaf_folders(self.src_dir)
+
+        
+        incomplete_folders = []
+        for folder in tqdm(leaf_folders, desc="Checking folders"):
+            folder_files = os.listdir(os.path.join(self.src_dir, folder))
+            
+            # check if folder has exactly the required files
+            if not all(f in folder_files for f in self.key_files):
+                incomplete_folders.append(folder)
+                
+        # Remove incomplete folders
+        for folder in incomplete_folders:
+            shutil.rmtree(os.path.join(self.src_dir, folder))
+        
+        self.logger.error(f"=========================")
+        self.logger.error(f"Removed {len(incomplete_folders)} incomplete folders")
+        self.logger.error(f"Remaining folders: {len(leaf_folders) - len(incomplete_folders)}")
+        self.logger.error(f"=========================\n")
         
       
     def generate_GT_train_test(self, n_train: int, n_test: int) -> None:
         '''generate GT-train / GT-test folders'''
         
+        # remove incomplete GT folders
+        self.__remove_incomplete_GT_folders()
+
         # assert [gt-train / gt-test] folders are empty
         assert not (os.path.exists(self.GT_train) and os.listdir(self.GT_train)), f"GT-train must be empty!"
         assert not (os.path.exists(self.GT_test) and os.listdir(self.GT_test)), f"GT-test must be empty!"
 
-        leaf_folders = _get_leaf_folders(self.src_dir)
+        leaf_folders = self.__get_leaf_folders(self.src_dir)
         random.shuffle(leaf_folders)
         
         assert len(leaf_folders) > n_train + n_test, f'Expected at least {n_train + n_test} leaf folders, but got {len(leaf_folders)}'
@@ -99,12 +102,12 @@ class GTDataHandler:
         test_folders = leaf_folders[n_train:n_train + n_test]
         
         # copy folders to GT_train / GT_test 
-        self._copy_folders(train_folders, self.src_dir, self.GT_train)
-        self._copy_folders(test_folders, self.src_dir, self.GT_test)
+        self.__copy_folders(train_folders, self.src_dir, self.GT_train)
+        self.__copy_folders(test_folders, self.src_dir, self.GT_test)
 
         # assert number of folders in gt-train / gt-test
-        assert len(_get_leaf_folders(self.GT_train)) == n_train, f'Expected {n_train} training files, but got {len(_get_leaf_folders(self.GT_train))}'
-        assert len(_get_leaf_folders(self.GT_test)) == n_test, f'Expected {n_test} test files, but got {len(_get_leaf_folders(self.GT_test))}'
+        assert len(self.__get_leaf_folders(self.GT_train)) == n_train, f'Expected {n_train} training files, but got {len(self.__get_leaf_folders(self.GT_train))}'
+        assert len(self.__get_leaf_folders(self.GT_test)) == n_test, f'Expected {n_test} test files, but got {len(self.__get_leaf_folders(self.GT_test))}'
       
 
 class ModelDataHandler:
@@ -129,7 +132,7 @@ class ModelDataHandler:
         self.model_test = os.path.join(self.model_dir, "test")
 
         self.logger.info(f"=========================")
-        self.logger.info("Processing MODEL-dataset!")
+        self.logger.info("Generating [MODEL-train / MODEL-test] from [GT-train / GT-test]...")
         self.logger.info(f"=========================\n")
 
     def __restructure_GT_folder(self, GT_dir: str, MODEL_dir: str):
@@ -161,9 +164,9 @@ class ModelDataHandler:
                    file.endswith('-rgb.png'):
                     total_files += 1
 
-        self.logger.info(f"=========================")
-        self.logger.info(f"Total files: {total_files}") 
-        self.logger.info(f"=========================\n")
+        # self.logger.info(f"=========================")
+        # self.logger.info(f"Total files: {total_files}") 
+        # self.logger.info(f"=========================\n")
 
 
         with tqdm(total=total_files, desc="Organizing Images") as pbar:
