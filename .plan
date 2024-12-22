@@ -197,8 +197,6 @@ test cases
 - w/o ipm features
 - w/o data augmentation
 
-
-- generate [train / eval / test] from bev-dataset
 - plot  measure accuracy
 - plot train / val / test accuracy
 - run on 500 / 200 / 200
@@ -209,11 +207,10 @@ test cases
 data-generator.py
 ======================
 + split bev-dataset into train-val-test
-- rename sbevnet module to model
-- flip masks
-- support for extra data-fields
-- resume error-free training
-- integrate generate.json
-- parametrize randomness / seeding
+* rename sbevnet module to model
++ flip masks
+* support for extra data-fields
+- resume training
+* parametrize randomness / seeding
 + clean GT-dataset -> remove incomplete leaf folders
-- generate gt data from z = 0.5 meters instead of z = 0m
+* generate gt data from z = 0.5 meters instead of z = 0m
