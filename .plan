@@ -242,5 +242,8 @@ fix poor validation set performance
 - check loss function weights
 - check class frequency
 - increase training data size
-
+- release GPU memory on exit
+- reset tensorboard canvas on exit
+- ditch tensorboard interface
+- shift train-data in z-direction
 

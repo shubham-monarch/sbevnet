@@ -55,7 +55,7 @@ class GTDataHandler:
 
     def __remove_incomplete_GT_folders(self):
         '''Remove incomplete GT folders'''
-            
+
         self.logger.info(f"=========================")
         self.logger.info("Checking for incomplete GT folders...")
         self.logger.info(f"=========================\n")
@@ -243,7 +243,7 @@ class ModelDataHandler:
 
 if __name__ == "__main__":
     gt_handler = GTDataHandler(src_dir="data/GT", dst_dir="data")
-    gt_handler.generate_GT_train_test(n_train=400, n_test=100)
+    gt_handler.generate_GT_train_test(n_train=1000, n_test=200)
 
     model_handler = ModelDataHandler(GT_train="data/GT-train", 
                                      GT_test="data/GT-test", 
