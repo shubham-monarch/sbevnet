@@ -78,8 +78,21 @@ def train_sbevnet():
     
     # Load datasets
     train_dataset = sbevnet_dataset(
-        json_path='datasets/dataset.json',
+        json_path='data/model-dataset/dataset.json',
         dataset_split='train',
+        do_ipm_rgb=params['do_ipm_rgb'],
+        do_ipm_feats=params['do_ipm_feats'],
+        fixed_cam_confs=params['fixed_cam_confs'],
+        do_mask=params['do_mask'],
+        do_top_seg=params['do_top_seg'],
+        zero_mask=params['zero_mask'],
+        image_w=params['image_w'],
+        image_h=params['image_h']
+    )
+
+    val_dataset = sbevnet_dataset(
+        json_path='data/model-dataset/dataset.json',
+        dataset_split='test',
         do_ipm_rgb=params['do_ipm_rgb'],
         do_ipm_feats=params['do_ipm_feats'],
         fixed_cam_confs=params['fixed_cam_confs'],
@@ -99,20 +112,33 @@ def train_sbevnet():
         pin_memory=True
     )
     
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=params['batch_size'],
+        shuffle=False,
+        num_workers=4,
+        pin_memory=True
+    )
+    
     logger.info(f'==================')
     logger.info(f'type(train_dataset): {type(train_dataset)}')
+    logger.info(f'type(val_dataset): {type(val_dataset)}')
     logger.info(f'Training dataset size: {len(train_dataset)}')
+    logger.info(f'Validation dataset size: {len(val_dataset)}')
     logger.info(f'==================\n')
     
     
     # Training loop
-    best_loss = float('inf')
+    best_val_loss = float('inf')
+    losses = []
+    val_losses = []
     
 
     # for epoch in range(params['num_epochs']):
     for epoch in range(1):
         network.train()
         epoch_loss = 0
+        epoch_val_loss = 0
 
         logger.warning(f'==================')
         logger.warning(f'epoch: {epoch}')
@@ -137,9 +163,6 @@ def train_sbevnet():
                 # Forward pass
                 optimizer.zero_grad()
 
-                # logger.warning(f'==================')
-                # logger.warning(f'CKPT-1')
-                # logger.warning(f'==================\n')
                 
                 if not isinstance(data, dict):
                     raise TypeError("Expected 'data' to be a dictionary")
@@ -149,21 +172,7 @@ def train_sbevnet():
                 # Ensure target is on the same device
                 target = data['top_seg'].to(device)
 
-                # logger.warning(f"=================")
-                # logger.warning(f"[train_sbevnet] --> before loss")
-                # logger.warning(f"=================\n")
-                
-                # logger.info(f"=================")
-                # logger.info(f"output['top_seg'].shape: {output['top_seg'].shape}")
-                # logger.info(f"target.shape: {target.shape}")
-                # logger.info(f"=================\n")
-
                 loss = criterion(output['top_seg'], target)
-
-                # logger.warning(f"=================")
-                # logger.warning(f"[train_sbevnet] --> after loss")
-                # logger.warning(f"=================\n")
-
 
                 # Backward pass and optimize
                 loss.backward()
@@ -180,7 +189,36 @@ def train_sbevnet():
         
         # Calculate average epoch loss
         avg_epoch_loss = epoch_loss / len(train_loader)
-        logger.info(f'Epoch {epoch+1} - Average Loss: {avg_epoch_loss:.4f}')
+        logger.info(f'Epoch {epoch+1} - Average Training Loss: {avg_epoch_loss:.4f}')
+        
+        # Validation loop
+        network.eval()
+        with torch.no_grad():
+            for batch_idx, data in enumerate(val_loader):
+                try:
+                    # Move data to device
+                    for key in data:
+                        if isinstance(data[key], torch.Tensor):
+                            data[key] = data[key].to(device)
+                        elif isinstance(data[key], list):
+                            data[key] = [item.to(device) if isinstance(item, torch.Tensor) else item for item in data[key]]
+
+                    # Forward pass
+                    if not isinstance(data, dict):
+                        raise TypeError("Expected 'data' to be a dictionary")
+                    
+                    output = network(data)
+                    target = data['top_seg'].to(device)
+                    loss = criterion(output['top_seg'], target)
+                    
+                    epoch_val_loss += loss.item()
+                
+                except Exception as e:
+                    logger.error(f'Error in validation batch {batch_idx}: {str(e)}')
+                    continue
+        
+        avg_epoch_val_loss = epoch_val_loss / len(val_loader)
+        logger.info(f'Epoch {epoch+1} - Average Validation Loss: {avg_epoch_val_loss:.4f}\n')
         
         # Save checkpoint
         checkpoint = {
@@ -188,6 +226,7 @@ def train_sbevnet():
             'model_state_dict': network.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': avg_epoch_loss,
+            'val_loss': avg_epoch_val_loss,
         }
         
         # Save latest checkpoint
@@ -196,23 +235,23 @@ def train_sbevnet():
 
 
         # Save best model
-        if avg_epoch_loss < best_loss:
-            best_loss = avg_epoch_loss
+        if avg_epoch_val_loss < best_val_loss:
+            best_val_loss = avg_epoch_val_loss
             torch.save(checkpoint, os.path.join(save_dir, 'best_model.pth'))
-            logger.info(f'New best model saved with loss: {best_loss:.4f}')
+            logger.info(f'New best model saved with validation loss: {best_val_loss:.4f}')
 
         
-        # Plot loss vs epoch graph
-        if not hasattr(train_sbevnet, 'losses'):
-            train_sbevnet.losses = []
-        train_sbevnet.losses.append(avg_epoch_loss)
+        # Plot loss vs epoch graph  
+        losses.append(avg_epoch_loss)
+        val_losses.append(avg_epoch_val_loss)
 
         # Create the plot
         plt.figure(figsize=(10,6))
-        plt.plot(range(1, len(train_sbevnet.losses) + 1), train_sbevnet.losses, 'b-', label='Training Loss')
+        plt.plot(range(1, len(losses) + 1), losses, 'b-', label='Training Loss')
+        plt.plot(range(1, len(val_losses) + 1), val_losses, 'r-', label='Validation Loss')
         plt.xlabel('Epoch')
         plt.ylabel('Loss')
-        plt.title('Training Loss vs Epoch')
+        plt.title('Training and Validation Loss vs Epoch')
         plt.legend()
         plt.grid(True)
         

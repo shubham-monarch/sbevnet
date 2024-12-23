@@ -55,9 +55,9 @@ class GTDataHandler:
 
     def __remove_incomplete_GT_folders(self):
         '''Remove incomplete GT folders'''
-        
+            
         self.logger.info(f"=========================")
-        self.logger.info("Removing incomplete GT folders...")
+        self.logger.info("Checking for incomplete GT folders...")
         self.logger.info(f"=========================\n")
         
         leaf_folders = self.__get_leaf_folders(self.src_dir)
@@ -135,10 +135,9 @@ class ModelDataHandler:
         self.logger.info("Generating [MODEL-train / MODEL-test] from [GT-train / GT-test]...")
         self.logger.info(f"=========================\n")
 
-    def __restructure_GT_folder(self, GT_dir: str, MODEL_dir: str, split = None):
+    def __restructure_GT_folder(self, GT_dir: str, MODEL_dir: str):
         # [model-train / model-test] folders should be empty
         assert not (os.path.exists(MODEL_dir) and os.listdir(MODEL_dir)), "model_train must be empty"
-        assert split in ['train', 'test'], "split must be either train or test"
         
         # create [model-train / model-test] folders
         os.makedirs(MODEL_dir, exist_ok=True)
@@ -165,10 +164,6 @@ class ModelDataHandler:
                    file.endswith('-rgb.png'):
                     total_files += 1
 
-        # self.logger.info(f"=========================")
-        # self.logger.info(f"Total files: {total_files}") 
-        # self.logger.info(f"=========================\n")
-
 
         with tqdm(total=total_files, desc="Organizing Images") as pbar:
             for root, dirs, files in os.walk(GT_dir):
@@ -186,11 +181,11 @@ class ModelDataHandler:
                         new_filename = f"{folder_num}__right.jpg"
                         shutil.copy(os.path.join(root, file), os.path.join(right_folder, new_filename))
                         pbar.update(1)
-                    elif file.endswith('-mono.png') and split == 'train':
+                    elif file.endswith('-mono.png'):
                         new_filename = f"{folder_num}__seg-mask-mono.png"
                         shutil.copy(os.path.join(root, file), os.path.join(seg_masks_mono_folder, new_filename))
                         pbar.update(1)
-                    elif file.endswith('-rgb.png') and split == 'train':
+                    elif file.endswith('-rgb.png'):
                         new_filename = f"{folder_num}__seg-mask-rgb.png"
                         shutil.copy(os.path.join(root, file), os.path.join(seg_masks_rgb_folder, new_filename))
                         pbar.update(1)
@@ -226,6 +221,7 @@ class ModelDataHandler:
             "test": {
                 "rgb_left": get_relative_files(os.path.join(self.model_test_dir, 'left'), IMG_EXTENSIONS),
                 "rgb_right": get_relative_files(os.path.join(self.model_test_dir, 'right'), IMG_EXTENSIONS),
+                "top_seg": get_relative_files(os.path.join(self.model_test_dir, 'seg-masks-mono'), ['.png']),
             }
         }
 
@@ -233,8 +229,8 @@ class ModelDataHandler:
             json.dump(data, f, indent=4)
 
     def generate_MODEL_train_test(self):
-        self.__restructure_GT_folder(self.GT_train, self.model_train_dir, split='train')
-        self.__restructure_GT_folder(self.GT_test, self.model_test_dir, split='test')
+        self.__restructure_GT_folder(self.GT_train, self.model_train_dir)
+        self.__restructure_GT_folder(self.GT_test, self.model_test_dir)
 
         # flip mono / rgb masks in model-train
         self.__flip_masks(os.path.join(self.model_train_dir, 'seg-masks-mono'),\
@@ -247,7 +243,7 @@ class ModelDataHandler:
 
 if __name__ == "__main__":
     gt_handler = GTDataHandler(src_dir="data/GT", dst_dir="data")
-    gt_handler.generate_GT_train_test(n_train=800, n_test=200)
+    gt_handler.generate_GT_train_test(n_train=400, n_test=100)
 
     model_handler = ModelDataHandler(GT_train="data/GT-train", 
                                      GT_test="data/GT-test", 

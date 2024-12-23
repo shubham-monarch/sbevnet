@@ -204,7 +204,7 @@ test cases
 
 
 ======================
-data-generator.py
+data-handler.py
 ======================
 + split bev-dataset into train-val-test
 * rename sbevnet module to model
@@ -215,5 +215,32 @@ data-generator.py
 + clean GT-dataset -> remove incomplete leaf folders
 * generate gt data from z = 0.5 meters instead of z = 0m
 + integrate generate_json
+
+
+======================
+training utils
+======================
+- ability to resume from last epoch / checkpoint
+- log every epoch 
++ plot validation error with train plot
+- add test.yaml
+- run model without camera intrinsics scaling
 - fix train-dist logging
 - integrate json path in train.yaml
+- use tensorboard, weights, biases
++ plot validation loss for overfitting detection
+- plot loss metrics for test-data
++ add GT to test folder
+- generate validation dataset
++ integrate validation dataset in dist-train.py
+- refactor train-dist.py
+
+
+======================
+fix poor validation set performance
+======================
+- check loss function weights
+- check class frequency
+- increase training data size
+
+

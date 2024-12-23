@@ -121,7 +121,7 @@ def evaluate_sbevnet():
     
     # load test dataset
     test_dataset = sbevnet_dataset(
-        json_path='datasets/dataset.json',
+        json_path='data/model-dataset/dataset.json',
         dataset_split='test',
         do_ipm_rgb=params['do_ipm_rgb'],
         do_ipm_feats=params['do_ipm_feats'],
@@ -168,17 +168,11 @@ def evaluate_sbevnet():
             try:
                 # move data to device
                 for key in data:
-                    # logger.info(f"=================")
-                    # logger.info(f"key: {key}")
-                    # logger.info(f"type: {type(data[key])}")
-                    # logger.info(f"=================\n")
                     if isinstance(data[key], torch.Tensor):
                         data[key] = data[key].to(device)
                     elif isinstance(data[key], list):
                         data[key] = [item.to(device) if isinstance(item, torch.Tensor) else item 
                                    for item in data[key]]
-
-                
 
                 # forward pass
                 output = network(data)
@@ -190,36 +184,35 @@ def evaluate_sbevnet():
                 # Save predictions
                 for i in range(pred.size(0)):
                     pred_np = pred[i].cpu().numpy()
-                    
-                    # Save raw prediction
-                    pred_path = os.path.join(pred_dir, f'pred_{batch_idx}_{i}.png')
-                    cv2.imwrite(pred_path, pred_np.astype(np.uint8))
-                    
+                        
                     # Save colored visualization
-                    colored_pred = get_colored_segmentation_image(pred_np, config_path='Mavis.yaml')
-                    colored_path = os.path.join(pred_dir, f'pred_{batch_idx}_{i}_color.png')
-                    cv2.imwrite(colored_path, colored_pred)
-
-                    left_idx = batch_idx * 2
-                    left_img_path = os.path.join('datasets/sample-svo/left', f'{left_idx:04d}.jpg')
+                    colored_pred = get_colored_segmentation_image(pred_np, config_path='configs/Mavis.yaml')
+                    colored_pred = cv2.flip(colored_pred, 0)
+                    
+                    # Load and resize left image
+                    left_idx = batch_idx * params['batch_size'] + i + 1
+                    left_img_path = os.path.join('data/model-dataset/test/left', f'{left_idx}__left.jpg')
+                    
+                    logger.info(f'=================')
+                    logger.info(f'{left_img_path}')
+                    logger.info(f'=================\n')
+                    
                     left_img = cv2.imread(left_img_path)
                     if left_img is None:
                         logger.error(f'Failed to read image at {left_img_path}')
                         continue
                     left_img_resized = cv2.resize(left_img, (256, 256), interpolation=cv2.INTER_LINEAR)
-                    combined_image = np.hstack((left_img_resized, cv2.flip(colored_pred, 0)))
                     
+                    # Combine and save
+                    combined_image = np.hstack((left_img_resized, cv2.flip(colored_pred, 0)))
                     combined_dir = os.path.join(pred_dir, f'combined')
                     os.makedirs(combined_dir, exist_ok=True)
-                    
-                    combined_path = os.path.join(combined_dir, f'pred_{batch_idx}_{i}.png')
+                    combined_path = os.path.join(combined_dir, f'pred_{left_idx:04d}.png')
                     cv2.imwrite(combined_path, combined_image)
             
             except Exception as e:
                 logger.error(f'Error in batch {batch_idx}: {str(e)}')
                 continue
-    
- 
 
 if __name__ == '__main__':
     evaluate_sbevnet() 
