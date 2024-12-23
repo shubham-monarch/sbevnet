@@ -118,7 +118,7 @@ def train(rank: int, world_size: int, params: dict) -> None:
         optimizer = optim.Adam(network.parameters(), lr=0.0001)
 
         train_dataset = sbevnet_dataset(
-            json_path='datasets/dataset.json',
+            json_path='data/model-dataset/dataset.json',
             dataset_split='train',
             do_ipm_rgb=params['do_ipm_rgb'],
             do_ipm_feats=params['do_ipm_feats'],
@@ -268,10 +268,10 @@ def train_sbevnet_distributed() -> None:
 
 if __name__ == '__main__':
     
-    # update json
-    json_path = 'datasets/dataset.json'
-    dataset_path = 'datasets'
-    populate_json(json_path, dataset_path)
+    # # update json
+    # json_path = 'datasets/dataset.json'
+    # dataset_path = 'datasets'
+    # populate_json(json_path, dataset_path)
     
     
     train_sbevnet_distributed() 

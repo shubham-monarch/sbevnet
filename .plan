@@ -210,8 +210,10 @@ data-generator.py
 * rename sbevnet module to model
 + flip masks
 * support for extra data-fields
-- resume training
++ resume training
 * parametrize randomness / seeding
 + clean GT-dataset -> remove incomplete leaf folders
 * generate gt data from z = 0.5 meters instead of z = 0m
-- integrate generate_json
++ integrate generate_json
+- fix train-dist logging
+- integrate json path in train.yaml
