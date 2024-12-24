@@ -242,7 +242,7 @@ class ModelDataHandler:
         self.__populate_json(os.path.join(self.model_dir, 'dataset.json'), self.model_dir)
 
 if __name__ == "__main__":
-    gt_handler = GTDataHandler(src_dir="data/GT", dst_dir="data")
+    gt_handler = GTDataHandler(src_dir="data/GT-aws", dst_dir="data")
     gt_handler.generate_GT_train_test(n_train=1000, n_test=200)
 
     model_handler = ModelDataHandler(GT_train="data/GT-train", 

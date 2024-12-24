@@ -44,20 +44,12 @@ def compute_class_weights(dataset: DataLoader, params: dict) -> torch.Tensor:
         for i in range(params['n_classes_seg']):
             class_counts[i] += (labels == i).sum()
     
-    # print counts for each class and total sum
-    # total_samples = class_counts.sum()
+    # compute inverse frequency weights
+    total_samples = class_counts.sum()
+    class_weights = total_samples / (class_counts * params['n_classes_seg'])
     
-    # logger.warning(f"=================")
-    # logger.warning(f"Class counts: {class_counts}, Total sum: {total_samples.item()}")
-    # logger.warning(f"=================\n")
-    
-    # # compute inverse frequency weights
-    # class_weights = total_samples / (class_counts * params['n_classes_seg'])
-    
-    # # normalize weights to have median of 1
-    # class_weights = class_weights / class_weights.median()
-    
-    class_weights = torch.tensor([10.0, 0.1, 0.1, 0.1, 10.0, 10.0])
+    # normalize weights to have median of 1
+    class_weights = class_weights / class_weights.median()
 
     logger.warning(f"=================")
     logger.warning(f"computed class weights: {class_weights}")
@@ -111,14 +103,9 @@ def train(rank: int, world_size: int, params: dict) -> None:
         # Wrap model with DDP
         network = DDP(network, device_ids=[rank])
         
-        class_weights = torch.tensor([0.1, 0.1, 0.1, 1.0, 10.0, 10.0]).to(rank)
-        # normalize
-        class_weights = class_weights / class_weights.sum()
-        criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=-100).to(rank)
+        # class_weights = torch.tensor([0.1, 0.1, 0.1, 1.0, 10.0, 10.0]).to(rank)
+        # class_weights = torch.tensor([0.1, 10.0, 0.1, 0.1, 10.0, 10.0]).to(rank)
         
-        # Fixed learning rate of 0.0001
-        optimizer = optim.Adam(network.parameters(), lr=0.0001)
-
         train_dataset = sbevnet_dataset(
             json_path='data/model-dataset/dataset.json',
             dataset_split='train',
@@ -132,6 +119,27 @@ def train(rank: int, world_size: int, params: dict) -> None:
             image_h=params['image_h']
         )
         
+        train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=params['batch_size'],
+            shuffle=False,
+            num_workers=4,
+            pin_memory=True,
+            sampler=train_sampler
+        )
+        
+        class_weights = compute_class_weights(train_loader, params).to(rank)
+        
+        logger.warning(f"=================")
+        logger.warning(f"computed class weights: {class_weights}")
+        logger.warning(f"=================\n")
+
+        criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=-100).to(rank)
+        
+        # Fixed learning rate of 0.0001
+        optimizer = optim.Adam(network.parameters(), lr=0.0001)
+
         val_dataset = sbevnet_dataset(
             json_path='data/model-dataset/dataset.json',
             dataset_split='test',
@@ -143,16 +151,6 @@ def train(rank: int, world_size: int, params: dict) -> None:
             zero_mask=params['zero_mask'],
             image_w=params['image_w'],
             image_h=params['image_h']
-        )
-
-        train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
-        train_loader = DataLoader(
-            train_dataset,
-            batch_size=params['batch_size'],
-            shuffle=False,
-            num_workers=4,
-            pin_memory=True,
-            sampler=train_sampler
         )
         
         val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank)
