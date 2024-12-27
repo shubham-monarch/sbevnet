@@ -253,3 +253,5 @@ fix poor validation set performance
 - why are black spaces being added to the GT mask? (/home/ubuntu/stereo-occ/sbevnet/data/GT-aws/vineyards/gallo/2024_06_07_utc/svo_files/front_2024-06-04-12-40-25.svo/1196_to_1338/frame-1198/seg-mask-rgb.png)
 - reason for black frame in the first frame of each section
 - poles are not in straight line in GT mask (/home/ubuntu/stereo-occ/sbevnet/data/GT-aws/vineyards/RJM/2024_06_06_utc/svo_files/front_2024-06-05-09-43-13.svo/246_to_388/frame-318/seg-mask-rgb.png)
+- remove degenerate frames from GT (>10% black patches)
+- plot % distribution of black patches in GT
