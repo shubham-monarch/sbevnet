@@ -4,9 +4,12 @@ import os
 import random
 import shutil
 from tqdm import tqdm
-from typing import List
+from typing import List, Dict
 import cv2
 import json
+import numpy as np
+import matplotlib.pyplot as plt
+
 from helpers import get_logger, flip_mask, get_files_from_folder
 
 
@@ -33,7 +36,58 @@ class GTDataHandler:
         self.logger.info("Generating [GT-train / GT-test] from GT-dataset...")
         self.logger.info(f"=========================\n")
 
-    def __get_leaf_folders(self, src_dir: str) -> List[str]:
+    @staticmethod
+    def log_class_distribution(src_dir: str) -> List[Dict[int, float]]:
+        '''Log the % distribution of each class in all segmentation masks in GT-aws'''
+        
+        leaf_folders = GTDataHandler.__get_leaf_folders(src_dir)
+        class_distributions = []
+
+        for folder in tqdm(leaf_folders, desc="Logging class % distribution"):
+            seg_mask_mono_path = os.path.join(src_dir, folder, 'seg-mask-mono.png')
+            if os.path.exists(seg_mask_mono_path):
+                mask = cv2.imread(seg_mask_mono_path, cv2.IMREAD_GRAYSCALE)
+                unique, counts = np.unique(mask, return_counts=True)
+                total_pixels = mask.size
+                distribution = {val: count / total_pixels * 100 for val, count in zip(unique, counts)}
+                class_distributions.append(distribution)
+
+        return class_distributions
+        # GTDataHandler.__plot_class_distribution(class_distributions)
+
+    @staticmethod
+    def plot_class_distribution(class_distributions: List[Dict[int, float]]) -> None:
+        '''Plot the % distribution for each class in all segmentation masks and save to disk.'''
+        
+        from scipy.stats import norm
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        # Aggregate data for class 0
+        class_0_data = [dist.get(0, 0) for dist in class_distributions]
+
+        # Fit a normal distribution to the data
+        mu, std = norm.fit(class_0_data)
+
+        # Plot the histogram with counts instead of density
+        plt.figure(figsize=(10, 6))
+        plt.hist(class_0_data, bins=20, alpha=0.6, color='blue', edgecolor='black')
+
+        # Remove density-based PDF plot since we're now showing counts
+        plt.title(f"Distribution of Class 0 Percentages\nTotal masks: {len(class_0_data)}")
+        plt.xlabel('Percentage of Class 0')
+        plt.ylabel('Number of Masks')
+        plt.grid(True)
+
+        # Save the plot to disk
+        plot_path = 'assets/class_0_distribution.png'
+        plt.savefig(plot_path)
+        plt.close()
+
+        print(f"Distribution plot for class 0 saved to {plot_path}")
+
+    @staticmethod
+    def __get_leaf_folders(src_dir: str) -> List[str]:
         '''Get all leaf folders inside the given folder recursively and return their relative positions as a list'''
         leaf_folders = []
         for root, dirs, files in os.walk(src_dir):
@@ -54,13 +108,13 @@ class GTDataHandler:
             shutil.copytree(src, dst, dirs_exist_ok=True)
 
     def __remove_incomplete_GT_folders(self):
-        '''Remove incomplete GT folders'''
+        '''remove folders with missing left.jpg / right.jpg / seg-mask-mono.png / seg-mask-rgb.png'''
 
         self.logger.info(f"=========================")
         self.logger.info("Checking for incomplete GT folders...")
         self.logger.info(f"=========================\n")
         
-        leaf_folders = self.__get_leaf_folders(self.src_dir)
+        leaf_folders = GTDataHandler.__get_leaf_folders(self.src_dir)
 
         
         incomplete_folders = []
@@ -81,7 +135,21 @@ class GTDataHandler:
         self.logger.error(f"=========================\n")
     
     def generate_GT_train_test(self, n_train: int, n_test: int) -> None:
-        '''generate GT-train / GT-test folders'''
+        '''generate GT-train / GT-test folders from GT-aws folders
+        
+        gt-train/ gt-test
+        ├── 1
+        │   ├── left.jpg
+        │   ├── right.jpg
+        │   ├── seg-mask-mono.png
+        │   └── seg-mask-rgb.png
+        ├── 2
+        │   ├── left.jpg
+        │   ├── right.jpg
+        │   ├── seg-mask-mono.png
+        │   └── seg-mask-rgb.png
+        ├── ...
+        '''
         
         # remove incomplete GT folders
         self.__remove_incomplete_GT_folders()
@@ -90,7 +158,7 @@ class GTDataHandler:
         assert not (os.path.exists(self.GT_train) and os.listdir(self.GT_train)), f"GT-train must be empty!"
         assert not (os.path.exists(self.GT_test) and os.listdir(self.GT_test)), f"GT-test must be empty!"
 
-        leaf_folders = self.__get_leaf_folders(self.src_dir)
+        leaf_folders = GTDataHandler.__get_leaf_folders(self.src_dir)
         random.shuffle(leaf_folders)
         
         assert len(leaf_folders) > n_train + n_test, f'Expected at least {n_train + n_test} leaf folders, but got {len(leaf_folders)}'
@@ -106,8 +174,8 @@ class GTDataHandler:
         self.__copy_folders(test_folders, self.src_dir, self.GT_test)
 
         # assert number of folders in gt-train / gt-test
-        assert len(self.__get_leaf_folders(self.GT_train)) == n_train, f'Expected {n_train} training files, but got {len(self.__get_leaf_folders(self.GT_train))}'
-        assert len(self.__get_leaf_folders(self.GT_test)) == n_test, f'Expected {n_test} test files, but got {len(self.__get_leaf_folders(self.GT_test))}'
+        assert len(GTDataHandler.__get_leaf_folders(self.GT_train)) == n_train, f'Expected {n_train} training files, but got {len(GTDataHandler.__get_leaf_folders(self.GT_train))}'
+        assert len(GTDataHandler.__get_leaf_folders(self.GT_test)) == n_test, f'Expected {n_test} test files, but got {len(GTDataHandler.__get_leaf_folders(self.GT_test))}'
       
 
 class ModelDataHandler:
@@ -241,7 +309,7 @@ class ModelDataHandler:
         # populate json file
         self.__populate_json(os.path.join(self.model_dir, 'dataset.json'), self.model_dir)
 
-if __name__ == "__main__":
+def generate_sample_model_dataset():
     gt_handler = GTDataHandler(src_dir="data/GT-aws", dst_dir="data")
     gt_handler.generate_GT_train_test(n_train=1000, n_test=200)
 
@@ -251,3 +319,9 @@ if __name__ == "__main__":
     model_handler.generate_MODEL_train_test()
 
     
+
+if __name__ == "__main__":
+    # generate_sample_model_dataset()
+
+    class_distribution = GTDataHandler.log_class_distribution("data/GT-train")
+    GTDataHandler.plot_class_distribution(class_distribution)

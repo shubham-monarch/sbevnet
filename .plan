@@ -242,9 +242,9 @@ fix poor validation set performance
 - check loss function weights
 - check class frequency
 - increase training data size
-- release GPU memory on exit
-- reset tensorboard canvas on exit
-- ditch tensorboard interface
+* release GPU memory on exit
+* reset tensorboard canvas on exit
++ ditch tensorboard interface
 - shift GT train-data in z-direction
 - use ignore index in loss function
 - try focal loss
@@ -255,3 +255,5 @@ fix poor validation set performance
 - poles are not in straight line in GT mask (/home/ubuntu/stereo-occ/sbevnet/data/GT-aws/vineyards/RJM/2024_06_06_utc/svo_files/front_2024-06-05-09-43-13.svo/246_to_388/frame-318/seg-mask-rgb.png)
 - remove degenerate frames from GT (>10% black patches)
 - plot % distribution of black patches in GT
+- special handling for void class in loss function
+- does eval model accept x,y param? 
