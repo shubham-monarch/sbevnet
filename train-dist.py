@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import yaml
 from torch.utils.tensorboard import SummaryWriter
+import time
+import torch.nn.functional as F
 
 from sbevnet.models.network_sbevnet import SBEVNet
 from sbevnet.data_utils.bev_dataset import sbevnet_dataset
@@ -56,6 +58,31 @@ def compute_class_weights(dataset: DataLoader, params: dict) -> torch.Tensor:
     logger.warning(f"=================\n")
     
     return class_weights
+
+
+class FocalLoss(nn.Module):
+    '''implementation of focal loss from "Focal Loss for Dense Object Detection"'''
+    def __init__(self, gamma: float = 2.0, weight: torch.Tensor = None, reduction: str = 'mean') -> None:
+        super().__init__()
+        self.gamma = gamma
+        self.weight = weight
+        self.reduction = reduction
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        # compute cross entropy loss
+        ce_loss = F.cross_entropy(input, target, weight=self.weight, reduction='none')
+        
+        # compute pt (probability of true class)
+        pt = torch.exp(-ce_loss)
+        
+        # compute focal loss
+        focal_loss = ((1 - pt) ** self.gamma * ce_loss)
+        
+        if self.reduction == 'mean':
+            return focal_loss.mean()
+        elif self.reduction == 'sum':
+            return focal_loss.sum()
+        return focal_loss
 
 
 def train(rank: int, world_size: int, params: dict) -> None:
@@ -129,13 +156,17 @@ def train(rank: int, world_size: int, params: dict) -> None:
             sampler=train_sampler
         )
         
-        class_weights = compute_class_weights(train_loader, params).to(rank)
+        # class_weights = compute_class_weights(train_loader, params).to(rank)
+        class_weights = torch.tensor([0.1, 10.0, 1.0, 1.0, 20.0, 20.0]).to(rank)
         
         logger.warning(f"=================")
         logger.warning(f"computed class weights: {class_weights}")
         logger.warning(f"=================\n")
 
-        criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=-100).to(rank)
+        # criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=-100).to(rank)
+        # criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=0).to(rank)
+        # criterion = nn.CrossEntropyLoss(weight=class_weights).to(rank)
+        criterion = FocalLoss(gamma=2.0, weight=class_weights).to(rank)
         
         # Fixed learning rate of 0.0001
         optimizer = optim.Adam(network.parameters(), lr=0.0001)
@@ -329,7 +360,7 @@ def train_sbevnet_distributed() -> None:
     """Main function to initialize distributed training."""
    
 
-    with open('configs/train.yaml', 'r') as file:
+    with open('configs/train-dist.yaml', 'r') as file:
         params = yaml.safe_load(file)
 
     scale_x = float(640 / 1920)
@@ -339,6 +370,14 @@ def train_sbevnet_distributed() -> None:
     params['cy'] *= scale_y
     params['f'] *= scale_x
     
+    # print all the values in params
+    for key, value in params.items():
+        print(f"{key}: {value}")
+    
+    # wait for 2 seconds before processing
+    time.sleep(2)
+
+
     world_size = torch.cuda.device_count()
     if world_size < 1:
         raise RuntimeError("No CUDA devices available")

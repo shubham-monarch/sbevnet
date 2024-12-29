@@ -257,3 +257,12 @@ fix poor validation set performance
 - plot % distribution of black patches in GT
 - special handling for void class in loss function
 - does eval model accept x,y param? 
+
+- handle void class through the loss function
+- what could the void class encode?
+- would adding occlusion mask fix the void mask problem?  
+- revisit GT generation, verify camera tilt values? 
+- check validation loss trend without intrinsics scaling
+- tune validation loss calculations
+- predictions code is wrong 
+- wrong stichhing of img | img-mask

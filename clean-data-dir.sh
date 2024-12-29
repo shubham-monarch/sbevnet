@@ -4,5 +4,4 @@
 
 rm -rf data/GT-train
 rm -rf data/GT-test
-rm -rf data/model-dataset/train
-rm -rf data/model-dataset/test
+rm -rf data/model-dataset/*

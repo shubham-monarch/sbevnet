@@ -201,9 +201,9 @@ class SegLoader(data.Dataset):
             if not self.explicit_mask is None:
                 mask = load_mask(self.explicit_mask[index])
                 seg_img[mask<0.5] = -100
-            else:
+            # else:
                 # seg_img[seg_img<0.5] = -100
-                seg_img[seg_img == 0] = -100
+                # seg_img[seg_img == 0] = -100
 
         # self.logger.info(f"=================")
         # self.logger.info(f"seg_img.shape: {seg_img.shape}")

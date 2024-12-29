@@ -310,8 +310,8 @@ class ModelDataHandler:
         self.__populate_json(os.path.join(self.model_dir, 'dataset.json'), self.model_dir)
 
 def generate_sample_model_dataset():
-    gt_handler = GTDataHandler(src_dir="data/GT-aws", dst_dir="data")
-    gt_handler.generate_GT_train_test(n_train=1000, n_test=200)
+    gt_handler = GTDataHandler(src_dir="data/GT-aws-2-to-7", dst_dir="data")
+    gt_handler.generate_GT_train_test(n_train=720, n_test=180)
 
     model_handler = ModelDataHandler(GT_train="data/GT-train", 
                                      GT_test="data/GT-test", 
@@ -321,7 +321,7 @@ def generate_sample_model_dataset():
     
 
 if __name__ == "__main__":
-    # generate_sample_model_dataset()
+    generate_sample_model_dataset()
 
-    class_distribution = GTDataHandler.log_class_distribution("data/GT-train")
-    GTDataHandler.plot_class_distribution(class_distribution)
+    # class_distribution = GTDataHandler.log_class_distribution("data/GT-train")
+    # GTDataHandler.plot_class_distribution(class_distribution)
