@@ -1,4 +1,3 @@
-
 import torch
 import torch.nn as nn
 import torchgeometry
@@ -10,39 +9,53 @@ import torch.nn.functional as F
 mapping_cache = {}
 
 
-def get_grid_one( cam_conf , img_h , img_w , n_hmap , xmax , xmin , ymax , ymin  , max_disp , camera_ext_x , camera_ext_y   ):
-    remap_normed_inv = np.zeros((n_hmap , n_hmap , 2 ))
+def get_grid_one(cam_conf, img_h, img_w, n_hmap, xmax, xmin, ymax, ymin, max_disp, camera_ext_x, camera_ext_y, R=None):
+    remap_normed_inv = np.zeros((n_hmap, n_hmap, 2))
     assert len(cam_conf) == 4 
-    f , cx , cy , tx = cam_conf
-    f = float( f )
-    cx = float( cx )
-    cy = float( cy )
-    tx = float( tx )
+    f, cx, cy, tx = cam_conf
+    f = float(f)
+    cx = float(cx)
+    cy = float(cy)
+    tx = float(tx)
     
+    # If no rotation matrix provided, use identity
+    if R is None:
+        R = np.eye(3)
+    assert R.shape == (3, 3), "Rotation matrix must be 3x3"
     
-    key = str(f) + str(cx) + str(cy) + str(tx)
+    # Create cache key including rotation matrix
+    key = str(f) + str(cx) + str(cy) + str(tx) + str(R.tobytes())
     
-    if not key in  mapping_cache:
-
+    if not key in mapping_cache:
         for X in range(n_hmap):
             for Y in range(n_hmap):
-                # x: 
-                k = ((( f  / (((xmax-xmin)*X/n_hmap + xmin - camera_ext_x)/tx ) ))) / ( max_disp/2) - 1 
-                # y:
-                j = ((( f  / (((xmax-xmin)*X/n_hmap + xmin -camera_ext_x )/tx ) )*(((ymax-ymin)*Y/n_hmap + ymin - camera_ext_y )/tx) + cx)/(img_w/2) ) - 1 
+                # Get 3D point in BEV coordinates
+                X_world = (xmax-xmin)*X/n_hmap + xmin - camera_ext_x
+                Y_world = (ymax-ymin)*Y/n_hmap + ymin - camera_ext_y
+                Z_world = tx  # baseline as depth reference
+                
+                # Apply rotation
+                point = np.array([X_world, Y_world, Z_world])
+                rotated_point = R @ point
+                
+                # x (disparity coordinate):
+                k = ((f / (rotated_point[0]/tx))) / (max_disp/2) - 1
+                
+                # y (image coordinate):
+                j = ((f * (rotated_point[1]/rotated_point[0]) + cx)/(img_w/2)) - 1
 
-                remap_normed_inv[ Y ,X, 0 ] = k # depth is along x lol
-                remap_normed_inv[ Y , X  , 1 ] = j
+                remap_normed_inv[Y, X, 0] = k  # depth is along x
+                remap_normed_inv[Y, X, 1] = j
 
         mapping_cache[key] = remap_normed_inv
     
     remap_normed_inv = mapping_cache[key]
-    grid = torch.from_numpy( remap_normed_inv[None].astype('float32') )
+    grid = torch.from_numpy(remap_normed_inv[None].astype('float32'))
     return grid
     
 
 
-def pt_costvol_to_hmap( reduced_vol , cam_confs , sys_confs ):
+def pt_costvol_to_hmap(reduced_vol, cam_confs, sys_confs):
     
     
     img_h = sys_confs['img_h']
@@ -54,7 +67,7 @@ def pt_costvol_to_hmap( reduced_vol , cam_confs , sys_confs ):
     ymin = sys_confs['ymin']
     max_disp = sys_confs['max_disp']
     camera_ext_x = sys_confs['camera_ext_x']
-    camera_ext_y     = sys_confs['camera_ext_y']
+    camera_ext_y = sys_confs['camera_ext_y']
     
     
     
@@ -64,11 +77,11 @@ def pt_costvol_to_hmap( reduced_vol , cam_confs , sys_confs ):
     bs = reduced_vol.shape[0]
     grids = []
     
-    for i in range( bs ):
-        grids.append( get_grid_one( cam_confs[i] , img_h=img_h , img_w=img_w , n_hmap=n_hmap , xmax=xmax , xmin=xmin , ymax=ymax , ymin=ymin   , max_disp=max_disp , camera_ext_x=camera_ext_x, camera_ext_y=camera_ext_y   ) )
-    grid = torch.cat( grids  , 0).cuda()
+    for i in range(bs):
+        grids.append(get_grid_one(cam_confs[i], img_h=img_h, img_w=img_w, n_hmap=n_hmap, xmax=xmax, xmin=xmin, ymax=ymax, ymin=ymin, max_disp=max_disp, camera_ext_x=camera_ext_x, camera_ext_y=camera_ext_y))
+    grid = torch.cat(grids, 0).cuda()
         
-    warped = torch.nn.functional.grid_sample( reduced_vol , grid,padding_mode='zeros') 
+    warped = torch.nn.functional.grid_sample(reduced_vol, grid, padding_mode='zeros')
     return warped
         
     
@@ -76,36 +89,36 @@ def pt_costvol_to_hmap( reduced_vol , cam_confs , sys_confs ):
     
 
 
-def warp_p_scale( img , ipm_m , sys_confs  ):
+def warp_p_scale(img, ipm_m, sys_confs):
     mm = ipm_m.cpu().numpy()
-    m = mm[ : , :9 ].reshape( (-1,3,3) )
+    m = mm[:, :9].reshape((-1, 3, 3))
     for i in range(img.shape[0]):
-        s = mm[i , 10] /  img[i].shape[2]
-        m[  i , : , :2 ] *= s 
+        s = mm[i, 10] / img[i].shape[2]
+        m[i, :, :2] *= s 
 #         print("scale , " , s  ,  mm[i , 10] , img[i].shape[2] )
-    m = Variable( torch.from_numpy(m)).cuda()
+    m = Variable(torch.from_numpy(m)).cuda()
     
 #     dbg[-1]  = mm
     
-    ans =  torchgeometry.warp_perspective( img , m  , dsize=(sys_confs['n_hmap'] , sys_confs['n_hmap'] ))
-    ans = torch.flip(ans , (3,))
-    return ans.permute(0 , 1 , 3 , 2)
+    ans = torchgeometry.warp_perspective(img, m, dsize=(sys_confs['n_hmap'], sys_confs['n_hmap']))
+    ans = torch.flip(ans, (3,))
+    return ans.permute(0, 1, 3, 2)
 
 
 
 
-def build_cost_volume(refimg_fea , targetimg_fea , maxdisp  ):
-    cost = Variable(torch.FloatTensor(refimg_fea.size()[0], refimg_fea.size()[1]*2, maxdisp//4,  refimg_fea.size()[2],  refimg_fea.size()[3]).zero_(), volatile=False).cuda()
+def build_cost_volume(refimg_fea, targetimg_fea, maxdisp):
+    cost = Variable(torch.FloatTensor(refimg_fea.size()[0], refimg_fea.size()[1]*2, maxdisp//4, refimg_fea.size()[2], refimg_fea.size()[3]).zero_(), volatile=False).cuda()
 
     for i in range(maxdisp//4):
-        if i > 0 :
-            cost[:, :refimg_fea.size()[1], i, :,i:]   = refimg_fea[:,:,:,i:]
-            cost[:, refimg_fea.size()[1]:, i, :,i:] = targetimg_fea[:,:,:,:-i]
+        if i > 0:
+            cost[:, :refimg_fea.size()[1], i, :, i:] = refimg_fea[:, :, :, i:]
+            cost[:, refimg_fea.size()[1]:, i, :, i:] = targetimg_fea[:, :, :, :-i]
         else:
-            cost[:, :refimg_fea.size()[1], i, :,:]   = refimg_fea
-            cost[:, refimg_fea.size()[1]:, i, :,:]   = targetimg_fea
+            cost[:, :refimg_fea.size()[1], i, :, :] = refimg_fea
+            cost[:, refimg_fea.size()[1]:, i, :, :] = targetimg_fea
     cost = cost.contiguous()
     
-    return cost 
+    return cost
 
 
