@@ -89,9 +89,8 @@ class StereoBEVFeats(nn.Module):
 
 
     # cost0: [B, C, D, H, W] ==> [2, 64, 16, 120, 160]
-    def forward(self , cost0 , sys_confs  , cam_confs ):
+    def forward(self , cost0 , sys_confs  , cam_confs = None):
     
-        
         # self.logger.warning(f"=================")
         # self.logger.warning(f"StereoBEVFeats ==> forward()")
         # self.logger.warning(f"=================\n")
@@ -129,7 +128,7 @@ class StereoBEVFeats(nn.Module):
         # self.logger.warning(f"[2d cost-volume] fea.shape: {fea.shape}")
         # self.logger.warning(f"=================\n")
 
-        fea = pt_costvol_to_hmap( fea , cam_confs , sys_confs=sys_confs  )
+        fea = pt_costvol_to_hmap( fea , sys_confs = sys_confs  , cam_confs=cam_confs )
         
         return fea 
         
@@ -349,8 +348,12 @@ class SBEVNet(nn.Module):
             
         if not self.fixed_cam_confs:
             cam_confs = data['cam_confs']
-            assert cam_confs.shape[-1] == 4 
-            assert len(cam_confs.shape) == 2 
+            # assert cam_confs.shape[-1] == 4 
+            # assert len(cam_confs.shape) == 2
+            self.logger.warning(f"=================")
+            self.logger.warning(f"cam_confs.shape: {cam_confs.shape}")
+            self.logger.warning(f"cam_confs: {cam_confs}")
+            self.logger.warning(f"=================\n")
         else:
             cam_conf = [self.sys_confs['f'] , self.sys_confs['cx'] , self.sys_confs['cy'] , self.sys_confs['tx']]
             bs = left.shape[0]

@@ -280,3 +280,4 @@ fix poor validation set performance
 - integrate rotation matrix into train.py
 - move pytest(s) to the test folder
 - test original get_grid_one with pytest
+- fix get_grid_one pytest
