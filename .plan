@@ -292,3 +292,5 @@ fix poor validation set performance
 
 - convert void to ground labels
 - adding regularalization
+- add learning rate scheduler
+- Add dropout / weight decay / or other regularization to reduce overfitting

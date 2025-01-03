@@ -157,7 +157,7 @@ def train(rank: int, world_size: int, params: dict) -> None:
         )
         
         # class_weights = compute_class_weights(train_loader, params).to(rank)
-        class_weights = torch.tensor([0.1, 10.0, 1.0, 1.0, 20.0, 20.0]).to(rank)
+        class_weights = torch.tensor([0.1, 10.0, 0.3, 5.0, 25.0, 25.0]).to(rank)
         
         logger.warning(f"=================")
         logger.warning(f"computed class weights: {class_weights}")
