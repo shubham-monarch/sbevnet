@@ -286,4 +286,9 @@ fix poor validation set performance
 - add focal-loss
 - tune cross-weighted entropy weights
 - is disparity scaling (/f) correct in get_grid_one?
+- clipping in get_grid_one
+- increase automation level in data-handler.py
 - move validation-patience to train-dist.yaml
+
+- convert void to ground labels
+- adding regularalization

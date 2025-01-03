@@ -312,8 +312,8 @@ class ModelDataHandler:
         # flip mono / rgb masks in model-train
         self.__flip_masks(os.path.join(self.model_train_dir, 'seg-masks-mono'),\
                            os.path.join(self.model_train_dir, 'seg-masks-mono'))
-        self.__flip_masks(os.path.join(self.model_train_dir, 'seg-masks-rgb'),\
-                           os.path.join(self.model_train_dir, 'seg-masks-rgb'))
+        self.__flip_masks(os.path.join(self.model_test_dir, 'seg-masks-rgb'),\
+                           os.path.join(self.model_test_dir, 'seg-masks-rgb'))
 
         # populate json file
         self.__populate_json(os.path.join(self.model_dir, 'dataset.json'), self.model_dir)
