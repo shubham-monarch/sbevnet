@@ -267,5 +267,16 @@ fix poor validation set performance
 - predictions code is wrong 
 - wrong stichhing of img | img-mask
 
+- add scripts / bash folder
+
+- __ to _ conversion
+- better comments
+- add 'download bev-folder from s3' in data-handler.py  
+- refactoring + better comments in data-handler.py
+
+
 - add rotation matrix support to get_grid_one
 - write unit test for get_grid_one
+- integrate rotation matrix into train.py
+- move pytest(s) to the test folder
+- test original get_grid_one with pytest

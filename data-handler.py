@@ -215,12 +215,14 @@ class ModelDataHandler:
         right_folder = os.path.join(MODEL_dir, 'right')
         seg_masks_mono_folder = os.path.join(MODEL_dir, 'seg-masks-mono')
         seg_masks_rgb_folder = os.path.join(MODEL_dir, 'seg-masks-rgb')
+        cam_extrinsics_folder = os.path.join(MODEL_dir, 'cam-extrinsics')
         
         # Create the target subfolders if they don't exist
         os.makedirs(left_folder, exist_ok=True)
         os.makedirs(right_folder, exist_ok=True)
         os.makedirs(seg_masks_mono_folder, exist_ok=True)
         os.makedirs(seg_masks_rgb_folder, exist_ok=True)
+        os.makedirs(cam_extrinsics_folder, exist_ok=True)
 
         # Count total files for progress bar
         total_files = 0
@@ -229,7 +231,8 @@ class ModelDataHandler:
                 if file.endswith('left.jpg') or \
                    file.endswith('right.jpg') or \
                    file.endswith('-mono.png') or \
-                   file.endswith('-rgb.png'):
+                   file.endswith('-rgb.png') or \
+                   file.endswith('cam-extrinsics.npy'):
                     total_files += 1
 
 
@@ -256,6 +259,10 @@ class ModelDataHandler:
                     elif file.endswith('-rgb.png'):
                         new_filename = f"{folder_num}__seg-mask-rgb.png"
                         shutil.copy(os.path.join(root, file), os.path.join(seg_masks_rgb_folder, new_filename))
+                        pbar.update(1)
+                    elif file.endswith('cam-extrinsics.npy'):
+                        new_filename = f"{folder_num}__cam-extrinsics.npy"
+                        shutil.copy(os.path.join(root, file), os.path.join(cam_extrinsics_folder, new_filename))
                         pbar.update(1)
 
     def __flip_masks(self, src_dir: str, dest_dir: str) -> None:
@@ -285,11 +292,13 @@ class ModelDataHandler:
                 "rgb_left": get_relative_files(os.path.join(self.model_train_dir, 'left'), IMG_EXTENSIONS),
                 "rgb_right": get_relative_files(os.path.join(self.model_train_dir, 'right'), IMG_EXTENSIONS),
                 "top_seg": get_relative_files(os.path.join(self.model_train_dir, 'seg-masks-mono'), ['.png']),
+                "confs": get_relative_files(os.path.join(self.model_train_dir, 'cam-extrinsics'), ['.npy']),
             },
             "test": {
                 "rgb_left": get_relative_files(os.path.join(self.model_test_dir, 'left'), IMG_EXTENSIONS),
                 "rgb_right": get_relative_files(os.path.join(self.model_test_dir, 'right'), IMG_EXTENSIONS),
                 "top_seg": get_relative_files(os.path.join(self.model_test_dir, 'seg-masks-mono'), ['.png']),
+                "confs": get_relative_files(os.path.join(self.model_test_dir, 'cam-extrinsics'), ['.npy']),
             }
         }
 
@@ -310,8 +319,8 @@ class ModelDataHandler:
         self.__populate_json(os.path.join(self.model_dir, 'dataset.json'), self.model_dir)
 
 def generate_sample_model_dataset():
-    gt_handler = GTDataHandler(src_dir="data/GT-aws-2-to-7", dst_dir="data")
-    gt_handler.generate_GT_train_test(n_train=720, n_test=180)
+    gt_handler = GTDataHandler(src_dir="data/GT-aws", dst_dir="data")
+    gt_handler.generate_GT_train_test(n_train=300, n_test=80)
 
     model_handler = ModelDataHandler(GT_train="data/GT-train", 
                                      GT_test="data/GT-test", 

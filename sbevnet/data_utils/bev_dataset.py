@@ -326,8 +326,8 @@ def sbevnet_dataset(
     # if do_ipm_feats:
     #     sub_datasets['ipm_feats_m']= NPArrayLoader(  jj[dataset_split]["top_ipm_m"]  )
 
-    # if not fixed_cam_confs:
-    #     sub_datasets['cam_confs']= NPArrayLoader(   jj[dataset_split]["confs"]  ) 
+    if not fixed_cam_confs:
+        sub_datasets['cam_confs']= NPArrayLoader(   jj[dataset_split]["confs"]  ) 
 
    
     # return ComposeDatasetDict( sub_datasets , ret_double=True )
