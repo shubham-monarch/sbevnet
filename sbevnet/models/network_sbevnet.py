@@ -20,7 +20,7 @@ import cv2
 import torchgeometry
 from pytorch_propane.registry import registry
 
-
+from typing import Dict, Any
 import inspect 
 
 from .submodule import feature_extraction , convbn_3d ,convbn  
@@ -345,19 +345,25 @@ class SBEVNet(nn.Module):
         
         if self.do_ipm_rgb:
             img_ipm = data['ipm_rgb']
+        
+        cam_confs:Dict[str, Any] = {}
+        cam_confs['f'] = self.sys_confs['f']
+        cam_confs['cx'] = self.sys_confs['cx']
+        cam_confs['cy'] = self.sys_confs['cy']
+        cam_confs['tx'] = self.sys_confs['tx']
             
         if not self.fixed_cam_confs:
-            cam_confs = data['cam_confs']
-            # assert cam_confs.shape[-1] == 4 
-            # assert len(cam_confs.shape) == 2
-            self.logger.warning(f"=================")
-            self.logger.warning(f"cam_confs.shape: {cam_confs.shape}")
-            self.logger.warning(f"cam_confs: {cam_confs}")
-            self.logger.warning(f"=================\n")
-        else:
-            cam_conf = [self.sys_confs['f'] , self.sys_confs['cx'] , self.sys_confs['cy'] , self.sys_confs['tx']]
-            bs = left.shape[0]
-            cam_confs = [cam_conf]*bs 
+            cam_confs['R'] = data['cam_confs']
+            # # assert cam_confs.shape[-1] == 4 
+            # # assert len(cam_confs.shape) == 2
+            # self.logger.warning(f"=================")
+            # self.logger.warning(f"cam_confs.shape: {cam_confs.shape}")
+            # self.logger.warning(f"cam_confs: {cam_confs}")
+            # self.logger.warning(f"=================\n")
+        # else:
+        #     # cam_conf = [self.sys_confs['f'] , self.sys_confs['cx'] , self.sys_confs['cy'] , self.sys_confs['tx']]
+        #     # bs = left.shape[0]
+        #     # cam_confs = [cam_conf]*bs 
             
         if self.do_ipm_feats: 
             ipm_m = data['ipm_feats_m']

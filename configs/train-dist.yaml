@@ -26,7 +26,9 @@ camera_ext_y: 0.0
 # additional parameters for SBEVNet
 do_ipm_rgb: false
 do_ipm_feats: false
-fixed_cam_confs: true
+
+# is camera confs fixed?
+fixed_cam_confs: false
 
 # training parameters
 batch_size: 4
