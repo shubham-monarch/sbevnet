@@ -320,7 +320,7 @@ class ModelDataHandler:
 
 def generate_sample_model_dataset():
     gt_handler = GTDataHandler(src_dir="data/GT-aws", dst_dir="data")
-    gt_handler.generate_GT_train_test(n_train=300, n_test=80)
+    gt_handler.generate_GT_train_test(n_train=480, n_test=60)
 
     model_handler = ModelDataHandler(GT_train="data/GT-train", 
                                      GT_test="data/GT-test", 

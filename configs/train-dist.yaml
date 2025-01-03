@@ -8,8 +8,8 @@ n_classes_seg: 6
 n_hmap: 256
 
 # depth range (in meters)
-xmin: 2.0
-xmax: 7.0
+xmin: 0.0001
+xmax: 5
 
 # horizontal range (in meters)
 ymin: -2.5

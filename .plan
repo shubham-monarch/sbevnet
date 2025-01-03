@@ -282,3 +282,8 @@ fix poor validation set performance
 - test original get_grid_one with pytest
 - fix get_grid_one pytest
 - pass batch-size to bev_cost_utils.py
+
+- add focal-loss
+- tune cross-weighted entropy weights
+- is disparity scaling (/f) correct in get_grid_one?
+- move validation-patience to train-dist.yaml
