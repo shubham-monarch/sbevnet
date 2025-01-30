@@ -17,7 +17,7 @@ import yaml
 from helpers import get_logger, flip_mask, get_files_from_folder
 
 
-class GTDataHandler:
+class S3_DataHandler:
     def __init__(self, src_dir: str, dst_dir: str, required_keys: List[str]) -> None:
         """Initialize GTDataHandler with source directory, destination directory, and required files
         
@@ -38,63 +38,13 @@ class GTDataHandler:
         self.GT_train = os.path.join(self.dst_dir, "GT-train")
         self.GT_test = os.path.join(self.dst_dir, "GT-test")
         
-        self.logger.info(f"=========================")
+        self.logger.info("───────────────────────────────")
         self.logger.info("Generating [GT-train / GT-test] from GT-dataset...")
-        self.logger.info(f"=========================\n")
+        self.logger.info("───────────────────────────────\n")
 
     @staticmethod
-    def log_class_distribution(src_dir: str) -> List[Dict[int, float]]:
-        '''Log the % distribution of each class in all segmentation masks in GT-aws'''
-        
-        leaf_folders = GTDataHandler.__get_leaf_folders(src_dir)
-        class_distributions = []
-
-        for folder in tqdm(leaf_folders, desc="Logging class % distribution"):
-            seg_mask_mono_path = os.path.join(src_dir, folder, 'seg-mask-mono.png')
-            if os.path.exists(seg_mask_mono_path):
-                mask = cv2.imread(seg_mask_mono_path, cv2.IMREAD_GRAYSCALE)
-                unique, counts = np.unique(mask, return_counts=True)
-                total_pixels = mask.size
-                distribution = {val: count / total_pixels * 100 for val, count in zip(unique, counts)}
-                class_distributions.append(distribution)
-
-        return class_distributions
-        # GTDataHandler.__plot_class_distribution(class_distributions)
-
-    @staticmethod
-    def plot_class_distribution(class_distributions: List[Dict[int, float]]) -> None:
-        '''Plot the % distribution for each class in all segmentation masks and save to disk.'''
-        
-        from scipy.stats import norm
-        import matplotlib.pyplot as plt
-        import numpy as np
-
-        # Aggregate data for class 0
-        class_0_data = [dist.get(0, 0) for dist in class_distributions]
-
-        # Fit a normal distribution to the data
-        mu, std = norm.fit(class_0_data)
-
-        # Plot the histogram with counts instead of density
-        plt.figure(figsize=(10, 6))
-        plt.hist(class_0_data, bins=20, alpha=0.6, color='blue', edgecolor='black')
-
-        # Remove density-based PDF plot since we're now showing counts
-        plt.title(f"Distribution of Class 0 Percentages\nTotal masks: {len(class_0_data)}")
-        plt.xlabel('Percentage of Class 0')
-        plt.ylabel('Number of Masks')
-        plt.grid(True)
-
-        # Save the plot to disk
-        plot_path = 'assets/class_0_distribution.png'
-        plt.savefig(plot_path)
-        plt.close()
-
-        print(f"Distribution plot for class 0 saved to {plot_path}")
-
-    @staticmethod
-    def __get_leaf_folders(src_dir: str) -> List[str]:
-        '''Get all leaf folders inside the given folder recursively and return their relative positions as a list'''
+    def _get_leaf_folders(src_dir: str) -> List[str]:
+        """Get all leaf folders inside the given folder recursively and return their relative positions as a list"""
         leaf_folders = []
         for root, dirs, files in os.walk(src_dir):
             if not dirs: 
@@ -102,8 +52,8 @@ class GTDataHandler:
         return leaf_folders
 
 
-    def __copy_folders(self, folder_list: List[str], src_dir: str, dst_dir: str) -> None:
-        '''Copy folders to destination directory'''
+    def _copy_folders(self, folder_list: List[str], src_dir: str, dst_dir: str) -> None:
+        """Copy folders to destination directory"""
         
         assert not (os.path.exists(dst_dir) and os.listdir(dst_dir)), f"Destination directory must be empty!"
         
@@ -113,14 +63,14 @@ class GTDataHandler:
             os.makedirs(dst_dir, exist_ok=True)
             shutil.copytree(src, dst, dirs_exist_ok=True)
 
-    def __remove_incomplete_GT_folders(self):
-        '''remove folders with missing left.jpg / right.jpg / seg-mask-mono.png / seg-mask-rgb.png'''
+    def _remove_incomplete_GT_folders(self):
+        """Remove folders with missing left.jpg / right.jpg / seg-mask-mono.png / seg-mask-rgb.png"""
 
-        self.logger.info(f"=========================")
+        self.logger.info("───────────────────────────────")
         self.logger.info("Checking for incomplete GT folders...")
-        self.logger.info(f"=========================\n")
+        self.logger.info("───────────────────────────────\n")
         
-        leaf_folders = GTDataHandler.__get_leaf_folders(self.src_dir)
+        leaf_folders = S3_DataHandler._get_leaf_folders(self.src_dir)
 
         
         incomplete_folders = []
@@ -135,11 +85,48 @@ class GTDataHandler:
         for folder in incomplete_folders:
             shutil.rmtree(os.path.join(self.src_dir, folder))
         
-        self.logger.error(f"=========================")
+        self.logger.error("───────────────────────────────")
         self.logger.error(f"Removed {len(incomplete_folders)} incomplete folders")
         self.logger.error(f"Remaining folders: {len(leaf_folders) - len(incomplete_folders)}")
-        self.logger.error(f"=========================\n")
+        self.logger.error("───────────────────────────────\n")
     
+    @staticmethod
+    def download_s3_folder(s3_uri, local_dir):
+        """Recursively download an S3 folder to a local directory
+        
+        Args:
+            s3_uri (str): S3 URI in format s3://bucket-name/path/to/folder
+            local_dir (str): Local directory to download files to
+        """
+        
+        logger = get_logger("DataHandler")
+    
+        parsed_uri = urlparse(s3_uri)
+        bucket_name = parsed_uri.netloc
+        s3_folder = parsed_uri.path.lstrip('/')
+        
+        os.makedirs(local_dir, exist_ok=True)
+        
+        logger.info("───────────────────────────────")
+        logger.info(f"Downloading files from {s3_uri} to {local_dir}")
+        logger.info("───────────────────────────────")
+        
+        s3_client = boto3.client('s3')
+        paginator = s3_client.get_paginator('list_objects_v2')
+        total_files = 0
+        objects = []
+        for page in paginator.paginate(Bucket=bucket_name, Prefix=s3_folder):
+            objects.extend(page.get('Contents', []))
+        total_files = len(objects)
+        
+        with tqdm(total=total_files, unit='file', desc='Downloading') as pbar:
+            for obj in objects:
+                relative_path = obj['Key'][len(s3_folder):].lstrip('/')
+                local_file_path = os.path.join(local_dir, relative_path)
+                os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+                s3_client.download_file(bucket_name, obj['Key'], local_file_path)
+                pbar.update(1)
+
     def generate_GT_train_test(self, n_train: int, n_test: int) -> None:
         """generate GT-train / GT-test folders from GT-aws folders
         
@@ -158,13 +145,13 @@ class GTDataHandler:
         """
         
         # remove incomplete GT folders
-        self.__remove_incomplete_GT_folders()
+        self._remove_incomplete_GT_folders()
 
         # assert [gt-train / gt-test] folders are empty
         assert not (os.path.exists(self.GT_train) and os.listdir(self.GT_train)), f"GT-train must be empty!"
         assert not (os.path.exists(self.GT_test) and os.listdir(self.GT_test)), f"GT-test must be empty!"
 
-        leaf_folders = GTDataHandler.__get_leaf_folders(self.src_dir)
+        leaf_folders = S3_DataHandler._get_leaf_folders(self.src_dir)
         random.shuffle(leaf_folders)
         
         assert len(leaf_folders) > n_train + n_test, f'Expected at least {n_train + n_test} leaf folders, but got {len(leaf_folders)}'
@@ -176,26 +163,25 @@ class GTDataHandler:
         test_folders = leaf_folders[n_train:n_train + n_test]
         
         # copy folders to GT_train / GT_test 
-        self.__copy_folders(train_folders, self.src_dir, self.GT_train)
-        self.__copy_folders(test_folders, self.src_dir, self.GT_test)
+        self._copy_folders(train_folders, self.src_dir, self.GT_train)
+        self._copy_folders(test_folders, self.src_dir, self.GT_test)
 
         # assert number of folders in gt-train / gt-test
-        assert len(GTDataHandler.__get_leaf_folders(self.GT_train)) == n_train, f'Expected {n_train} training files, but got {len(GTDataHandler.__get_leaf_folders(self.GT_train))}'
-        assert len(GTDataHandler.__get_leaf_folders(self.GT_test)) == n_test, f'Expected {n_test} test files, but got {len(GTDataHandler.__get_leaf_folders(self.GT_test))}'
+        assert len(S3_DataHandler._get_leaf_folders(self.GT_train)) == n_train, f'Expected {n_train} training files, but got {len(S3_DataHandler._get_leaf_folders(self.GT_train))}'
+        assert len(S3_DataHandler._get_leaf_folders(self.GT_test)) == n_test, f'Expected {n_test} test files, but got {len(S3_DataHandler._get_leaf_folders(self.GT_test))}'
       
 
 class ModelDataHandler:
     
-    def __init__(self,\
-                model_dir: str,\
-                GT_train: str, GT_test: str):
-        '''
-        :param model_dir: path to model dataset folder
-        :param gt_train: path to gt-train folder
-        :param gt_test: path to gt-test folder
-        '''
-        self.logger = get_logger("DataHandlerModel")        
+    def __init__(self, model_dir: str, GT_train: str, GT_test: str) -> None:
+        """Initialize ModelDataHandler with model directory, GT-train directory, and GT-test directory
         
+        Args:
+            model_dir (str): Path to model dataset
+            GT_train (str): Path to GT-train
+            GT_test (str): Path to GT-test
+        """
+        self.logger = get_logger("DataHandlerModel")        
         # GT folders
         self.GT_train = GT_train
         self.GT_test = GT_test
@@ -205,11 +191,11 @@ class ModelDataHandler:
         self.model_train_dir = os.path.join(self.model_dir, "train")
         self.model_test_dir = os.path.join(self.model_dir, "test")
 
-        self.logger.info(f"=========================")
+        self.logger.info("───────────────────────────────")
         self.logger.info("Generating [MODEL-train / MODEL-test] from [GT-train / GT-test]...")
-        self.logger.info(f"=========================\n")
+        self.logger.info("───────────────────────────────\n")
 
-    def __restructure_GT_folder(self, GT_dir: str, MODEL_dir: str):
+    def _restructure_GT_folder(self, GT_dir: str, MODEL_dir: str):
         """Restructure GT folder into model-train / model-test folders"""
         
         # [model-train / model-test] folders should be empty
@@ -273,7 +259,7 @@ class ModelDataHandler:
                         shutil.copy(os.path.join(root, file), os.path.join(cam_extrinsics_folder, new_filename))
                         pbar.update(1)
 
-    def __flip_masks(self, src_dir: str, dest_dir: str) -> None:
+    def _flip_masks(self, src_dir: str, dest_dir: str) -> None:
         '''Flip the masks in the source folder and save them to the destination folder.'''
         
         masks = get_files_from_folder(src_dir, ['.png'])
@@ -281,7 +267,7 @@ class ModelDataHandler:
             mask_flipped_mono = flip_mask(mask_path)
             cv2.imwrite(os.path.join(dest_dir, os.path.basename(mask_path)), mask_flipped_mono)
 
-    def __populate_json(self, json_path, dataset_path):
+    def _populate_json(self, json_path, dataset_path):
         '''Populate the json file with the file paths of the images in the dataset.'''
         
         if os.path.exists(json_path):
@@ -314,53 +300,18 @@ class ModelDataHandler:
             json.dump(data, f, indent=4)
 
     def generate_MODEL_train_test(self):
-        self.__restructure_GT_folder(self.GT_train, self.model_train_dir)
-        self.__restructure_GT_folder(self.GT_test, self.model_test_dir)
+        self._restructure_GT_folder(self.GT_train, self.model_train_dir)
+        self._restructure_GT_folder(self.GT_test, self.model_test_dir)
 
         # flip mono / rgb masks in model-train
-        self.__flip_masks(os.path.join(self.model_train_dir, 'seg-masks-mono'),\
+        self._flip_masks(os.path.join(self.model_train_dir, 'seg-masks-mono'),\
                            os.path.join(self.model_train_dir, 'seg-masks-mono'))
-        self.__flip_masks(os.path.join(self.model_test_dir, 'seg-masks-rgb'),\
+        self._flip_masks(os.path.join(self.model_test_dir, 'seg-masks-rgb'),\
                            os.path.join(self.model_test_dir, 'seg-masks-rgb'))
 
         # populate json file
-        self.__populate_json(os.path.join(self.model_dir, 'dataset.json'), self.model_dir)
+        self._populate_json(os.path.join(self.model_dir, 'dataset.json'), self.model_dir)
 
-def download_s3_folder(s3_uri, local_dir):
-    """Recursively download an S3 folder to a local directory
-    
-    Args:
-        s3_uri (str): S3 URI in format s3://bucket-name/path/to/folder
-        local_dir (str): Local directory to download files to
-    """
-    
-    logger = get_logger("DataHandler")
-   
-    parsed_uri = urlparse(s3_uri)
-    bucket_name = parsed_uri.netloc
-    s3_folder = parsed_uri.path.lstrip('/')
-    
-    os.makedirs(local_dir, exist_ok=True)
-    
-    logger.info("───────────────────────────────")
-    logger.info(f"Downloading files from {s3_uri} to {local_dir}")
-    logger.info("───────────────────────────────")
-    
-    s3_client = boto3.client('s3')
-    paginator = s3_client.get_paginator('list_objects_v2')
-    total_files = 0
-    objects = []
-    for page in paginator.paginate(Bucket=bucket_name, Prefix=s3_folder):
-        objects.extend(page.get('Contents', []))
-    total_files = len(objects)
-    
-    with tqdm(total=total_files, unit='file', desc='Downloading') as pbar:
-        for obj in objects:
-            relative_path = obj['Key'][len(s3_folder):].lstrip('/')
-            local_file_path = os.path.join(local_dir, relative_path)
-            os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
-            s3_client.download_file(bucket_name, obj['Key'], local_file_path)
-            pbar.update(1)
 
 def generate_model_dataset(config):
     """
@@ -382,9 +333,9 @@ def generate_model_dataset(config):
     os.makedirs(local_dir, exist_ok=True)
     
     # Download all files from S3
-    download_s3_folder(s3_uri, local_dir)
+    S3_DataHandler.download_s3_folder(s3_uri, local_dir)
     
-    gt_handler = GTDataHandler(
+    gt_handler = S3_DataHandler(
         src_dir=local_dir,
         dst_dir="data",
         required_keys = keys
