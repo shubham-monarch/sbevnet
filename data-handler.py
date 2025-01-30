@@ -315,7 +315,7 @@ class ModelDataHandler:
 
 def generate_model_dataset(config):
     """
-    Generate sample dataset by downloading from S3 and processing the data
+    Generate model-dataset by downloading from S3 and processing the data
     
     Args:
         config (dict): Configuration dictionary from YAML file
@@ -350,22 +350,14 @@ def generate_model_dataset(config):
     model_handler.generate_MODEL_train_test()
 
 if __name__ == "__main__":
-    # Create argument parser
-    parser = argparse.ArgumentParser(
-        description='Generate model dataset from GT dataset stored in S3'
-    )
     
+    parser = argparse.ArgumentParser(description='Generate model dataset from GT dataset stored in S3')
     parser.add_argument('--config', type=str, required=True, help='Path to YAML configuration file')
-    
-    # Parse arguments
     args = parser.parse_args()
     
-    # Load configuration
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
     
-    # Generate dataset using config
     generate_model_dataset(config)
 
-    # class_distribution = GTDataHandler.log_class_distribution("data/GT-train")
-    # GTDataHandler.plot_class_distribution(class_distribution)
+    
