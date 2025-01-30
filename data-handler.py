@@ -9,24 +9,30 @@ import cv2
 import json
 import numpy as np
 import matplotlib.pyplot as plt
+import boto3
+from urllib.parse import urlparse
+import argparse
+import yaml
 
 from helpers import get_logger, flip_mask, get_files_from_folder
 
 
 class GTDataHandler:
-    def __init__(self, src_dir: str, dst_dir: str) -> None:
-        '''
-        :param src_dir: path to GT-dataset
-        :param dst_dir: path to save gt-train /  gt-test
-        '''
+    def __init__(self, src_dir: str, dst_dir: str, required_keys: List[str]) -> None:
+        """Initialize GTDataHandler with source directory, destination directory, and required files
         
+        Args:
+            src_dir (str): Path to GT-dataset
+            dst_dir (str): Path to save gt-train/gt-test 
+            required_keys (List[str]): List of required keys in each GT folder
+        """
         self.logger = get_logger("GTHandler")
         
         self.src_dir = src_dir
         self.dst_dir = dst_dir
 
         # files required in each valid GT-dataset folder
-        self.key_files = ['left.jpg', 'right.jpg', 'seg-mask-mono.png', 'seg-mask-rgb.png']
+        self.key_files = required_keys
 
         # [GT-train / GT-test] folders
         self.GT_train = os.path.join(self.dst_dir, "GT-train")
@@ -135,7 +141,7 @@ class GTDataHandler:
         self.logger.error(f"=========================\n")
     
     def generate_GT_train_test(self, n_train: int, n_test: int) -> None:
-        '''generate GT-train / GT-test folders from GT-aws folders
+        """generate GT-train / GT-test folders from GT-aws folders
         
         gt-train/ gt-test
         ├── 1
@@ -149,7 +155,7 @@ class GTDataHandler:
         │   ├── seg-mask-mono.png
         │   └── seg-mask-rgb.png
         ├── ...
-        '''
+        """
         
         # remove incomplete GT folders
         self.__remove_incomplete_GT_folders()
@@ -204,6 +210,8 @@ class ModelDataHandler:
         self.logger.info(f"=========================\n")
 
     def __restructure_GT_folder(self, GT_dir: str, MODEL_dir: str):
+        """Restructure GT folder into model-train / model-test folders"""
+        
         # [model-train / model-test] folders should be empty
         assert not (os.path.exists(MODEL_dir) and os.listdir(MODEL_dir)), "model_train must be empty"
         
@@ -318,19 +326,95 @@ class ModelDataHandler:
         # populate json file
         self.__populate_json(os.path.join(self.model_dir, 'dataset.json'), self.model_dir)
 
-def generate_sample_model_dataset():
-    gt_handler = GTDataHandler(src_dir="data/GT-aws", dst_dir="data")
-    gt_handler.generate_GT_train_test(n_train=500, n_test=80)
+def download_s3_folder(s3_uri, local_dir):
+    """Recursively download an S3 folder to a local directory
+    
+    Args:
+        s3_uri (str): S3 URI in format s3://bucket-name/path/to/folder
+        local_dir (str): Local directory to download files to
+    """
+    
+    logger = get_logger("DataHandler")
+   
+    parsed_uri = urlparse(s3_uri)
+    bucket_name = parsed_uri.netloc
+    s3_folder = parsed_uri.path.lstrip('/')
+    
+    os.makedirs(local_dir, exist_ok=True)
+    
+    logger.info("───────────────────────────────")
+    logger.info(f"Downloading files from {s3_uri} to {local_dir}")
+    logger.info("───────────────────────────────")
+    
+    s3_client = boto3.client('s3')
+    paginator = s3_client.get_paginator('list_objects_v2')
+    total_files = 0
+    objects = []
+    for page in paginator.paginate(Bucket=bucket_name, Prefix=s3_folder):
+        objects.extend(page.get('Contents', []))
+    total_files = len(objects)
+    
+    with tqdm(total=total_files, unit='file', desc='Downloading') as pbar:
+        for obj in objects:
+            relative_path = obj['Key'][len(s3_folder):].lstrip('/')
+            local_file_path = os.path.join(local_dir, relative_path)
+            os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+            s3_client.download_file(bucket_name, obj['Key'], local_file_path)
+            pbar.update(1)
 
-    model_handler = ModelDataHandler(GT_train="data/GT-train", 
-                                     GT_test="data/GT-test", 
-                                     model_dir="data/model-dataset")
+def generate_model_dataset(config):
+    """
+    Generate sample dataset by downloading from S3 and processing the data
+    
+    Args:
+        config (dict): Configuration dictionary from YAML file
+    """
+    s3_uri = config['s3_uri']
+    n_train = config['n_train']
+    n_test = config['n_test']
+    local_dir = config['local_dir']
+    keys = config['keys']
+
+    assert not (os.path.exists(local_dir) and os.listdir(local_dir)), \
+        f"Directory {local_dir} is not empty. Please provide an empty directory."
+
+    # Create local directory if it doesn't exist
+    os.makedirs(local_dir, exist_ok=True)
+    
+    # Download all files from S3
+    download_s3_folder(s3_uri, local_dir)
+    
+    gt_handler = GTDataHandler(
+        src_dir=local_dir,
+        dst_dir="data",
+        required_keys = keys
+    )
+    gt_handler.generate_GT_train_test(n_train=n_train, n_test=n_test)
+
+    model_handler = ModelDataHandler(
+        GT_train=config['output_dirs']['gt_train'],
+        GT_test=config['output_dirs']['gt_test'],
+        model_dir=config['output_dirs']['model_dataset']
+    )
     model_handler.generate_MODEL_train_test()
 
-    
-
 if __name__ == "__main__":
-    generate_sample_model_dataset()
+    # Create argument parser
+    parser = argparse.ArgumentParser(
+        description='Generate model dataset from GT dataset stored in S3'
+    )
+    
+    parser.add_argument('--config', type=str, required=True, help='Path to YAML configuration file')
+    
+    # Parse arguments
+    args = parser.parse_args()
+    
+    # Load configuration
+    with open(args.config, 'r') as f:
+        config = yaml.safe_load(f)
+    
+    # Generate dataset using config
+    generate_model_dataset(config)
 
     # class_distribution = GTDataHandler.log_class_distribution("data/GT-train")
     # GTDataHandler.plot_class_distribution(class_distribution)

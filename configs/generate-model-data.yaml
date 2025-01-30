@@ -1,0 +1,22 @@
+# S3 configuration
+s3_uri: "s3://occupancy-dataset/bev-dairy/dairy/mineral_king/"
+
+# model dataset 
+n_train: 20  # number of training samples
+n_test: 5  # number of test samples
+
+# Directory paths
+local_dir: "data/GT-aws"  # local directory to store downloaded aws GT dataset
+
+# Required files in each GT folder
+keys:
+  - "left.jpg"
+  - "right.jpg"
+  - "seg-mask-mono.png"
+  - "seg-mask-rgb.png"
+
+# Output directories
+output_dirs:
+  gt_train: "data/GT-train"
+  gt_test: "data/GT-test"
+  model_dataset: "data/model-dataset" 
