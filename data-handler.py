@@ -170,7 +170,6 @@ class S3_DataHandler:
         assert len(S3_DataHandler._get_leaf_folders(self.GT_train)) == n_train, f'Expected {n_train} training files, but got {len(S3_DataHandler._get_leaf_folders(self.GT_train))}'
         assert len(S3_DataHandler._get_leaf_folders(self.GT_test)) == n_test, f'Expected {n_test} test files, but got {len(S3_DataHandler._get_leaf_folders(self.GT_test))}'
       
-
 class ModelDataHandler:
     
     def __init__(self, model_dir: str, GT_train: str, GT_test: str) -> None:
@@ -181,7 +180,11 @@ class ModelDataHandler:
             GT_train (str): Path to GT-train
             GT_test (str): Path to GT-test
         """
-        self.logger = get_logger("DataHandlerModel")        
+        self.logger = get_logger("DataHandlerModel")
+        
+        # assert model_dir is empty
+        assert not (os.path.exists(model_dir) and os.listdir(model_dir)), f"Model directory {model_dir} must be empty!"
+        
         # GT folders
         self.GT_train = GT_train
         self.GT_test = GT_test
@@ -299,6 +302,14 @@ class ModelDataHandler:
         with open(json_path, 'w') as f:
             json.dump(data, f, indent=4)
 
+    def _remap_mask_labels(self, mask_dir: str) -> None:
+        '''Remaps the mask labels in the given directory. Changes all 255 labels to 0'''
+        masks = get_files_from_folder(mask_dir, ['.png'])
+        for mask_path in tqdm(masks, desc="Remapping mask labels"):
+            mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+            mask[mask == 255] = 0
+            cv2.imwrite(mask_path, mask)
+
     def generate_MODEL_train_test(self):
         self._restructure_GT_folder(self.GT_train, self.model_train_dir)
         self._restructure_GT_folder(self.GT_test, self.model_test_dir)
@@ -308,6 +319,10 @@ class ModelDataHandler:
                            os.path.join(self.model_train_dir, 'seg-masks-mono'))
         self._flip_masks(os.path.join(self.model_test_dir, 'seg-masks-rgb'),\
                            os.path.join(self.model_test_dir, 'seg-masks-rgb'))
+        
+        # remap mask labels
+        self._remap_mask_labels(os.path.join(self.model_train_dir, 'seg-masks-mono'))
+        self._remap_mask_labels(os.path.join(self.model_test_dir, 'seg-masks-mono'))
 
         # populate json file
         self._populate_json(os.path.join(self.model_dir, 'dataset.json'), self.model_dir)
@@ -320,28 +335,36 @@ def generate_model_dataset(config):
     Args:
         config (dict): Configuration dictionary from YAML file
     """
+
+    logger = get_logger("DataHandler")
+    
     s3_uri = config['s3_uri']
     n_train = config['n_train']
     n_test = config['n_test']
-    local_dir = config['local_dir']
+    aws_dir = config['aws_dir']
     keys = config['keys']
 
-    assert not (os.path.exists(local_dir) and os.listdir(local_dir)), \
-        f"Directory {local_dir} is not empty. Please provide an empty directory."
+    # assert not (os.path.exists(aws_dir) and os.listdir(aws_dir)), \
+    #     f"Directory {aws_dir} is not empty. Please provide an empty directory."
 
-    # Create local directory if it doesn't exist
-    os.makedirs(local_dir, exist_ok=True)
+    if not os.path.exists(aws_dir) or not os.listdir(aws_dir):
+        os.makedirs(aws_dir, exist_ok=True)
+        S3_DataHandler.download_s3_folder(s3_uri, aws_dir)
     
-    # Download all files from S3
-    S3_DataHandler.download_s3_folder(s3_uri, local_dir)
+        # generate GT-train / GT-test folders
+        gt_handler = S3_DataHandler(
+            src_dir=aws_dir,
+            dst_dir="data",
+            required_keys = keys
+        )
+        gt_handler.generate_GT_train_test(n_train=n_train, n_test=n_test)
     
-    gt_handler = S3_DataHandler(
-        src_dir=local_dir,
-        dst_dir="data",
-        required_keys = keys
-    )
-    gt_handler.generate_GT_train_test(n_train=n_train, n_test=n_test)
+    else : 
+        logger.info("───────────────────────────────")
+        logger.info("GT-train / GT-test folders already exist. Skipping GT generation...")
+        logger.info("───────────────────────────────\n")
 
+    # generate model-train / model-test folders
     model_handler = ModelDataHandler(
         GT_train=config['output_dirs']['gt_train'],
         GT_test=config['output_dirs']['gt_test'],
@@ -349,8 +372,8 @@ def generate_model_dataset(config):
     )
     model_handler.generate_MODEL_train_test()
 
-if __name__ == "__main__":
-    
+
+def main():
     parser = argparse.ArgumentParser(description='Generate model dataset from GT dataset stored in S3')
     parser.add_argument('--config', type=str, required=True, help='Path to YAML configuration file')
     args = parser.parse_args()
@@ -360,4 +383,5 @@ if __name__ == "__main__":
     
     generate_model_dataset(config)
 
-    
+if __name__ == "__main__":
+    main()
