@@ -1,4 +1,3 @@
-
 import torch
 import torch.nn as nn
 import torchgeometry
@@ -102,15 +101,15 @@ def pt_costvol_to_hmap( reduced_vol , cam_confs , sys_confs ):
     cam_conf['cx'] = cam_confs['cx']
     cam_conf['cy'] = cam_confs['cy']
     cam_conf['tx'] = cam_confs['tx']
-        
-    for i in range( bs ):
-        
-        cam_conf['R'] = cam_confs['R'][i]
-
-        # logger.warning(f"=================")
-        # logger.warning(f"cam_conf['R']: {cam_conf['R']}")
-        # logger.warning(f"=================\n")
-        
+    
+    # Handle rotation matrix initialization
+    if 'R' in cam_confs:
+        R_list = cam_confs['R']
+    else:
+        R_list = [np.eye(3)] * bs  # Default identity matrix
+    
+    for i in range(bs):
+        cam_conf['R'] = R_list[i] if 'R' in cam_confs else np.eye(3)
         grids.append( get_grid_one( cam_conf , img_h=img_h , img_w=img_w , n_hmap=n_hmap , xmax=xmax , xmin=xmin , ymax=ymax , ymin=ymin   , max_disp=max_disp , camera_ext_x=camera_ext_x, camera_ext_y=camera_ext_y   ) )
     
     grid = torch.cat( grids  , 0).cuda()
