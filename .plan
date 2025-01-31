@@ -284,13 +284,62 @@ fix poor validation set performance
 - pass batch-size to bev_cost_utils.py
 
 - add focal-loss
-- tune cross-weighted entropy weights
 - is disparity scaling (/f) correct in get_grid_one?
 - clipping in get_grid_one
 - increase automation level in data-handler.py
 - move validation-patience to train-dist.yaml
 
 - convert void to ground labels
-- adding regularalization
-- add learning rate scheduler
+- add learning rate scheduler ==> [Exponential Decay / Step Decay / Cosine Annealing /ReduceLROnPlateau] 
 - Add dropout / weight decay / or other regularization to reduce overfitting
+- fix evaluate-model visualization
+- tune cross-weighted entropy weights
+- tune focal loss
+- compare validation loss for get_grid_one [1 vs 2]
+- is the new get_grid_one correct?
+
+- training on only vine stems + poles followwd by fine tuning on other classes
+
+
+======================
+sbevnet 
+======================
+- check sbevnet utils
+- EvalClass 
+- integrate eval cases
+- metrics ?
+- train / eval / test split
+- processing bev-aws to bev-model pipeline
+- utility to classify dataset into [object / pole / vineyard ] heavy
++ add as submodule to stereo-occ
+- train one class at a time
+- warm-up + cool-down 
+- pytorch lightening
+- pytorch fabric
+- check occ-mask integration in sbevnet
+- data augmentation
+- undo tilt correction in sbevnet_get_grid_one
+- fix / review disparity scaling in sbevnet
+- fix / review / improve image pre-processing step 
+- [debug] sbvenet with only [canopy + navigable-space] as output
+- stereo rectification 
+- handle image resizing effect on disparity
+- z / y swap
+- transpose effect
+- review disparity scaling
+
+
++ end to end data-handling in data-handler.py
+- refactor data-handler.py
+- refactor sbevnet
+- add scripts folder
+- simplify dataloaders
+- separate model-dataset generation
+- explore best practices around incorporating validation loss in training
+- do not measure void classes for loss calculations during evaluation
+- fix get_grid_one + data warping
+- examine disparity scaling
+- examine image pre-processing step 
+- add / revisit data-augmentation step
+- add regularalization 
+- figure out fine-tuning strategies
