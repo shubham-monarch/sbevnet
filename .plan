@@ -331,6 +331,7 @@ sbevnet
 
 + end to end data-handling in data-handler.py
 - refactor data-handler.py
+- refactor train-dist.py
 - refactor sbevnet
 - add scripts folder
 - simplify dataloaders
@@ -343,3 +344,6 @@ sbevnet
 - add / revisit data-augmentation step
 - add regularalization 
 - figure out fine-tuning strategies
+- co-relation betweeen train / validation loss
+- label-wise training
+- revisit validation loss calculations
