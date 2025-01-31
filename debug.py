@@ -1,66 +1,96 @@
 #! /usr/bin/env python3
 
+import logging
+from typing import Callable, Dict
+from dataclasses import dataclass
+import traceback
+from pathlib import Path
+import argparse
 
-
-import torch
-import torch.utils.data as data
-from torch.utils.data import Dataset, DataLoader
-import numpy as np
-import cv2
-
-from evaluate_model import get_colored_segmentation_image
 from helpers import get_logger
 
-class ComposeDatasetDict(data.Dataset):
+logger = get_logger("debug")
 
-    "TO take a dictionary of datasets and return a dataset which produces elements as a dictionalry "
+@dataclass
+class DebugCase:
+    """Class to represent a debug test case"""
+    name: str
+    description: str
+    function: Callable
+    enabled: bool = True
+
+class DebugRunner:
+    """Class to manage and run debug test cases"""
     
-    def __init__(self , data_loaders ,ret_double=False ):
-        self.data_loaders = data_loaders
-        self.logger = get_logger('ComposeDatasetDict')
+    def __init__(self):
+        self.cases: Dict[str, DebugCase] = {}
+        self.debug_dir = Path("debug")
         
-        self.logger.warning(f"=================")
-        for k in self.data_loaders:
-            self.logger.warning(f"len(self.data_loaders[k]): {len(self.data_loaders[k])}")
-        self.logger.warning(f"=================\n") 
+    def register_case(self, case_id: str, name: str, description: str, func: Callable, enabled: bool = True) -> None:
+        """Register a new debug case"""
+        self.cases[case_id] = DebugCase(name, description, func, enabled)
         
-        # make sure all the datasets are of the same size!! 
-        for k in self.data_loaders:
-            l = len( self.data_loaders[k])
-            break 
-        for k in self.data_loaders:
-            assert l == len( self.data_loaders[k] ) , "The sizes of the datasets do not match! "+k  
-            # print( l , k , )
+    def run_case(self, case_id: str) -> None:
+        """Run a specific debug case"""
+        if case_id not in self.cases:
+            logger.error(f"Case {case_id} not found")
+            return
+            
+        case = self.cases[case_id]
+        if not case.enabled:
+            logger.info(f"Case {case_id} ({case.name}) is disabled, skipping...")
+            return
+            
+        logger.info(f"Running case {case_id}: {case.name}")
+        logger.info(f"Description: {case.description}")
+        logger.info("=" * 50)
         
-        self.ret_double = ret_double 
+        try:
+            case.function()
+        except Exception as e:
+            logger.error(f"Error in case {case_id}: {str(e)}")
+            logger.error(traceback.format_exc())
         
-    def __getitem__(self, index):
-        ret = {}
-        for k in self.data_loaders:
-            ret[k] = self.data_loaders[k].__getitem__(index)
+        logger.info("=" * 50)
+        
+    def run_all_enabled(self) -> None:
+        """Run all enabled debug cases"""
+        for case_id in self.cases:
+            self.run_case(case_id)
+            
+    def get_case_dir(self, case_id: str) -> Path:
+        """Get directory for debug case outputs"""
+        case_dir = self.debug_dir / case_id
+        case_dir.mkdir(parents=True, exist_ok=True)
+        return case_dir
 
-        if self.ret_double:
-            return ret , ret 
-        else:
-            return ret 
+# Define debug cases in separate module
+from debug_cases import (
+    test_labels_in_seg_masks
+)
 
-    def __len__(self):
-        for k in self.data_loaders:
-            return len(self.data_loaders[k]) 
+def main():
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description='Run debug test cases')
+    parser.add_argument('--case', type=str, help='Specific case ID to run')
+    args = parser.parse_args()
 
- 
-
-if __name__ == '__main__':
+    # Initialize debug runner
+    runner = DebugRunner()
     
-    logger = get_logger('debug')
+    # Register all test cases
+    cases = [
+        ("case_1", "Dairy Masks", "Test dairy mask generation", test_labels_in_seg_masks),
+    ]
     
-    seg_mask_mono_path = 'datasets/test-640x480/seg-masks-mono/4__seg-mask-mono.png'
-    seg_mask_mono = cv2.imread(seg_mask_mono_path, cv2.IMREAD_GRAYSCALE)
-
-    logger.info(f"=================")
-    logger.info(f"seg_mask_mono.shape: {seg_mask_mono.shape}")
-    logger.info(f"=================\n")
-
-    seg_mask_rgb = get_colored_segmentation_image(seg_mask_mono, 'Mavis.yaml')
+    for case_id, name, desc, func in cases:
+        runner.register_case(case_id, name, desc, func)
     
-    cv2.imwrite('seg_mask_rgb.png', seg_mask_rgb)
+    # Run specific case if provided, otherwise run all cases
+    if args.case:
+        runner.run_case(args.case)
+    else:
+        runner.run_all_enabled()
+
+if __name__ == "__main__":
+    main()
