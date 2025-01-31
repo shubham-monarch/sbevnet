@@ -350,19 +350,20 @@ def generate_model_dataset(config):
     if not os.path.exists(aws_dir) or not os.listdir(aws_dir):
         os.makedirs(aws_dir, exist_ok=True)
         S3_DataHandler.download_s3_folder(s3_uri, aws_dir)
-    
-        # generate GT-train / GT-test folders
-        gt_handler = S3_DataHandler(
-            src_dir=aws_dir,
-            dst_dir="data",
-            required_keys = keys
-        )
-        gt_handler.generate_GT_train_test(n_train=n_train, n_test=n_test)
-    
-    else : 
+
+    else: 
         logger.info("───────────────────────────────")
-        logger.info("GT-train / GT-test folders already exist. Skipping GT generation...")
+        logger.info("aws-data already exist. Skipping download...")
         logger.info("───────────────────────────────\n")
+
+    # generate GT-train / GT-test folders
+    gt_handler = S3_DataHandler(
+        src_dir=aws_dir,
+        dst_dir="data",
+        required_keys = keys
+    )
+    gt_handler.generate_GT_train_test(n_train=n_train, n_test=n_test)
+    
 
     # generate model-train / model-test folders
     model_handler = ModelDataHandler(
