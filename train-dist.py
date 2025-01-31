@@ -17,6 +17,7 @@ import yaml
 from torch.utils.tensorboard import SummaryWriter
 import time
 import torch.nn.functional as F
+import argparse
 
 from sbevnet.models.network_sbevnet import SBEVNet
 from sbevnet.data_utils.bev_dataset import sbevnet_dataset
@@ -157,7 +158,9 @@ def train(rank: int, world_size: int, params: dict) -> None:
         )
         
         # class_weights = compute_class_weights(train_loader, params).to(rank)
-        class_weights = torch.tensor([0.1, 10.0, 0.3, 5.0, 25.0, 25.0]).to(rank)
+        # class_weights = torch.tensor([0.1, 10.0, 1.0, 1.0, 20.0, 20.0]).to(rank)
+        # class_weights = torch.tensor([0.1, 10.0, 0.1, 0.5, 5.0, 5.0]).to(rank)
+        class_weights = torch.tensor([0, 0.1, 0.05, 0.1, 0, 0.1, 0.1, 0, 0, 0, 0.1, 0.1, 0, 0.1]).to(rank)
         
         logger.warning(f"=================")
         logger.warning(f"computed class weights: {class_weights}")
@@ -165,11 +168,13 @@ def train(rank: int, world_size: int, params: dict) -> None:
 
         # criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=-100).to(rank)
         # criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=0).to(rank)
-        # criterion = nn.CrossEntropyLoss(weight=class_weights).to(rank)
-        criterion = FocalLoss(gamma=2.0, weight=class_weights).to(rank)
+        
+        criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=-100).to(rank)
+        # criterion = FocalLoss(gamma=2.0, weight=class_weights).to(rank)
         
         # Fixed learning rate of 0.0001
         optimizer = optim.Adam(network.parameters(), lr=0.0001)
+        # optimizer = optim.Adam(network.parameters(), lr=0.00001)
 
         val_dataset = sbevnet_dataset(
             json_path='data/model-dataset/dataset.json',
@@ -356,11 +361,13 @@ def train(rank: int, world_size: int, params: dict) -> None:
             logger.info("Cleaned up distributed training")
 
 
-def train_sbevnet_distributed() -> None:
-    """Main function to initialize distributed training."""
-   
-
-    with open('configs/train-dist.yaml', 'r') as file:
+def train_sbevnet_distributed(config_path: str) -> None:
+    """Main function to initialize distributed training.
+    
+    Args:
+        config_path: Path to the YAML config file
+    """
+    with open(config_path, 'r') as file:
         params = yaml.safe_load(file)
 
     scale_x = float(640 / 1920)
@@ -370,13 +377,10 @@ def train_sbevnet_distributed() -> None:
     params['cy'] *= scale_y
     params['f'] *= scale_x
     
-    # print all the values in params
     for key, value in params.items():
         print(f"{key}: {value}")
     
-    # wait for 2 seconds before processing
     time.sleep(2)
-
 
     world_size = torch.cuda.device_count()
     if world_size < 1:
@@ -391,11 +395,8 @@ def train_sbevnet_distributed() -> None:
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', type=str, required=True, help='Path to config YAML file')
+    args = parser.parse_args()
     
-    # # update json
-    # json_path = 'datasets/dataset.json'
-    # dataset_path = 'datasets'
-    # populate_json(json_path, dataset_path)
-    
-    
-    train_sbevnet_distributed() 
+    train_sbevnet_distributed(args.config) 
