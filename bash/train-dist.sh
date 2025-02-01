@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rm -rf logs/train-dist.log
+# rm -rf logs/train-dist.log
 exec >> logs/train-dist.log 2>&1
 
 python train-dist.py --config configs/train-dist.yaml
