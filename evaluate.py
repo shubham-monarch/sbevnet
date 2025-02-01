@@ -10,6 +10,7 @@ import numpy as np
 import cv2
 import argparse
 import sys
+import yaml
 
 from sbevnet.models.network_sbevnet import SBEVNet
 from sbevnet.data_utils.bev_dataset import sbevnet_dataset
@@ -17,12 +18,8 @@ from helpers import get_logger
 
 def get_colored_segmentation_image(seg_arr: np.ndarray, config_path: str) -> np.ndarray:
     """Convert seg array to colored image"""
-    import yaml
-
     with open(config_path, 'r') as file:
         config = yaml.safe_load(file)
-
-   
 
     color_map = config['color_map']
     output_height = seg_arr.shape[0]
@@ -63,8 +60,6 @@ def evaluate_sbevnet(config_path: str, color_map_path: str):
     """
     logger = get_logger("evaluate")
     
-    import yaml
-
     with open(config_path, 'r') as file:
         params = yaml.safe_load(file)
 
@@ -87,9 +82,12 @@ def evaluate_sbevnet(config_path: str, color_map_path: str):
     assert not (os.path.exists(pred_dir) and os.listdir(pred_dir)), "Predictions directory must be empty"
     os.makedirs(pred_dir, exist_ok=True)
     
-    # initialize network
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
+    # Get GPU ID from config with default 0
+    gpu_id = params.get('gpu_id', 0)
+    device = torch.device(f'cuda:{gpu_id}' if torch.cuda.is_available() else 'cpu')
+
+    # Set the default CUDA device to ensure new tensors are allocated on cuda:gpu_id
+    torch.cuda.set_device(gpu_id)
     
     logger.warning(f'==============')
     logger.warning(f'Using device: {device}')

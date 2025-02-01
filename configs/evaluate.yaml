@@ -44,3 +44,4 @@ checkpoint_path: 'checkpoints/latest_checkpoint.pth'
 batch_size: 1
 do_top_seg: false
 predictions_dir: 'predictions'
+gpu_id: 3
