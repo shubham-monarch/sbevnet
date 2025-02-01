@@ -344,6 +344,32 @@ sbevnet
 - add / revisit data-augmentation step
 - add regularalization 
 - figure out fine-tuning strategies
-- co-relation betweeen train / validation loss
 - label-wise training
-- revisit validation loss calculations
+- option to resume training
+- option to visualize results at each epoch
+- add ensembling
+- what does the nature of the train-validation plot say?
+- possible to train + eval simultaneously / alternately?
+- integrate gt in evaluate.py
+- inspect cases in which GT has significant rotation
+- what information is contained in .pth file? 
+
+fix train-dist.py
+- how is validation loss being calculated?
+- add seed
+- save best-train / best-val / latest.pth
+- co-relation betweeen train / validation loss
+
+
+
+fix evaluation.py
+- major refactoring
+- is the correspondance with images, gt-seg-imgs and prediction even correct?
+- visulalize img + gt + pred in one-frame
+- tune weights
+
+
+to-read
+- handling cases with class imbalanace
+- writing train scripts
+- writing eval scripts
