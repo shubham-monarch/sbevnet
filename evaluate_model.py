@@ -8,6 +8,8 @@ import logging
 from tqdm import tqdm
 import numpy as np
 import cv2
+import argparse
+import sys
 
 from sbevnet.models.network_sbevnet import SBEVNet
 from sbevnet.data_utils.bev_dataset import sbevnet_dataset
@@ -52,12 +54,18 @@ def calculate_iou(pred, target, n_classes):
     
     return ious
 
-def evaluate_sbevnet():
+def evaluate_sbevnet(config_path: str, color_map_path: str):
+    """Evaluate SBEVNet model using provided configuration files.
+    
+    Args:
+        config_path: Path to the evaluation configuration YAML file
+        color_map_path: Path to the color map configuration YAML file
+    """
     logger = get_logger("evaluate")
     
     import yaml
 
-    with open('configs/train.yaml', 'r') as file:
+    with open(config_path, 'r') as file:
         params = yaml.safe_load(file)
 
     scale_x = float(640 / 1920)
@@ -67,12 +75,13 @@ def evaluate_sbevnet():
     params['cy'] *= scale_y
     params['f'] *= scale_x
     
-    params['checkpoint_path'] = 'checkpoints/best_model.pth'
-    params['batch_size'] = 1
-    params['do_top_seg'] = False
+    # params['checkpoint_path'] = 'checkpoints/best_model.pth'
+    # params['checkpoint_path'] = 'checkpoints/best_model.pth'
+    # params['batch_size'] = 1
+    # params['do_top_seg'] = False
 
     # mkdir predictions
-    pred_dir = 'predictions'
+    pred_dir = params['predictions_dir']
 
     # predictions directory must be empty
     assert not (os.path.exists(pred_dir) and os.listdir(pred_dir)), "Predictions directory must be empty"
@@ -145,15 +154,6 @@ def evaluate_sbevnet():
     logger.warning(f'Test dataset size: {len(test_dataset)}')
     logger.warning(f'=================\n')
     
-    # class names for logging
-    class_names = {
-        0: "background",
-        1: "road",
-        2: "sidewalk", 
-        3: "terrain",
-        4: "vegetation",
-        5: "vehicle"
-    }
     
     # initialize metrics storage
     total_ious = [0] * params['n_classes_seg']
@@ -186,7 +186,7 @@ def evaluate_sbevnet():
                     pred_np = pred[i].cpu().numpy()
                         
                     # Save colored visualization
-                    colored_pred = get_colored_segmentation_image(pred_np, config_path='configs/Mavis.yaml')
+                    colored_pred = get_colored_segmentation_image(pred_np, config_path=color_map_path)
                     colored_pred = cv2.flip(colored_pred, 0)
                     
                     # Load and resize left image
@@ -214,5 +214,24 @@ def evaluate_sbevnet():
                 logger.error(f'Error in batch {batch_idx}: {str(e)}')
                 continue
 
+def main():
+    """Main entry point for the evaluation script."""
+    parser = argparse.ArgumentParser(description='Evaluate SBEVNet model')
+    parser.add_argument('--config', type=str, default='configs/evaluate.yaml', 
+                       help='Path to evaluation config file')
+    parser.add_argument('--color_map', type=str, default='configs/Mavis.yaml', 
+                       help='Path to color map config file')
+    args = parser.parse_args()
+    
+    # Validate config files exist
+    if not os.path.exists(args.config):
+        print(f"Error: Config file {args.config} not found")
+        sys.exit(1)
+    if not os.path.exists(args.color_map):
+        print(f"Error: Color map file {args.color_map} not found")
+        sys.exit(1)
+        
+    evaluate_sbevnet(args.config, args.color_map)
+
 if __name__ == '__main__':
-    evaluate_sbevnet() 
+    main() 
