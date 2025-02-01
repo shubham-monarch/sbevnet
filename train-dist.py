@@ -347,9 +347,9 @@ def train(rank: int, world_size: int, params: dict) -> None:
                     epochs_no_improve = 0
                 else:
                     epochs_no_improve += 1
-                    if epochs_no_improve == patience:
-                        logger.info(f'Early stopping triggered after {patience} epochs without improvement.')
-                        break
+                    # if epochs_no_improve == patience:
+                    #     logger.info(f'Early stopping triggered after {patience} epochs without improvement.')
+                    #     break
         if is_main_process:
             writer.close()
 
