@@ -86,21 +86,26 @@ class FocalLoss(nn.Module):
         return focal_loss
 
 
+
+
 def train(rank: int, world_size: int, params: dict) -> None:
     """Training function for each process."""
     try:
+        # Set random seeds for reproducibility
+        seed = params.get('random_seed', 42)
+        
         setup(rank, world_size)
         logger = get_logger("train", rank)
         
-        # Only log on rank 0 for most messages
         is_main_process = rank == 0
         
         torch.cuda.set_device(rank)
-        
-        # Create save directory
+
+        # Create save directory and subdirectories
         save_dir = 'checkpoints'
         if is_main_process:
             os.makedirs(save_dir, exist_ok=True)
+            os.makedirs(os.path.join(save_dir, 'epochs'), exist_ok=True)
             writer = SummaryWriter(log_dir=os.path.join(save_dir, 'runs'))
         
         # Initialize network and move to device
@@ -135,7 +140,7 @@ def train(rank: int, world_size: int, params: dict) -> None:
         # class_weights = torch.tensor([0.1, 10.0, 0.1, 0.1, 10.0, 10.0]).to(rank)
         
         train_dataset = sbevnet_dataset(
-            json_path='data/model-dataset/dataset.json',
+            json_path=params['dataset_path'],
             dataset_split='train',
             do_ipm_rgb=params['do_ipm_rgb'],
             do_ipm_feats=params['do_ipm_feats'],
@@ -147,7 +152,13 @@ def train(rank: int, world_size: int, params: dict) -> None:
             image_h=params['image_h']
         )
         
-        train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
+        train_sampler = DistributedSampler(
+            train_dataset,
+            num_replicas=world_size,
+            rank=rank,
+            seed=seed  # Add seed for deterministic shuffling
+        )
+        
         train_loader = DataLoader(
             train_dataset,
             batch_size=params['batch_size'],
@@ -160,17 +171,19 @@ def train(rank: int, world_size: int, params: dict) -> None:
         # class_weights = compute_class_weights(train_loader, params).to(rank)
         # class_weights = torch.tensor([0.1, 10.0, 1.0, 1.0, 20.0, 20.0]).to(rank)
         # class_weights = torch.tensor([0.1, 10.0, 0.1, 0.5, 5.0, 5.0]).to(rank)
-        class_weights = torch.tensor([0, 0.1, 0.05, 0.1, 0, 0.1, 0.1, 0, 0, 0, 0.1, 0.1, 0, 0.1]).to(rank)
+        class_weights = torch.tensor(params['class_weights'], dtype=torch.float32).to(rank)
         
         logger.warning(f"=================")
         logger.warning(f"computed class weights: {class_weights}")
         logger.warning(f"=================\n")
 
-        # criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=-100).to(rank)
-        # criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=0).to(rank)
-        
-        criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=-100).to(rank)
-        # criterion = FocalLoss(gamma=2.0, weight=class_weights).to(rank)
+        # Criterion selection based on config (loss_type: "focal" or "cross_entropy")
+        loss_type = params.get('loss_type', 'cross_entropy')
+        if loss_type.lower() == 'focal':
+            gamma = params.get('focal_gamma', 2.0)
+            criterion = FocalLoss(gamma=gamma, weight=class_weights).to(rank)
+        else:
+            criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=-100).to(rank)
         
         # Fixed learning rate of 0.0001
         optimizer = optim.Adam(network.parameters(), lr=0.0001)
@@ -207,7 +220,8 @@ def train(rank: int, world_size: int, params: dict) -> None:
         val_losses = []
         learning_rates = []
         best_val_loss = float('inf')
-        patience = 20  # Number of epochs to wait for improvement
+        best_train_loss = float('inf')
+        patience = 20
         epochs_no_improve = 0
         
         for epoch in range(params['num_epochs']):
@@ -327,29 +341,36 @@ def train(rank: int, world_size: int, params: dict) -> None:
                 plt.savefig(os.path.join(save_dir, 'training_plot.png'))
                 plt.close()
 
-                # Save checkpoint
+                # Save checkpoint for current epoch
                 checkpoint = {
                     'epoch': epoch,
                     'model_state_dict': network.module.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
-                    'loss': avg_epoch_loss,
+                    'train_loss': avg_epoch_loss,
                     'val_loss': avg_epoch_val_loss,
                     'losses': losses,
                     'val_losses': val_losses,
                 }
                 
+                # Save checkpoint for current epoch
+                # torch.save(checkpoint, os.path.join(save_dir, 'epochs', f'checkpoint_epoch_{epoch+1}.pth'))
                 torch.save(checkpoint, os.path.join(save_dir, 'latest_checkpoint.pth'))
                 
+                # Save best validation model
                 if avg_epoch_val_loss < best_val_loss:
                     best_val_loss = avg_epoch_val_loss
-                    torch.save(checkpoint, os.path.join(save_dir, 'best_model.pth'))
-                    logger.info(f'New best model saved with validation loss: {best_val_loss:.4f}')
+                    torch.save(checkpoint, os.path.join(save_dir, 'best_val_model.pth'))
+                    logger.info(f'New best validation model saved with loss: {best_val_loss:.4f}')
                     epochs_no_improve = 0
                 else:
                     epochs_no_improve += 1
-                    # if epochs_no_improve == patience:
-                    #     logger.info(f'Early stopping triggered after {patience} epochs without improvement.')
-                    #     break
+                
+                # Save best training model
+                if avg_epoch_loss < best_train_loss:
+                    best_train_loss = avg_epoch_loss
+                    torch.save(checkpoint, os.path.join(save_dir, 'best_train_model.pth'))
+                    logger.info(f'New best training model saved with loss: {best_train_loss:.4f}')
+
         if is_main_process:
             writer.close()
 

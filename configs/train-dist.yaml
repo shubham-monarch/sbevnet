@@ -46,5 +46,12 @@ dataset_path: "data/model-dataset/dataset.json"
 save_dir: "checkpoints"
 
 # training configuration
-class_weights: [0, 0.1, 0.05, 0.1, 0, 0.1, 0.1, 0, 0, 0, 0.1, 0.1, 0, 0.1]
+class_weights: [0, 0.4, 0.01, 0.1, 0, 0.8, 0.1, 0, 0, 0, 0.8, 0.2, 0, 0.2]
 early_stopping_patience: 20
+
+# loss configuration
+loss_type: focal         # set to "focal" to use FocalLoss, or "cross_entropy" for the default
+focal_gamma: 2.0         # gamma parameter for FocalLoss
+
+# seed
+random_seed: 420
