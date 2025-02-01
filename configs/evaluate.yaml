@@ -4,7 +4,7 @@ image_h: 480
 max_disp: 64
 
 # segmentation and heatmap parameters
-n_classes_seg: 6
+n_classes_seg: 14
 n_hmap: 256
 
 # depth range (in meters)
@@ -12,8 +12,8 @@ xmin: 2.0
 xmax: 7.0
 
 # horizontal range (in meters)
-ymin: -2.5
-ymax: 2.5
+ymin: -2.0
+ymax: 3.0
 
 # camera parameters
 cx: 964.989
@@ -37,3 +37,10 @@ learning_rate: 0.0001
 do_mask: false
 do_top_seg: true
 zero_mask: false
+
+# evaluation specific parameters
+# checkpoint_path: 'checkpoints/best_model.pth'
+checkpoint_path: 'checkpoints/latest_checkpoint.pth'
+batch_size: 1
+do_top_seg: false
+predictions_dir: 'predictions'
