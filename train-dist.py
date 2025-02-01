@@ -18,17 +18,32 @@ from torch.utils.tensorboard import SummaryWriter
 import time
 import torch.nn.functional as F
 import argparse
+import random
+import numpy as np
 
 from sbevnet.models.network_sbevnet import SBEVNet
 from sbevnet.data_utils.bev_dataset import sbevnet_dataset
 from helpers import get_logger, populate_json
 
 
+def set_seed(seed: int):
+    """Set all random seeds for reproducibility"""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    # Enable deterministic CuDNN algorithms (may impact performance)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
 def setup(rank: int, world_size: int) -> None:
     """Initialize distributed training process group."""
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = '12355'
+    os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'  # For deterministic CUDA ops
     dist.init_process_group("nccl", rank=rank, world_size=world_size)
+    torch.use_deterministic_algorithms(True, warn_only=True)  # Force deterministic algorithms
 
 
 def cleanup() -> None:
@@ -86,13 +101,20 @@ class FocalLoss(nn.Module):
         return focal_loss
 
 
+def seed_worker(worker_id):
+    """Global worker seeding function"""
+    worker_seed = (torch.initial_seed() + worker_id) % 2**32
+    random.seed(worker_seed)
+    np.random.seed(worker_seed)
+    torch.manual_seed(worker_seed)
 
 
 def train(rank: int, world_size: int, params: dict) -> None:
     """Training function for each process."""
     try:
-        # Set random seeds for reproducibility
-        seed = params.get('random_seed', 42)
+        # Get seed from config with default 420 if not specified
+        seed = params.get('random_seed', 420)
+        set_seed(seed + rank)
         
         setup(rank, world_size)
         logger = get_logger("train", rank)
@@ -159,13 +181,17 @@ def train(rank: int, world_size: int, params: dict) -> None:
             seed=seed  # Add seed for deterministic shuffling
         )
         
+        # Modified DataLoader configurations
         train_loader = DataLoader(
             train_dataset,
             batch_size=params['batch_size'],
             shuffle=False,
             num_workers=4,
             pin_memory=True,
-            sampler=train_sampler
+            sampler=train_sampler,
+            worker_init_fn=seed_worker,
+            generator=torch.Generator().manual_seed(seed + rank),
+            persistent_workers=True
         )
         
         # class_weights = compute_class_weights(train_loader, params).to(rank)
@@ -209,7 +235,10 @@ def train(rank: int, world_size: int, params: dict) -> None:
             shuffle=False,
             num_workers=4,
             pin_memory=True,
-            sampler=val_sampler
+            sampler=val_sampler,
+            worker_init_fn=seed_worker,
+            generator=torch.Generator().manual_seed(seed + rank),
+            persistent_workers=True
         )
         
         if is_main_process:
@@ -225,7 +254,7 @@ def train(rank: int, world_size: int, params: dict) -> None:
         epochs_no_improve = 0
         
         for epoch in range(params['num_epochs']):
-            train_sampler.set_epoch(epoch)
+            train_sampler.set_epoch(epoch + seed)  # Seed based on initial seed + epoch
             network.train()
             epoch_loss = 0.0
             
