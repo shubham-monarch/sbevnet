@@ -432,7 +432,8 @@ def train_sbevnet_distributed(config_path: str) -> None:
     
     time.sleep(2)
 
-    world_size = torch.cuda.device_count()
+    world_size = params.get('num_gpus', torch.cuda.device_count())
+    world_size = min(world_size, torch.cuda.device_count())  # Don't exceed available GPUs
     if world_size < 1:
         raise RuntimeError("No CUDA devices available")
     

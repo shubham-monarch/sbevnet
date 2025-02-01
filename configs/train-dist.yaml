@@ -35,6 +35,7 @@ batch_size: 4
 num_epochs: 200
 learning_rate: 0.0001
 num_workers: 4
+num_gpus: 3
 
 # dataset parameters
 do_mask: false
@@ -46,7 +47,10 @@ dataset_path: "data/model-dataset/dataset.json"
 save_dir: "checkpoints"
 
 # training configuration
-class_weights: [0, 0.4, 0.01, 0.1, 0, 0.8, 0.1, 0, 0, 0, 0.8, 0.2, 0, 0.2]
+# focal_loss_class_weights: [0, 0.4, 0.01, 0.1, 0, 0.8, 0.1, 0, 0, 0, 0.8, 0.2, 0, 0.2]
+# cross_entropy_class_weights: [0, 0.1, 0.05, 0.1, 0, 0.1, 0.1, 0, 0, 0, 0.1, 0.1, 0, 0.1]
+class_weights: [0, 0.1, 0.05, 0.1, 0, 0.1, 0.1, 0, 0, 0, 0.1, 0.1, 0, 0.1]
+
 early_stopping_patience: 20
 
 # loss configuration
