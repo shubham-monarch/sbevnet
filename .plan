@@ -1,13 +1,10 @@
----------------------
-- --> TO-DO
-+ --> DONE 
-* --> DROPPED  
----------------------
+<!-- keys- --> 
+- to-do 
++ done
+* dropped  
 
 
-======================
-initial set-up
-======================
+<!-- initial set-up -->
 + prepare train-data => [left, right, top_seg, top_ipm] 
 + generate dataset.json
 + fix train.py
@@ -34,19 +31,15 @@ initial set-up
 + generate square shaped top_seg train-data
 * provision for multiple training log folders
 
-
-======================
-fix model input
-======================
+    
+<!-- fix model input -->
 + flip GT seg-mask in z-direction
 + z / y swap
 + how can y-min be negative? 
 * generate 500 frames
 
 
-======================
-why is loss not dropping?
-======================
+<!-- why is loss not dropping? -->
 + scale cx, cy, fx, fy
 + review segmentation loss function calculations
 + fix loss calculations
@@ -56,9 +49,7 @@ why is loss not dropping?
 + importance of transpose
 
 
-======================
-implement baseline model
-======================
+<!-- implement baseline model -->
 + fix predicted mask dimensions (480 * 480)
 + transpose
 + fix SegLoader
@@ -84,21 +75,14 @@ implement baseline model
 + check mono --> rgb seg-mask conversion in evaluate_model.py
 
 
-
-======================
-demo video
-======================
+<!-- demo video -->
 + generate video eval script
 * augment minor classes
 + check metric accuracy
 + plot stem points on a plot to check metric accuracy 
 * refactoring
 
-
-
-======================
-tune training params
-======================
+<!-- tune training params -->
 * enable saving of intermediate epochs 
 + plot epoch loss
 - decide on the the epoch count
@@ -107,9 +91,7 @@ tune training params
 - tune learning rate (refer crestereo)
 
 
-======================
-enable distributed training
-======================
+<!-- enable distributed training -->
 + enable multi-gpu training
 * fix logs in distributed training script
 * double check distributed-training script
@@ -117,18 +99,14 @@ enable distributed training
 + why is loss different (or decreasing faster) in distributed-training?
 
 
-======================
-aws based bev-generator
-======================
+<!-- aws based bev-generator -->
 + start aws based data-generation pipeline
 + index to track processed files
 - ipm rgb 
 - occlusion mask
 + add index.json
 
-======================
-improve model baseline
-======================
+<!-- improve model baseline -->
 - fix black patches
 - convert black to naviagble spaces
 - add visibility mask
@@ -151,9 +129,7 @@ improve model baseline
 - change z-min to 0.5 in GT-seg-mask
 
 
-======================
-camera intrinsics scaling
-======================
+<!-- camera intrinsics scaling -->
 - write comparison script
 - establish camera intrinsics scaling params
 - camera baseline scaling
@@ -162,16 +138,12 @@ camera intrinsics scaling
 - handle image resizing effect on disparity
 
 
-======================
-data augmentation
-======================
+<!-- data augmentation -->
 - increase contrast for minor classes
 - fill void with ground points
 
 
-======================
-testing infrastructure
-======================
+<!-- testing infrastructure -->
 - figure out metrics
 - write testing class
 - figure out eval-results logging mechanism 
@@ -188,9 +160,7 @@ testing infrastructure
 - utility to classify dataset into [object / pole / vineyard ] heavy
 
 
-======================
-test cases
-======================
+<!-- test cases -->
 - w/o occlusion-mask.py
 - w/o stereo-rectification 
 - w/o ipm rgb
@@ -203,9 +173,7 @@ test cases
 - uplaod sample dataset to git
 
 
-======================
-data-handler.py
-======================
+<!-- data-handler.py -->
 + split bev-dataset into train-val-test
 * rename sbevnet module to model
 + flip masks
@@ -217,9 +185,7 @@ data-handler.py
 + integrate generate_json
 
 
-======================
-training utils
-======================
+<!-- training utils -->
 - ability to resume from last epoch / checkpoint
 - log every epoch 
 + plot validation error with train plot
@@ -236,9 +202,7 @@ training utils
 - refactor train-dist.py
 
 
-======================
-fix poor validation set performance
-======================
+<!-- fix poor validation set performance -->
 - check loss function weights
 - check class frequency
 - increase training data size
@@ -301,9 +265,7 @@ fix poor validation set performance
 - training on only vine stems + poles followwd by fine tuning on other classes
 
 
-======================
-sbevnet 
-======================
+<!-- sbevnet  -->
 - check sbevnet utils
 - EvalClass 
 - integrate eval cases
@@ -330,13 +292,12 @@ sbevnet
 
 
 + end to end data-handling in data-handler.py
-- refactor data-handler.py
++ refactor data-handler.py
 - refactor train-dist.py
 - refactor sbevnet
 - add scripts folder
 - simplify dataloaders
-- separate model-dataset generation
-- explore best practices around incorporating validation loss in training
++ separate model-dataset generation
 - do not measure void classes for loss calculations during evaluation
 - fix get_grid_one + data warping
 - examine disparity scaling
@@ -350,26 +311,49 @@ sbevnet
 - add ensembling
 - what does the nature of the train-validation plot say?
 - possible to train + eval simultaneously / alternately?
-- integrate gt in evaluate.py
 - inspect cases in which GT has significant rotation
 - what information is contained in .pth file? 
 
-fix train-dist.py
+
+
+<!-- fix train-dist.py -->
++ significance of background class
 - how is validation loss being calculated?
-- add seed
-- save best-train / best-val / latest.pth
++ add seed
++ save best-train / best-val / latest.pth
++ save all intermediate epochs
+- class-wise training
 - co-relation betweeen train / validation loss
-
-
-
-fix evaluation.py
-- major refactoring
-- is the correspondance with images, gt-seg-imgs and prediction even correct?
-- visulalize img + gt + pred in one-frame
+- fine tuning strategy
+- train on single farm
+- explore best practices around incorporating validation loss in training
+- reduce code duplication
++ support for train on 3 gpus + eval on 1 gpu
 - tune weights
-
-
-to-read
+- tune gamma
+- introduce alpha in focalLoss
 - handling cases with class imbalanace
-- writing train scripts
-- writing eval scripts
+- read training scripts
+
+<!-- fix rotation issue -->
+- make prediction for all the frames in one leaf folder 
+
+
+<!-- fix evaluation.py -->
+- major refactoring
+- visulalize img + gt + pred in one-frame
+- integrate gt in evaluate.py
+- add real-time inference
+- what params can be stripped off from the evaluate.yaml 
+- rename to evaluate.py 
+- is it good strategy to train one class at a time and then fine tune on other classes
+- common training strategy in class imbalance
+- add script to combine eval predictions with gt-predictions / left-image
+- read evaluation scripts
+- mIoU? 
+
+
+
+- correspondance with images, gt-seg-imgs and prediction even correct is wrong
+- figure out a way to save predictions / loss-curves across training runs
+
