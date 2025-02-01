@@ -352,6 +352,11 @@
 - read evaluation scripts
 - mIoU? 
 
+<!-- literature revierw -->
+- focal loss + class imbalance
+- training in class imbalance situations
+- using weighted cross-entropy loss
+- how to tune focalLoss? 
 
 
 - correspondance with images, gt-seg-imgs and prediction even correct is wrong
