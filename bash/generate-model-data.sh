@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Run the Python script with config file
-python3 -m data-handler --config configs/generate-model-data.yaml
+python3 -m data_handler --config configs/generate-model-data.yaml
 
 # Check if the script executed successfully
 if [ $? -eq 0 ]; then

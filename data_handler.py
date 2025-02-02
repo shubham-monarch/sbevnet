@@ -13,6 +13,7 @@ import boto3
 from urllib.parse import urlparse
 import argparse
 import yaml
+from typing import Tuple
 
 from helpers import get_logger, flip_mask, get_files_from_folder
 
@@ -303,14 +304,52 @@ class ModelDataHandler:
             json.dump(data, f, indent=4)
 
     def _remap_mask_labels(self, mask_dir: str) -> None:
-        '''Remaps the mask labels in the given directory. Changes all 255 labels to 0'''
+        '''Changes all 255 labels to 0'''
         masks = get_files_from_folder(mask_dir, ['.png'])
         for mask_path in tqdm(masks, desc="Remapping mask labels"):
             mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
             mask[mask == 255] = 0
             cv2.imwrite(mask_path, mask)
 
+    @staticmethod
+    def _remove_mask_from_model_dataset(seg_mask_mono_path: str) -> None:
+        """Remove mask from the model-dataset folders 
+        [left / right / seg-masks-mono / seg-masks-rgb/ ..]"""
+        
+        logger = get_logger("DataHandlerModel")
+        parent_dir = os.path.dirname(os.path.dirname(seg_mask_mono_path))
+        try:
+            file_index = os.path.basename(seg_mask_mono_path).split('_')[0]
+        except IndexError:
+            logger.error(f"Could not extract index from {seg_mask_mono_path}")
+            return
+        
+        for folder in os.listdir(parent_dir):
+            for file in os.listdir(os.path.join(parent_dir, folder)):
+                if file.split('_')[0] == file_index:
+                    os.remove(os.path.join(parent_dir, folder, file))
+                    break
+
+    @staticmethod
+    def _remove_outliers(mask_dir: str, target_label: int, threshold: float) -> Tuple[int, List[str]]:
+        '''Remove masks with more than threshold % of the target label'''
+        logger = get_logger("DataHandlerModel")
+        masks = get_files_from_folder(mask_dir, ['.png'])
+        cnt = 0
+        files = []
+        for mask_path in tqdm(masks, desc="Removing label outliers"):
+            seg_mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+            label_mask_cnt = np.sum(seg_mask == target_label)
+            if label_mask_cnt / seg_mask.size >= threshold:
+                cnt += 1
+                files.append(os.path.basename(mask_path))
+                # ModelDataHandler._remove_mask_from_model_dataset(mask_path)
+        
+        return cnt, files
+
     def generate_MODEL_train_test(self):
+        logger = get_logger("DataHandlerModel")
+
         self._restructure_GT_folder(self.GT_train, self.model_train_dir)
         self._restructure_GT_folder(self.GT_test, self.model_test_dir)
 
@@ -323,6 +362,13 @@ class ModelDataHandler:
         # remap mask labels
         self._remap_mask_labels(os.path.join(self.model_train_dir, 'seg-masks-mono'))
         self._remap_mask_labels(os.path.join(self.model_test_dir, 'seg-masks-mono'))
+
+        # remove label 0 outliers
+        cnt, _ = self._remove_outliers(os.path.join(self.model_train_dir, 'seg-masks-mono'), 0, 0.8)
+        
+        logger.info("───────────────────────────────")
+        logger.info(f"Removed {cnt} masks with label outliers")
+        logger.info("───────────────────────────────\n")
 
         # populate json file
         self._populate_json(os.path.join(self.model_dir, 'dataset.json'), self.model_dir)
