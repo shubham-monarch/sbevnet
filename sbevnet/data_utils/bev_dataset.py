@@ -1,23 +1,18 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
 import os
 import torch
 import torch.utils.data as data
 import torch
 import torchvision.transforms as transforms
-import random
 from PIL import Image, ImageOps
 import numpy as np
 from . import preprocess
 import cv2
 import json 
 import inspect 
-import glob
 
 from helpers import get_logger
 
-# from pytorch_propane.data_utils import ComposeDatasetDict 
-from helpers import ComposeDatasetDict
+from composite_dataset import ComposeDatasetDict
 from pytorch_propane.registry import registry
 
 logger = get_logger("bev_dataset")
