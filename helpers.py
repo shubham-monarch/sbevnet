@@ -24,8 +24,7 @@ from typing import Tuple
 from tqdm import tqdm
 import fire
 import sys, inspect
-    
-
+import matplotlib.pyplot as plt
 
 def get_logger(name: str, rank: int = 0) -> logging.Logger:
     """Create a logger that only logs on rank 0 by default."""
@@ -68,7 +67,6 @@ def print_available_gpus():
     else:
         logger.info("No GPUs available.")
 
-
 def get_files_from_folder(folder, extensions):
     '''Get all files with the given extensions from the folder.'''
     files = []
@@ -108,13 +106,9 @@ def populate_json(json_path, dataset_path, split="train"):
         json.dump(data, f, indent=4)
 
 def flip_mask(mask_path: str) -> np.ndarray:
-    
     '''Flip the single channel segmentation mask vertically.'''
-
-    # return cv2.flip(mask, 0)
     mask_i_mono = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
     mask_f_mono = cv2.flip(mask_i_mono, 0)
-
     return mask_f_mono
 
 def crop_resize_mask(mask_path: str) -> np.ndarray:
@@ -147,6 +141,77 @@ def show_help():
     logger.info(help_str)
     logger.info("───────────────────────────────")
 
+def get_label_distribution(folder_path: str = "data/model-dataset/train/seg-masks-mono") -> Dict[int, float]:
+    """Get the label distribution of the dataset including per-image statistics and histograms."""
+    logger = get_logger('get_label_distribution')
+    folder_path = Path(folder_path)
+
+    if not folder_path.exists():
+        logger.error(f"Segmentation mask folder not found: {folder_path}")
+        return
+
+    mask_files = list(folder_path.glob('*.png'))
+
+    # logger.info("───────────────────────────────")
+    # logger.info(f"mask_files: {mask_files[:10]}")
+    # logger.info("───────────────────────────────")
+
+    if not mask_files:
+        logger.warning(f"No mask files found in: {folder_path}")
+        return
+
+    total_label_counts = {}
+    total_pixels = 0
+
+    per_mask_percentages = []  # List of dicts mapping label: percentage for each image
+    observed_labels = set()
+
+    for mask_file in mask_files:
+        mask = cv2.imread(str(mask_file), cv2.IMREAD_UNCHANGED)
+        if mask is None:
+            logger.warning(f"Could not read mask file: {mask_file}")
+            continue
+
+        mask_size = mask.size
+        per_image = {}
+        unique_labels = np.unique(mask)
+        for label in unique_labels:
+            count = np.sum(mask == label)
+            total_label_counts[label] = total_label_counts.get(label, 0) + count
+            per_image[label] = (count / mask_size) * 100
+        per_mask_percentages.append(per_image)
+        observed_labels.update(unique_labels.tolist())
+        total_pixels += mask_size
+
+    if total_pixels == 0:
+        logger.warning("No pixels found in any mask.")
+        return
+
+    # global_label_percentages = {label: (total_label_counts[label] / total_pixels) * 100
+    #                             for label in total_label_counts}
+    
+    # Build a dict mapping each label to a list of its percentage across images.
+    label_percentages_across_images = {label: [] for label in observed_labels}
+    for per_image in per_mask_percentages:
+        for label in observed_labels:
+            label_percentages_across_images[label].append(per_image.get(label, 0))
+
+    for label, percentages in label_percentages_across_images.items():
+        percentages_np = np.array(percentages)
+        mean_val = np.mean(percentages_np)
+        median_val = np.median(percentages_np)
+        std_val = np.std(percentages_np)
+        logger.info(f"Label {label}: mean: {mean_val:.2f}%, median: {median_val:.2f}%, std: {std_val:.2f}%")
+        
+        plt.figure()
+        plt.hist(percentages, bins=20, edgecolor='black')
+        plt.title(f"Histogram for Label {label}")
+        plt.xlabel("Percentage of pixels per image (%)")
+        plt.ylabel("Frequency")
+        plt.savefig(f"assets/label_{label}_histogram.png")
+        plt.close()
+
+    # return global_label_percentages
 
 def main():
     logger = get_logger('helpers')
