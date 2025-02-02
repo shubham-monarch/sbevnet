@@ -57,5 +57,6 @@ early_stopping_patience: 20
 loss_type: focal         # set to "focal" to use FocalLoss, or "cross_entropy" for the default
 focal_gamma: 2.0         # gamma parameter for FocalLoss
 
-# seed
+# seed and deterministic settings
 random_seed: 420
+deterministic: false     # Toggle deterministic behavior

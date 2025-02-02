@@ -1,8 +1,9 @@
 # S3 configuration
-s3_uri: "s3://occupancy-dataset/bev-dairy/dairy"
+s3_uri: "s3://occupancy-dataset/bev-dairy-more-navigable/"
+
 
 # model dataset 
-n_train: 1800 # number of training samples
+n_train: 1950 # number of training samples
 n_test: 400 # number of test samples
 
 # Directory paths

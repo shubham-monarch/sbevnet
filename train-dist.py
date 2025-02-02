@@ -20,30 +20,36 @@ import torch.nn.functional as F
 import argparse
 import random
 import numpy as np
+import sys
 
 from sbevnet.models.network_sbevnet import SBEVNet
 from sbevnet.data_utils.bev_dataset import sbevnet_dataset
 from helpers import get_logger, populate_json
 
 
-def set_seed(seed: int):
+def set_seed(seed: int, deterministic: bool = True):
     """Set all random seeds for reproducibility"""
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-    # Enable deterministic CuDNN algorithms (may impact performance)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    
+    if deterministic:
+        # Enable deterministic CuDNN algorithms (may impact performance)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
 
-def setup(rank: int, world_size: int) -> None:
+def setup(rank: int, world_size: int, deterministic: bool = True) -> None:
     """Initialize distributed training process group."""
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = '12355'
-    os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'  # For deterministic CUDA ops
+    
+    if deterministic:
+        os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'  # For deterministic CUDA ops
+        torch.use_deterministic_algorithms(True, warn_only=True)  # Force deterministic algorithms
+    
     dist.init_process_group("nccl", rank=rank, world_size=world_size)
-    torch.use_deterministic_algorithms(True, warn_only=True)  # Force deterministic algorithms
 
 
 def cleanup() -> None:
@@ -112,11 +118,12 @@ def seed_worker(worker_id):
 def train(rank: int, world_size: int, params: dict) -> None:
     """Training function for each process."""
     try:
-        # Get seed from config with default 420 if not specified
+        # Get seed and deterministic settings from config
         seed = params.get('random_seed', 420)
-        set_seed(seed + rank)
+        deterministic = params.get('deterministic', True)
         
-        setup(rank, world_size)
+        set_seed(seed + rank, deterministic)
+        setup(rank, world_size, deterministic)
         logger = get_logger("train", rank)
         
         is_main_process = rank == 0
@@ -445,9 +452,24 @@ def train_sbevnet_distributed(config_path: str) -> None:
     )
 
 
-if __name__ == '__main__':
+def main():
+    """Main entry point for the training script."""
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, required=True, help='Path to config YAML file')
     args = parser.parse_args()
     
-    train_sbevnet_distributed(args.config) 
+    logger = get_logger("train-dist", logging.INFO)
+    
+    try:
+        with open(args.config, 'r') as file:
+            params = yaml.safe_load(file)
+        
+        train_sbevnet_distributed(args.config)
+        
+    except Exception as e:
+        logger.error(f"Error: {e.__class__.__name__}: {str(e)}")
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main() 
