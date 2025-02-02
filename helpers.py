@@ -142,7 +142,9 @@ def show_help():
     logger.info("───────────────────────────────")
 
 def get_label_distribution(folder_path: str = "data/model-dataset/train/seg-masks-mono") -> Dict[int, float]:
+    
     """Get the label distribution of the dataset including per-image statistics and histograms."""
+    
     logger = get_logger('get_label_distribution')
     folder_path = Path(folder_path)
 
@@ -151,10 +153,6 @@ def get_label_distribution(folder_path: str = "data/model-dataset/train/seg-mask
         return
 
     mask_files = list(folder_path.glob('*.png'))
-
-    # logger.info("───────────────────────────────")
-    # logger.info(f"mask_files: {mask_files[:10]}")
-    # logger.info("───────────────────────────────")
 
     if not mask_files:
         logger.warning(f"No mask files found in: {folder_path}")
@@ -187,10 +185,6 @@ def get_label_distribution(folder_path: str = "data/model-dataset/train/seg-mask
         logger.warning("No pixels found in any mask.")
         return
 
-    # global_label_percentages = {label: (total_label_counts[label] / total_pixels) * 100
-    #                             for label in total_label_counts}
-    
-    # Build a dict mapping each label to a list of its percentage across images.
     label_percentages_across_images = {label: [] for label in observed_labels}
     for per_image in per_mask_percentages:
         for label in observed_labels:
@@ -212,6 +206,13 @@ def get_label_distribution(folder_path: str = "data/model-dataset/train/seg-mask
         plt.close()
 
     # return global_label_percentages
+
+def get_label_cnt_in_dataset(mask_dir: str = "data/model-dataset/train/seg-masks-mono", label: int = 0, thresh: float = 0.5) -> int:
+    '''Get the count of the target label in the mask directory.'''
+    from data_handler import ModelDataHandler  # defer import to avoid circular dependency
+    cnt, files = ModelDataHandler._remove_outliers(mask_dir, label, thresh)
+    files.sort(key=lambda x: int(x.split('_')[0]))
+    return cnt, files
 
 def main():
     logger = get_logger('helpers')
