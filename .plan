@@ -314,9 +314,13 @@
 - inspect cases in which GT has significant rotation
 - what information is contained in .pth file? 
 
+fine-tuning
+- remove gate-class outliers from train-data
+- remove void-class outliers from train-data
+- set gate-class weight to 0
 
 
-<!-- fix train-dist.py -->
+
 + significance of background class
 - how is validation loss being calculated?
 + add seed
@@ -334,31 +338,44 @@
 - introduce alpha in focalLoss
 - handling cases with class imbalanace
 - read training scripts
-
-<!-- fix rotation issue -->
-- make prediction for all the frames in one leaf folder 
-
-
-<!-- fix evaluation.py -->
+- fill void points with navigable-space 
+- just predict navigable-space, obstacles and feed. 
+- add warm-up
 - major refactoring
-- visulalize img + gt + pred in one-frame
 - integrate gt in evaluate.py
+- visulalize img + gt + pred in one-frame
 - add real-time inference
 - what params can be stripped off from the evaluate.yaml 
-- rename to evaluate.py 
++ rename to evaluate.py 
 - is it good strategy to train one class at a time and then fine tune on other classes
 - common training strategy in class imbalance
 - add script to combine eval predictions with gt-predictions / left-image
 - read evaluation scripts
 - mIoU? 
-
-<!-- literature revierw -->
 - focal loss + class imbalance
 - training in class imbalance situations
 - using weighted cross-entropy loss
 - how to tune focalLoss? 
-
-
-- correspondance with images, gt-seg-imgs and prediction even correct is wrong
+- when to use focalLoss vs CELoss
 - figure out a way to save predictions / loss-curves across training runs
+- visulalize gt + pred in one-frame
+- better predictions + training-plot logging mechanism
+- [inspect] inspect gate-label outliers in GT seg-masks
+- refactor bev-dataset.py
+- [model-dataset-generation] add original folder reference in model-dataset, if possible URI
+- just predict navigable-space, obstacles and feed. 
+- script that takes in bev-dairy uri and makes it ready for evaluation.sh
+- add gt-combined folder that contains mask + left-img
++ [model-dataset-generation] remove invalid seg-masks
++ regenerate bev_seg_mask with better navigable-space representation
+- script to scp [gt-seg-mask + left-img] or [pred-seg-mask + left-img] to local 
++ aggregate average class % in train / test data 
+- script to evaluate on train-data instead of validation-data
+- start data-augmentation pipeline
+- use the label-cnt distribution data to adjust crosssEntropyLoss weights 
+- curious case of gate-label outliers
 
+
+- script to directly predict on a leaf-folder
+- correspondance with images, gt-seg-imgs and prediction even correct is wrong
+- fix rotation
