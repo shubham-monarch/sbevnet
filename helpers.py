@@ -129,30 +129,28 @@ def crop_resize_mask(mask_path: str) -> np.ndarray:
     assert mask_cropped.shape == (256,256), f"Expected mask shape to be (256, 256), but got {mask_cropped.shape}"
     return mask_cropped
 
-
 def show_help():
     """Show help and available commands including parameter hints."""
-    import inspect
-    available_commands = {
-        "print_available_gpus": print_available_gpus,
-        "get_files_from_folder": get_files_from_folder,
-        "populate_json": populate_json,
-        "flip_mask": flip_mask,
-        "crop_resize_mask": crop_resize_mask,
-        "help": show_help,
-    }
+    logger = get_logger('show_help')
+    current_module = sys.modules[__name__]
+    all_functions = inspect.getmembers(current_module, inspect.isfunction)
+    commands = {name: func for name, func in all_functions if not name.startswith('_') and name != "main"}
     help_str = "Available commands:\n"
-    for cmd, func in available_commands.items():
+    
+    for cmd, func in commands.items():
         sig = inspect.signature(func)
         doc = inspect.getdoc(func)
         summary = doc.splitlines()[0] if doc else "No description provided."
         help_str += f"  {cmd}{sig}: {summary}\n"
-    print(help_str)
+    
+    logger.info("───────────────────────────────")
+    logger.info(help_str)
+    logger.info("───────────────────────────────")
+
 
 def main():
     logger = get_logger('helpers')
-    logger.info(f"Available commands: {commands}")
-
+    
     current_module = sys.modules[__name__]
     # Get all functions defined in the current module.
     all_functions = inspect.getmembers(current_module, inspect.isfunction)
