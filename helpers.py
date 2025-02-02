@@ -1,5 +1,9 @@
 #! /usr/bin/env python3
 
+from pathlib import Path
+from typing import Dict, List, Tuple, Any, Optional
+import logging
+import json
 import os
 import shutil
 from tqdm import tqdm
@@ -18,7 +22,8 @@ import random
 import shutil
 from typing import Tuple
 import pyzed.sl as sl
-
+from tqdm import tqdm
+import fire
 
 
 class ComposeDatasetDict(data.Dataset):
@@ -54,9 +59,8 @@ class ComposeDatasetDict(data.Dataset):
         else:
             return ret 
 
-    def __len__(self):
-        for k in self.data_loaders:
-            return len(self.data_loaders[k]) 
+    def __len__(self) -> int:
+        return len(next(iter(self.data_loaders.values())))
 
 
 
@@ -385,120 +389,53 @@ def plot_segmentation_classes(mask: np.ndarray) -> None:
     plt.savefig('segmentation_classes_plot.png')  # save plot to disk
     plt.close()  # close the plot to free memory
 
+def show_help():
+    """Show help and available commands including parameter hints."""
+    import inspect
+    available_commands = {
+        "get_label_colors_from_yaml": get_label_colors_from_yaml,
+        "mono_to_rgb_mask": mono_to_rgb_mask,
+        "convert_rgb_to_single_channel": convert_rgb_to_single_channel,
+        "print_available_gpus": print_available_gpus,
+        "get_files_from_folder": get_files_from_folder,
+        "populate_json": populate_json,
+        "print_unique_ids_in_mask": print_unique_ids_in_mask,
+        "flip_mask": flip_mask,
+        "flip_masks": flip_masks,
+        "crop_resize_mask": crop_resize_mask,
+        "crop_resize_masks": crop_resize_masks,
+        "generate_dataset_from_svo": generate_dataset_from_svo,
+        "plot_segmentation_classes": plot_segmentation_classes,
+        "help": show_help,
+    }
+    help_str = "Available commands:\n"
+    for cmd, func in available_commands.items():
+        sig = inspect.signature(func)
+        doc = inspect.getdoc(func)
+        summary = doc.splitlines()[0] if doc else "No description provided."
+        help_str += f"  {cmd}{sig}: {summary}\n"
+    print(help_str)
+
+def main():
+    """CLI interface for helper functions."""
+    commands = {
+        "get_label_colors": get_label_colors_from_yaml,
+        "mono_to_rgb": mono_to_rgb_mask,
+        "convert_to_single_channel": convert_rgb_to_single_channel,
+        "print_gpus": print_available_gpus,
+        "get_files": get_files_from_folder,
+        "create_json": populate_json,
+        "print_mask_ids": print_unique_ids_in_mask,
+        "flip_mask": flip_mask,
+        "flip_masks": flip_masks,
+        "crop_resize": crop_resize_mask,
+        "process_masks": crop_resize_masks,
+        "generate_dataset": generate_dataset_from_svo,
+        "plot_classes": plot_segmentation_classes,
+        "help": show_help,
+    }
+    
+    fire.Fire(commands)
 
 if __name__ == "__main__":
-    # pass
-    
-    logger = get_logger('main')
-
-    # CASE 14
-    # plot segmentation classes
-    mask_path = 'datasets/train-640x480/seg-masks-mono-cropped/58__seg-mask-mono.png'
-    mask = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
-    # flip the mask in the y-direction
-    mask_ = np.flip(mask, axis=0)
-    plot_segmentation_classes(mask_)
-
-
-    # # CASE 13
-    # # generate a dataset from an SVO file
-    # svo_path = "front_2024-06-04-10-39-57.svo"
-    # dataset_path = "datasets/sample-svo"
-    # generate_dataset_from_svo(svo_path, dataset_path, size=(640, 480))
-    # populate_json('datasets/dataset.json', 'datasets')
-
-    # # CASE 12
-    # # crop + flip mono / rgb masks
-    # src_mono = 'datasets/train-640x480/seg-masks-mono'
-    # dest_mono = 'datasets/train-640x480/seg-masks-mono-cropped'
-    # dest_rgb = 'datasets/train-640x480/seg-masks-rgb-cropped'
-    
-    # # resize mono / rgb masks
-    # crop_resize_masks(src_mono, dest_mono, dest_rgb)
-
-    # # flip mono / rgb masks
-    # flip_masks(dest_mono, dest_mono)
-    # flip_masks(dest_rgb, dest_rgb)
-
-    # # CASE 11
-    # src_mono = 'datasets/train-640x480/seg-masks-mono'
-    # dest_mono = 'datasets/train-640x480/seg-masks-mono-cropped'
-    # dest_rgb = 'datasets/train-640x480/seg-masks-rgb-cropped'
-    # crop_resize_masks(src_mono, dest_mono, dest_rgb)
-
-
-    # # CASE 10
-    # mask_path = '/home/ubuntu/sbevnet/datasets/train-640x480/seg-masks-mono/19__seg-mask-mono.png'
-    # mask_i = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
-    # mask_f = crop_resize_mask(mask_path)
-    # mask_f_rgb = mono_to_rgb_mask(mask_f)
-    # cv2.imwrite('debug/mask_cropped.png', mask_f_rgb)
-    
-    # # CASE 9
-    # mask_path = '/home/ubuntu/sbevnet/datasets/train-640x480/seg-masks-mono/19__seg-mask-mono.png'
-    # mask_f = flip_mask(mask_path)
-    # # cv2.imwrite('debug/mask_f.png', mask_f)
-
-    # CASE => 1
-    # Restructure the train-dataset into left, right, and bev-segmented folders.
-    # src_folder = 'train-data'
-    # target_folder = 'train-data-organized'
-    # restructure_dataset(src_folder, target_folder)
-
-    # CASE => 2
-    # Populate the json file with the file paths of the images in the dataset.
-    # json_path = 'datasets/dataset.json'
-    # dataset_path = 'datasets'
-    # populate_json(json_path, dataset_path)
-
-    # # CASE => 3
-    # # Convert an RGB segmentation mask to a single channel image.
-    # segmentation_mask = 'datasets/train/bev-segmented/1__left.disp.png'
-    # single_channel_mask = convert_rgb_to_single_channel(segmentation_mask)
-    # # print(f"single_channel_mask.shape: {single_channel_mask.shape}")
-
-    # CASE => 4
-    # Get the number of unique labels from an RGB segmentation mask.
-    # segmentation_mask = 'datasets/train/bev-segmented/1__left.disp.png'
-    # num_labels = get_unique_labels_from_rgb_mask(segmentation_mask)
-    # print(f"Number of unique labels: {num_labels}")
-
-    # CASE => 5
-    # Resize segmentation masks in the input folder and save them to the output folder.
-    # input_folder = 'datasets/train/cropped-seg-masks-mono'
-    # output_folder = 'datasets/train/cropped-seg-masks-mono'
-    # new_size = (480,480)
-    # resize_segmentation_masks(input_folder, output_folder, new_size, labels=[0, 1, 2, 3, 4, 5])
-
-    # CASE => 6
-    # Convert all mono segmentation masks to RGB masks.
-    # src_folder = 'debug/cropped-seg-masks-mono'
-    # dst_folder = 'debug/cropped-seg-masks-rgb'
-    # convert_mono_to_rgb_masks(src_folder, dst_folder)
-
-    # CASE => 7
-    # Print information about available CUDA GPUs.
-    # print_available_gpus()
-
-    # # CASE => 8
-    # # Print the number of unique IDs in a single channel segmentation mask.
-    
-    # seg_mask_mono_folder = 'datasets/test-640x480/seg-masks-mono'
-    
-    # # Get a random mask path from the folder
-    # mask_path = random.choice(glob.glob(os.path.join(seg_mask_mono_folder, '*.png')))
-    # num_labels, unique_ids, mask_shape = print_unique_ids_in_mask(mask_path)
-
-    # logger.info(f"===============")
-    # logger.info(f"Mask file name: {os.path.basename(mask_path)}")
-    # logger.info(f"Mask shape: {mask_shape}")
-    # logger.info(f"Number of unique labels: {num_labels}")
-    # logger.info(f"Unique IDs: {unique_ids}")
-    # logger.info(f"===============\n")
-
-    # mask_path = 'predictions/pred_0_0.png'
-    # num_labels, unique_ids = print_unique_ids_in_mask(mask_path)
-    # logger.info(f"===============")
-    # logger.info(f"Number of unique labels: {num_labels}")
-    # logger.info(f"Unique IDs: {unique_ids}")
-    # logger.info(f"===============\n")
+    main()
