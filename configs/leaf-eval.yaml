@@ -25,3 +25,55 @@ output_dirs:
   gt_train: "leaf-eval/GT-train"
   gt_test: "leaf-eval/GT-test"
   model_dataset: "leaf-eval/model-dataset"
+
+
+
+  # image dimensions
+image_w: 640
+image_h: 480
+max_disp: 64
+
+# segmentation and heatmap parameters
+n_classes_seg: 14
+n_hmap: 256
+
+# depth range (in meters)
+xmin: 2.0
+xmax: 7.0
+
+# horizontal range (in meters)
+ymin: -2.0
+ymax: 3.0
+
+# camera parameters
+cx: 964.989
+cy: 569.276
+f: 1093.2768
+tx: 0.12
+camera_ext_x: 0.0
+camera_ext_y: 0.0
+
+# additional parameters for SBEVNet
+do_ipm_rgb: false
+do_ipm_feats: false
+fixed_cam_confs: true
+
+# training parameters
+batch_size: 4
+num_epochs: 200
+learning_rate: 0.0001
+
+# dataset parameters
+json_path: 'leaf-eval/model-dataset/dataset.json'
+color_map: 'configs/Mavis.yaml'
+do_mask: false
+do_top_seg: true
+zero_mask: false
+
+# evaluation specific parameters
+checkpoint_path: 'checkpoints/best_val_model.pth'
+# checkpoint_path: 'checkpoints/best_train_model.pth'
+batch_size: 1
+do_top_seg: false
+predictions_dir: 'leaf-eval/predictions'
+gpu_id: 3

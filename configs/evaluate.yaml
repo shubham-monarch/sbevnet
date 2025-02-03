@@ -34,13 +34,15 @@ num_epochs: 200
 learning_rate: 0.0001
 
 # dataset parameters
+json_path: 'data/model-dataset/dataset.json'
+color_map: 'configs/Mavis.yaml'
 do_mask: false
 do_top_seg: true
 zero_mask: false
 
 # evaluation specific parameters
-# checkpoint_path: 'checkpoints/best_model.pth'
-checkpoint_path: 'checkpoints/latest_checkpoint.pth'
+checkpoint_path: 'checkpoints/best_val_model.pth'
+# checkpoint_path: 'checkpoints/best_train_model.pth'
 batch_size: 1
 do_top_seg: false
 predictions_dir: 'predictions'

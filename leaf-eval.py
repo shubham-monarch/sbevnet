@@ -4,6 +4,7 @@ import argparse
 
 from data_handler import ModelDataHandler
 from helpers import get_logger
+from evaluate import evaluate_sbevnet
 
 class Evaluation: 
 
@@ -15,6 +16,11 @@ class Evaluation:
         
         # download leaf-folder and generate model-dataset
         ModelDataHandler.generate_model_dataset(config_path)
+
+        # evaluate model-dataset
+        evaluate_sbevnet(config_path)
+
+        
 
 
 def main():
