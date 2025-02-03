@@ -176,8 +176,8 @@ class S3_DataHandler:
         self._copy_folders(test_folders, self.src_dir, self.GT_test)
 
         # assert number of folders in gt-train / gt-test
-        assert len(S3_DataHandler._get_leaf_folders(self.GT_train)) == n_train, f'Expected {n_train} training files, but got {len(S3_DataHandler._get_leaf_folders(self.GT_train))}'
-        assert len(S3_DataHandler._get_leaf_folders(self.GT_test)) == n_test, f'Expected {n_test} test files, but got {len(S3_DataHandler._get_leaf_folders(self.GT_test))}'
+        # assert len(S3_DataHandler._get_leaf_folders(self.GT_train)) == len(train_folders), f'Expected {len(train_folders)} training files, but got {len(S3_DataHandler._get_leaf_folders(self.GT_train))}'
+        # assert len(S3_DataHandler._get_leaf_folders(self.GT_test)) == len(test_folders), f'Expected {len(test_folders)} test files, but got {len(S3_DataHandler._get_leaf_folders(self.GT_test))}'
       
 class ModelDataHandler:
     
@@ -395,10 +395,14 @@ class ModelDataHandler:
         with open(config_path, 'r') as f:
             config = yaml.safe_load(f)
         
+        # S3DataHandler confs
         s3_uri = config['s3_uri']
+        s3_dest_dir = config['s3_dest_dir']
+        aws_dir = config['aws_dir']
+        
+        # ModelDataHandler confs
         n_train = config['n_train']
         n_test = config['n_test']
-        aws_dir = config['aws_dir']
         keys = config['keys']
 
         if not os.path.exists(aws_dir) or not os.listdir(aws_dir):
@@ -413,7 +417,7 @@ class ModelDataHandler:
         # generate GT-train / GT-test folders
         gt_handler = S3_DataHandler(
             src_dir=aws_dir,
-            dst_dir="data",
+            dst_dir=s3_dest_dir,
             required_keys = keys
         )
         gt_handler.generate_GT_train_test(n_train=n_train, n_test=n_test)

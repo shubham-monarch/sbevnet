@@ -1,0 +1,27 @@
+# S3 configuration
+s3_uri: "s3://occupancy-dataset/bev-dairy-more-navigable/dairy/ghdairy/2024_02_19/svo_files/front_2024-02-21-11-10-38.svo/2084_to_2226/"
+s3_dest_dir: "leaf-eval"
+
+# model dataset 
+n_train: 0 # number of training samples
+
+# assign all samples in s3_uri (leaf-folders) to test set
+n_test: -1 
+
+root_dir: "leaf-eval"
+
+# Directory paths
+aws_dir: "leaf-eval/GT-aws"  # local directory to store aws data
+
+# Required files in each GT folder
+keys:
+  - "left.jpg"
+  - "right.jpg"
+  - "seg-mask-mono.png"
+  - "seg-mask-rgb.png"
+
+# Output directories
+output_dirs:
+  gt_train: "leaf-eval/GT-train"
+  gt_test: "leaf-eval/GT-test"
+  model_dataset: "leaf-eval/model-dataset"

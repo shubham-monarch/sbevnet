@@ -1,6 +1,6 @@
 # S3 configuration
 s3_uri: "s3://occupancy-dataset/bev-dairy-more-navigable/"
-
+s3_dest_dir: "data"
 
 # model dataset 
 n_train: 1950 # number of training samples
