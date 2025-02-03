@@ -15,7 +15,7 @@ debug/*
 logs/*
 .cursorrules
 sync.expect
-
+leaf-eval/*
 
 # OS generated files #
 ######################

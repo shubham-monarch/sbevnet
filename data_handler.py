@@ -39,9 +39,9 @@ class S3_DataHandler:
         self.GT_train = os.path.join(self.dst_dir, "GT-train")
         self.GT_test = os.path.join(self.dst_dir, "GT-test")
         
-        self.logger.info("───────────────────────────────")
-        self.logger.info("Generating [GT-train / GT-test] from GT-dataset...")
-        self.logger.info("───────────────────────────────\n")
+        # self.logger.info("───────────────────────────────")
+        # self.logger.info("Generating [GT-train / GT-test] from GT-dataset...")
+        # self.logger.info("───────────────────────────────\n")
 
     @staticmethod
     def _get_leaf_folders(src_dir: str) -> List[str]:
@@ -75,7 +75,7 @@ class S3_DataHandler:
 
         
         incomplete_folders = []
-        for folder in tqdm(leaf_folders, desc="Checking folders"):
+        for folder in tqdm(leaf_folders, desc="Removing incomplete folders"):
             folder_files = os.listdir(os.path.join(self.src_dir, folder))
             
             # check if folder has exactly the required files
@@ -367,15 +367,18 @@ class ModelDataHandler:
         self._flip_masks(os.path.join(self.model_test_dir, 'seg-masks-rgb'),\
                            os.path.join(self.model_test_dir, 'seg-masks-rgb'))
         
-        # remap mask labels
+        # remap label 255 to 0
         self._remap_mask_labels(os.path.join(self.model_train_dir, 'seg-masks-mono'))
         self._remap_mask_labels(os.path.join(self.model_test_dir, 'seg-masks-mono'))
 
-        # remove label 0 outliers
-        cnt, _ = self._remove_outliers(os.path.join(self.model_train_dir, 'seg-masks-mono'), 0, 0.8)
+        # remove masks containing more than 80% of any label
+        total_cnt = 0
+        for label in range(0,14):
+            cnt, _ = self._remove_outliers(os.path.join(self.model_train_dir, 'seg-masks-mono'), label, 0.8)
+            total_cnt += cnt
         
         logger.info("───────────────────────────────")
-        logger.info(f"Removed {cnt} masks with label outliers")
+        logger.info(f"Removed {total_cnt} masks with label outliers")
         logger.info("───────────────────────────────\n")
 
         # populate json file

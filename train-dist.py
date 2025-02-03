@@ -57,30 +57,6 @@ def cleanup() -> None:
     dist.destroy_process_group()
 
 
-def compute_class_weights(dataset: DataLoader, params: dict) -> torch.Tensor:
-    """compute inverse frequency class weights"""
-    logger = logging.getLogger("compute_class_weights")
-    
-    # count frequencies of each class
-    class_counts = torch.zeros(params['n_classes_seg'])
-    for data in dataset:
-        labels = data['top_seg']
-        for i in range(params['n_classes_seg']):
-            class_counts[i] += (labels == i).sum()
-    
-    # compute inverse frequency weights
-    total_samples = class_counts.sum()
-    class_weights = total_samples / (class_counts * params['n_classes_seg'])
-    
-    # normalize weights to have median of 1
-    class_weights = class_weights / class_weights.median()
-
-    logger.warning(f"=================")
-    logger.warning(f"computed class weights: {class_weights}")
-    logger.warning(f"=================\n")
-    
-    return class_weights
-
 
 class FocalLoss(nn.Module):
     '''implementation of focal loss from "Focal Loss for Dense Object Detection"'''
@@ -206,9 +182,17 @@ def train(rank: int, world_size: int, params: dict) -> None:
         # class_weights = torch.tensor([0.1, 10.0, 0.1, 0.5, 5.0, 5.0]).to(rank)
         class_weights = torch.tensor(params['class_weights'], dtype=torch.float32).to(rank)
         
-        logger.warning(f"=================")
-        logger.warning(f"computed class weights: {class_weights}")
-        logger.warning(f"=================\n")
+        logger.warning("───────────────────────────────")
+        logger.warning(f"original class_weights: {class_weights}")
+        logger.warning("───────────────────────────────")
+
+        total_weight = class_weights.sum().item()
+        if total_weight > 0:
+            class_weights = class_weights / total_weight
+        
+        logger.warning("───────────────────────────────")
+        logger.warning(f"normalized_class_weights: {class_weights}")
+        logger.warning("───────────────────────────────")
 
         # Criterion selection based on config (loss_type: "focal" or "cross_entropy")
         loss_type = params.get('loss_type', 'cross_entropy')
