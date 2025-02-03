@@ -156,12 +156,20 @@ class S3_DataHandler:
         random.shuffle(leaf_folders)
         
         assert len(leaf_folders) > n_train + n_test, f'Expected at least {n_train + n_test} leaf folders, but got {len(leaf_folders)}'
+        assert not (n_train == -1 and n_test == -1), "Both n_train and n_test cannot be -1."
 
         os.makedirs(self.GT_train, exist_ok=True)
         os.makedirs(self.GT_test, exist_ok=True)
-                
-        train_folders = leaf_folders[:n_train]
-        test_folders = leaf_folders[n_train:n_train + n_test]
+        
+        if n_train >= 0:
+            train_folders = leaf_folders[:n_train]
+        else: 
+            train_folders = leaf_folders[:]
+        
+        if n_test >= 0:
+            test_folders = leaf_folders[n_train:n_train + n_test]
+        else: 
+            test_folders = leaf_folders[n_train:]
         
         # copy folders to GT_train / GT_test 
         self._copy_folders(train_folders, self.src_dir, self.GT_train)
@@ -343,7 +351,7 @@ class ModelDataHandler:
             if label_mask_cnt / seg_mask.size >= threshold:
                 cnt += 1
                 files.append(os.path.basename(mask_path))
-                # ModelDataHandler._remove_mask_from_model_dataset(mask_path)
+                ModelDataHandler._remove_mask_from_model_dataset(mask_path)
         
         return cnt, files
 
@@ -373,51 +381,51 @@ class ModelDataHandler:
         # populate json file
         self._populate_json(os.path.join(self.model_dir, 'dataset.json'), self.model_dir)
 
+    @staticmethod
+    def generate_model_dataset(config_path: str):
+        """
+        Generate model-dataset by downloading from S3 and processing the data
+        
+        Args:
+            config_path (str): path to the config file
+        """
 
-def generate_model_dataset(config):
-    """
-    Generate model-dataset by downloading from S3 and processing the data
-    
-    Args:
-        config (dict): Configuration dictionary from YAML file
-    """
+        logger = get_logger("DataHandler")
+        
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        
+        s3_uri = config['s3_uri']
+        n_train = config['n_train']
+        n_test = config['n_test']
+        aws_dir = config['aws_dir']
+        keys = config['keys']
 
-    logger = get_logger("DataHandler")
-    
-    s3_uri = config['s3_uri']
-    n_train = config['n_train']
-    n_test = config['n_test']
-    aws_dir = config['aws_dir']
-    keys = config['keys']
+        if not os.path.exists(aws_dir) or not os.listdir(aws_dir):
+            os.makedirs(aws_dir, exist_ok=True)
+            S3_DataHandler.download_s3_folder(s3_uri, aws_dir)
 
-    # assert not (os.path.exists(aws_dir) and os.listdir(aws_dir)), \
-    #     f"Directory {aws_dir} is not empty. Please provide an empty directory."
+        else: 
+            logger.info("───────────────────────────────")
+            logger.info("aws-data already exist. Skipping download...")
+            logger.info("───────────────────────────────\n")
 
-    if not os.path.exists(aws_dir) or not os.listdir(aws_dir):
-        os.makedirs(aws_dir, exist_ok=True)
-        S3_DataHandler.download_s3_folder(s3_uri, aws_dir)
+        # generate GT-train / GT-test folders
+        gt_handler = S3_DataHandler(
+            src_dir=aws_dir,
+            dst_dir="data",
+            required_keys = keys
+        )
+        gt_handler.generate_GT_train_test(n_train=n_train, n_test=n_test)
+        
 
-    else: 
-        logger.info("───────────────────────────────")
-        logger.info("aws-data already exist. Skipping download...")
-        logger.info("───────────────────────────────\n")
-
-    # generate GT-train / GT-test folders
-    gt_handler = S3_DataHandler(
-        src_dir=aws_dir,
-        dst_dir="data",
-        required_keys = keys
-    )
-    gt_handler.generate_GT_train_test(n_train=n_train, n_test=n_test)
-    
-
-    # generate model-train / model-test folders
-    model_handler = ModelDataHandler(
-        GT_train=config['output_dirs']['gt_train'],
-        GT_test=config['output_dirs']['gt_test'],
-        model_dir=config['output_dirs']['model_dataset']
-    )
-    model_handler.generate_MODEL_train_test()
+        # generate model-train / model-test folders
+        model_handler = ModelDataHandler(
+            GT_train=config['output_dirs']['gt_train'],
+            GT_test=config['output_dirs']['gt_test'],
+            model_dir=config['output_dirs']['model_dataset']
+        )
+        model_handler.generate_MODEL_train_test()
 
 
 def main():
@@ -425,10 +433,7 @@ def main():
     parser.add_argument('--config', type=str, required=True, help='Path to YAML configuration file')
     args = parser.parse_args()
     
-    with open(args.config, 'r') as f:
-        config = yaml.safe_load(f)
-    
-    generate_model_dataset(config)
+    ModelDataHandler.generate_model_dataset(args.config)
 
 if __name__ == "__main__":
     main()
