@@ -318,6 +318,8 @@ fine-tuning
 - remove gate-class outliers from train-data
 - remove void-class outliers from train-data
 - set gate-class weight to 0
+- scheduler
+- warm-ups
 
 
 
@@ -361,6 +363,7 @@ fine-tuning
 - visulalize gt + pred in one-frame
 - better predictions + training-plot logging mechanism
 - [inspect] inspect gate-label outliers in GT seg-masks
+
 - refactor bev-dataset.py
 - [model-dataset-generation] add original folder reference in model-dataset, if possible URI
 - just predict navigable-space, obstacles and feed. 
@@ -374,8 +377,9 @@ fine-tuning
 - start data-augmentation pipeline
 - use the label-cnt distribution data to adjust crosssEntropyLoss weights 
 - curious case of gate-label outliers
+- how does the cam-extrinsics vary across the files? 
 
 
-- script to directly predict on a leaf-folder
++ script to directly predict on a leaf-folder
 - correspondance with images, gt-seg-imgs and prediction even correct is wrong
 - fix rotation

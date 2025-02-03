@@ -255,7 +255,7 @@ class DispImgLoader(data.Dataset):
 
 
 
-@registry.register_dataset("sbevnet_dataset_main")
+# @registry.register_dataset("sbevnet_dataset_main")
 def sbevnet_dataset(
 
     json_path , dataset_split  , do_ipm_rgb=False , 
