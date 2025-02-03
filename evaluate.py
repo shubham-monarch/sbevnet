@@ -51,17 +51,17 @@ def calculate_iou(pred, target, n_classes):
     
     return ious
 
-def evaluate_sbevnet(config_path: str, color_map_path: str):
+def evaluate_sbevnet(config_path: str):
     """Evaluate SBEVNet model using provided configuration files.
     
     Args:
         config_path: Path to the evaluation configuration YAML file
-        color_map_path: Path to the color map configuration YAML file
     """
     logger = get_logger("evaluate")
     
     with open(config_path, 'r') as file:
         params = yaml.safe_load(file)
+    color_map_path = params.get('color_map', 'configs/Mavis.yaml')
 
     scale_x = float(640 / 1920)
     scale_y = float(480 / 1080)
@@ -70,11 +70,6 @@ def evaluate_sbevnet(config_path: str, color_map_path: str):
     params['cy'] *= scale_y
     params['f'] *= scale_x
     
-    # params['checkpoint_path'] = 'checkpoints/best_model.pth'
-    # params['checkpoint_path'] = 'checkpoints/best_model.pth'
-    # params['batch_size'] = 1
-    # params['do_top_seg'] = False
-
     # mkdir predictions
     pred_dir = params['predictions_dir']
 
@@ -128,8 +123,9 @@ def evaluate_sbevnet(config_path: str, color_map_path: str):
     
     # load test dataset
     test_dataset = sbevnet_dataset(
-        json_path='data/model-dataset/dataset.json',
+        json_path=params['json_path'],
         dataset_split='test',
+        # dataset_split='train',
         do_ipm_rgb=params['do_ipm_rgb'],
         do_ipm_feats=params['do_ipm_feats'],
         fixed_cam_confs=params['fixed_cam_confs'],
@@ -217,19 +213,14 @@ def main():
     parser = argparse.ArgumentParser(description='Evaluate SBEVNet model')
     parser.add_argument('--config', type=str, default='configs/evaluate.yaml', 
                        help='Path to evaluation config file')
-    parser.add_argument('--color_map', type=str, default='configs/Mavis.yaml', 
-                       help='Path to color map config file')
     args = parser.parse_args()
     
     # Validate config files exist
     if not os.path.exists(args.config):
         print(f"Error: Config file {args.config} not found")
         sys.exit(1)
-    if not os.path.exists(args.color_map):
-        print(f"Error: Color map file {args.color_map} not found")
-        sys.exit(1)
         
-    evaluate_sbevnet(args.config, args.color_map)
+    evaluate_sbevnet(args.config)
 
 if __name__ == '__main__':
     main() 
