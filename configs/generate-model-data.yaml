@@ -1,23 +1,17 @@
 # S3 configuration
-s3_uri: "s3://occupancy-dataset/bev-dairy-more-navigable/"
-s3_dest_dir: "data"
-
-# model dataset 
-n_train: 1950 # number of training samples
-n_test: 400 # number of test samples
-
-# Directory paths
-aws_dir: "data/GT-aws"  # local directory to store aws data
-
-# Required files in each GT folder
-keys:
-  - "left.jpg"
-  - "right.jpg"
-  - "seg-mask-mono.png"
-  - "seg-mask-rgb.png"
+s3_data_handler:
+  s3_uri: "s3://occupancy-dataset/bev-dairy-more-navigable/"
+  base_dir: "data"       # Base directory for downloads and S3 destination
+  required_keys:
+    - "left.jpg"
+    - "right.jpg"
+    - "seg-mask-mono.png"
+    - "seg-mask-rgb.png"
+  n_train: 2200          # Training sample count for GT dataset
+  n_test: 400            # Test sample count for GT dataset
 
 # Output directories
-output_dirs:
-  gt_train: "data/GT-train"
-  gt_test: "data/GT-test"
-  model_dataset: "data/model-dataset" 
+model_data_handler:
+  base_dir: "data"       # Base directory for GT-train/GT-test and model dataset folders
+  labels_to_remove: [0]  # List of labels to remove when cleaning masks
+

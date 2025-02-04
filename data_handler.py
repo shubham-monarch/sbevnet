@@ -181,33 +181,8 @@ class S3_DataHandler:
       
 class ModelDataHandler:
     
-    def __init__(self, model_dir: str, GT_train: str, GT_test: str) -> None:
-        """Initialize ModelDataHandler with model directory, GT-train directory, and GT-test directory
-        
-        Args:
-            model_dir (str): Path to model dataset
-            GT_train (str): Path to GT-train
-            GT_test (str): Path to GT-test
-        """
-        self.logger = get_logger("DataHandlerModel")
-        
-        # assert model_dir is empty
-        assert not (os.path.exists(model_dir) and os.listdir(model_dir)), f"Model directory {model_dir} must be empty!"
-        
-        # GT folders
-        self.GT_train = GT_train
-        self.GT_test = GT_test
-        
-        # model-dataset folders
-        self.model_dir = model_dir
-        self.model_train_dir = os.path.join(self.model_dir, "train")
-        self.model_test_dir = os.path.join(self.model_dir, "test")
-
-        self.logger.info("───────────────────────────────")
-        self.logger.info("Generating [MODEL-train / MODEL-test] from [GT-train / GT-test]...")
-        self.logger.info("───────────────────────────────\n")
-
-    def _restructure_GT_folder(self, GT_dir: str, MODEL_dir: str):
+    @staticmethod
+    def _restructure_GT_folder(GT_dir: str, MODEL_dir: str) -> None:
         """Restructure GT folder into model-train / model-test folders"""
         
         # [model-train / model-test] folders should be empty
@@ -271,7 +246,8 @@ class ModelDataHandler:
                         shutil.copy(os.path.join(root, file), os.path.join(cam_extrinsics_folder, new_filename))
                         pbar.update(1)
 
-    def _flip_masks(self, src_dir: str, dest_dir: str) -> None:
+    @staticmethod
+    def _flip_masks(src_dir: str, dest_dir: str) -> None:
         '''Flip the masks in the source folder and save them to the destination folder.'''
         
         masks = get_files_from_folder(src_dir, ['.png'])
@@ -279,7 +255,8 @@ class ModelDataHandler:
             mask_flipped_mono = flip_mask(mask_path)
             cv2.imwrite(os.path.join(dest_dir, os.path.basename(mask_path)), mask_flipped_mono)
 
-    def _populate_json(self, json_path, dataset_path):
+    @staticmethod
+    def _populate_json(json_path: str, dataset_path: str, model_train_dir: str, model_test_dir: str) -> None:
         '''Populate the json file with the file paths of the images in the dataset.'''
         
         if os.path.exists(json_path):
@@ -295,23 +272,24 @@ class ModelDataHandler:
         data = {
             
             "train": {
-                "rgb_left": get_relative_files(os.path.join(self.model_train_dir, 'left'), IMG_EXTENSIONS),
-                "rgb_right": get_relative_files(os.path.join(self.model_train_dir, 'right'), IMG_EXTENSIONS),
-                "top_seg": get_relative_files(os.path.join(self.model_train_dir, 'seg-masks-mono'), ['.png']),
-                "confs": get_relative_files(os.path.join(self.model_train_dir, 'cam-extrinsics'), ['.npy']),
+                "rgb_left": get_relative_files(os.path.join(model_train_dir, 'left'), IMG_EXTENSIONS),
+                "rgb_right": get_relative_files(os.path.join(model_train_dir, 'right'), IMG_EXTENSIONS),
+                "top_seg": get_relative_files(os.path.join(model_train_dir, 'seg-masks-mono'), ['.png']),
+                "confs": get_relative_files(os.path.join(model_train_dir, 'cam-extrinsics'), ['.npy']),
             },
             "test": {
-                "rgb_left": get_relative_files(os.path.join(self.model_test_dir, 'left'), IMG_EXTENSIONS),
-                "rgb_right": get_relative_files(os.path.join(self.model_test_dir, 'right'), IMG_EXTENSIONS),
-                "top_seg": get_relative_files(os.path.join(self.model_test_dir, 'seg-masks-mono'), ['.png']),
-                "confs": get_relative_files(os.path.join(self.model_test_dir, 'cam-extrinsics'), ['.npy']),
+                "rgb_left": get_relative_files(os.path.join(model_test_dir, 'left'), IMG_EXTENSIONS),
+                "rgb_right": get_relative_files(os.path.join(model_test_dir, 'right'), IMG_EXTENSIONS),
+                "top_seg": get_relative_files(os.path.join(model_test_dir, 'seg-masks-mono'), ['.png']),
+                "confs": get_relative_files(os.path.join(model_test_dir, 'cam-extrinsics'), ['.npy']),
             }
         }
 
         with open(json_path, 'w') as f:
             json.dump(data, f, indent=4)
 
-    def _remap_mask_labels(self, mask_dir: str) -> None:
+    @staticmethod
+    def _remap_mask_labels(mask_dir: str) -> None:
         '''Changes all 255 labels to 0'''
         masks = get_files_from_folder(mask_dir, ['.png'])
         for mask_path in tqdm(masks, desc="Remapping mask labels"):
@@ -355,84 +333,91 @@ class ModelDataHandler:
         
         return cnt, files
 
-    def generate_MODEL_train_test(self):
+    @staticmethod
+    def generate_MODEL_train_test(GT_train: str, GT_test: str, model_train_dir: str, model_test_dir: str, model_dir: str, labels_to_remove: List[int]) -> None:
+        """Generate model train and test datasets."""
         logger = get_logger("DataHandlerModel")
 
-        self._restructure_GT_folder(self.GT_train, self.model_train_dir)
-        self._restructure_GT_folder(self.GT_test, self.model_test_dir)
+        ModelDataHandler._restructure_GT_folder(GT_train, model_train_dir)
+        ModelDataHandler._restructure_GT_folder(GT_test, model_test_dir)
 
         # flip mono / rgb masks in model-train
-        self._flip_masks(os.path.join(self.model_train_dir, 'seg-masks-mono'),\
-                           os.path.join(self.model_train_dir, 'seg-masks-mono'))
-        self._flip_masks(os.path.join(self.model_test_dir, 'seg-masks-rgb'),\
-                           os.path.join(self.model_test_dir, 'seg-masks-rgb'))
+        ModelDataHandler._flip_masks(os.path.join(model_train_dir, 'seg-masks-mono'),\
+                           os.path.join(model_train_dir, 'seg-masks-mono'))
+        ModelDataHandler._flip_masks(os.path.join(model_test_dir, 'seg-masks-rgb'),\
+                           os.path.join(model_test_dir, 'seg-masks-rgb'))
         
         # remap label 255 to 0
-        self._remap_mask_labels(os.path.join(self.model_train_dir, 'seg-masks-mono'))
-        self._remap_mask_labels(os.path.join(self.model_test_dir, 'seg-masks-mono'))
+        ModelDataHandler._remap_mask_labels(os.path.join(model_train_dir, 'seg-masks-mono'))
+        ModelDataHandler._remap_mask_labels(os.path.join(model_test_dir, 'seg-masks-mono'))
 
         # remove masks containing more than 80% of any label
         total_cnt = 0
-        for label in range(0,14):
-            cnt, _ = self._remove_outliers(os.path.join(self.model_train_dir, 'seg-masks-mono'), label, 0.8)
+        for label in labels_to_remove:
+            cnt, _ = ModelDataHandler._remove_outliers(os.path.join(model_train_dir, 'seg-masks-mono'), label, 0.8)
             total_cnt += cnt
         
         logger.info("───────────────────────────────")
         logger.info(f"Removed {total_cnt} masks with label outliers")
-        logger.info("───────────────────────────────\n")
+        logger.info("───────────────────────────────\n  ")
 
         # populate json file
-        self._populate_json(os.path.join(self.model_dir, 'dataset.json'), self.model_dir)
+        ModelDataHandler._populate_json(os.path.join(model_dir, 'dataset.json'), model_dir, model_train_dir, model_test_dir)
 
     @staticmethod
-    def generate_model_dataset(config_path: str):
+    def generate_model_dataset(config_path: str) -> None:
         """
         Generate model-dataset by downloading from S3 and processing the data
-        
-        Args:
-            config_path (str): path to the config file
-        """
+        using the updated configuration structure.
 
+        Args:
+            config_path (str): Path to the YAML config file.
+        """
         logger = get_logger("DataHandler")
-        
         with open(config_path, 'r') as f:
             config = yaml.safe_load(f)
         
-        # S3DataHandler confs
-        s3_uri = config['s3_uri']
-        s3_dest_dir = config['s3_dest_dir']
-        aws_dir = config['aws_dir']
+        # Extract S3 configuration from 's3_data_handler' section
+        s3_config = config.get('s3_data_handler', {})
+        s3_uri = s3_config.get('s3_uri')
+        base_dir_s3 = s3_config.get('base_dir')
+        aws_dir = os.path.join(base_dir_s3, "GT-aws")
+        s3_dest_dir = base_dir_s3
+        required_keys = s3_config.get('required_keys')
+        n_train = s3_config.get('n_train')
+        n_test = s3_config.get('n_test')
         
-        # ModelDataHandler confs
-        n_train = config['n_train']
-        n_test = config['n_test']
-        keys = config['keys']
+        # Extract output directories from 'model_data_handler' section
+        model_config = config.get('model_data_handler', {})
+        base_dir_model = model_config.get('base_dir')
+        gt_train = os.path.join(base_dir_model, "GT-train")
+        gt_test = os.path.join(base_dir_model, "GT-test")
+        model_dataset = os.path.join(base_dir_model, "model-dataset")
+        labels_to_remove = model_config.get('labels_to_remove', [0])
 
         if not os.path.exists(aws_dir) or not os.listdir(aws_dir):
             os.makedirs(aws_dir, exist_ok=True)
             S3_DataHandler.download_s3_folder(s3_uri, aws_dir)
-
         else: 
             logger.info("───────────────────────────────")
             logger.info("aws-data already exist. Skipping download...")
             logger.info("───────────────────────────────\n")
 
-        # generate GT-train / GT-test folders
         gt_handler = S3_DataHandler(
             src_dir=aws_dir,
             dst_dir=s3_dest_dir,
-            required_keys = keys
+            required_keys=required_keys
         )
         gt_handler.generate_GT_train_test(n_train=n_train, n_test=n_test)
-        
 
-        # generate model-train / model-test folders
-        model_handler = ModelDataHandler(
-            GT_train=config['output_dirs']['gt_train'],
-            GT_test=config['output_dirs']['gt_test'],
-            model_dir=config['output_dirs']['model_dataset']
+        ModelDataHandler.generate_MODEL_train_test(
+            GT_train=gt_train,
+            GT_test=gt_test,
+            model_train_dir=os.path.join(model_dataset, "train"),
+            model_test_dir=os.path.join(model_dataset, "test"),
+            model_dir=model_dataset,
+            labels_to_remove=labels_to_remove
         )
-        model_handler.generate_MODEL_train_test()
 
 
 def main():
