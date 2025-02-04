@@ -144,6 +144,11 @@ def evaluate_sbevnet(config_path: str):
         num_workers=4,
         pin_memory=True
     )
+
+    logger.warning("───────────────────────────────\n  ")
+    logger.warning(f"params['json_path']: {params['json_path']}")
+    # logger.warning(f"params['s3_dest_dir']: {params['s3_dest_dir']}")
+    logger.warning("───────────────────────────────\n  ")
     
     # Load the test split left image list from the JSON file
     with open(params['json_path'], 'r') as f:
@@ -197,7 +202,8 @@ def evaluate_sbevnet(config_path: str):
                     # Instead of constructing a filename from an index, retrieve it from the JSON test split.
                     img_idx = batch_idx * params['batch_size'] + i  # zero-indexed
                     left_img_file = test_rgb_left[img_idx]
-                    left_img_path = os.path.join('data/model-dataset', left_img_file)
+                    # left_img_path = os.path.join('data/model-dataset', left_img_file)
+                    left_img_path = os.path.join(params['s3_data_handler']['base_dir'], f"model-dataset", left_img_file)
                     
                     logger.info("───────────────────────────────\n  ")
                     logger.info(f"left_img_file: {left_img_file}")

@@ -1,24 +1,22 @@
 # S3 configuration
-s3_uri: "s3://occupancy-dataset/bev-dairy-more-navigable/dairy/ghdairy/2024_02_19/svo_files/front_2024-02-21-11-10-38.svo/2084_to_2226/"
-s3_dest_dir: "leaf-eval"
+s3_data_handler:
+  s3_uri: "s3://occupancy-dataset/bev-dairy-more-navigable/dairy/chino_valley/2024_02_13/front/front_2024-02-13-10-02-14.svo/1876_to_2018/"
+  base_dir: "leaf-eval"
+  required_keys:
+    - "left.jpg"
+    - "right.jpg"
+    - "seg-mask-mono.png"
+    - "seg-mask-rgb.png"
+  n_train: 0        # number of training samples
+  n_test: -1        # assign all samples to the test set
 
 # model dataset 
-n_train: 0 # number of training samples
-
-# assign all samples in s3_uri (leaf-folders) to test set
-n_test: -1 
-
-root_dir: "leaf-eval"
+model_data_handler:
+  base_dir: "leaf-eval"
+  labels_to_remove: [0]
 
 # Directory paths
 aws_dir: "leaf-eval/GT-aws"  # local directory to store aws data
-
-# Required files in each GT folder
-keys:
-  - "left.jpg"
-  - "right.jpg"
-  - "seg-mask-mono.png"
-  - "seg-mask-rgb.png"
 
 # Output directories
 output_dirs:
@@ -26,9 +24,7 @@ output_dirs:
   gt_test: "leaf-eval/GT-test"
   model_dataset: "leaf-eval/model-dataset"
 
-
-
-  # image dimensions
+# image dimensions
 image_w: 640
 image_h: 480
 max_disp: 64
@@ -64,16 +60,16 @@ num_epochs: 200
 learning_rate: 0.0001
 
 # dataset parameters
-json_path: 'leaf-eval/model-dataset/dataset.json'
-color_map: 'configs/Mavis.yaml'
+json_path: "leaf-eval/model-dataset/dataset.json"
+color_map: "configs/Mavis.yaml"
 do_mask: false
 do_top_seg: true
 zero_mask: false
 
 # evaluation specific parameters
-checkpoint_path: 'checkpoints/best_val_model.pth'
-# checkpoint_path: 'checkpoints/best_train_model.pth'
+checkpoint_path: "checkpoints/best_val_model.pth"
+# checkpoint_path: "checkpoints/best_train_model.pth"
 batch_size: 1
 do_top_seg: false
-predictions_dir: 'leaf-eval/predictions'
+predictions_dir: "leaf-eval/predictions"
 gpu_id: 3
