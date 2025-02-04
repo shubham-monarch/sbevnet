@@ -63,6 +63,9 @@ class S3_DataHandler:
             dst = os.path.join(dst_dir, str(idx))
             os.makedirs(dst_dir, exist_ok=True)
             shutil.copytree(src, dst, dirs_exist_ok=True)
+            # Create a file that stores the relative path of the folder from src
+            with open(os.path.join(dst, "file_name.txt"), "w") as f:
+                f.write(folder)
 
     def _remove_incomplete_GT_folders(self):
         """Remove folders with missing left.jpg / right.jpg / seg-mask-mono.png / seg-mask-rgb.png"""
@@ -183,7 +186,7 @@ class ModelDataHandler:
     
     @staticmethod
     def _restructure_GT_folder(GT_dir: str, MODEL_dir: str) -> None:
-        """Restructure GT folder into model-train / model-test folders"""
+        """Restructure GT folder into model-train / model-test folders and generate a filenames folder"""
         
         # [model-train / model-test] folders should be empty
         assert not (os.path.exists(MODEL_dir) and os.listdir(MODEL_dir)), "model_train must be empty"
@@ -197,6 +200,7 @@ class ModelDataHandler:
         seg_masks_mono_folder = os.path.join(MODEL_dir, 'seg-masks-mono')
         seg_masks_rgb_folder = os.path.join(MODEL_dir, 'seg-masks-rgb')
         cam_extrinsics_folder = os.path.join(MODEL_dir, 'cam-extrinsics')
+        filenames_folder = os.path.join(MODEL_dir, 'filenames')
         
         # Create the target subfolders if they don't exist
         os.makedirs(left_folder, exist_ok=True)
@@ -204,8 +208,9 @@ class ModelDataHandler:
         os.makedirs(seg_masks_mono_folder, exist_ok=True)
         os.makedirs(seg_masks_rgb_folder, exist_ok=True)
         os.makedirs(cam_extrinsics_folder, exist_ok=True)
+        os.makedirs(filenames_folder, exist_ok=True)
 
-        # Count total files for progress bar
+        # Count total files for progress bar (including file_name.txt files)
         total_files = 0
         for root, dirs, files in os.walk(GT_dir):
             for file in files:
@@ -213,13 +218,13 @@ class ModelDataHandler:
                    file.endswith('right.jpg') or \
                    file.endswith('-mono.png') or \
                    file.endswith('-rgb.png') or \
-                   file.endswith('cam-extrinsics.npy'):
+                   file.endswith('cam-extrinsics.npy') or \
+                   file == "file_name.txt":
                     total_files += 1
-
 
         with tqdm(total=total_files, desc="Organizing Images") as pbar:
             for root, dirs, files in os.walk(GT_dir):
-                # Get folder number from root path
+                # Only process numbered folders
                 folder_num = os.path.basename(root)
                 if not folder_num.isdigit():
                     continue
@@ -244,6 +249,10 @@ class ModelDataHandler:
                     elif file.endswith('cam-extrinsics.npy'):
                         new_filename = f"{folder_num}__cam-extrinsics.npy"
                         shutil.copy(os.path.join(root, file), os.path.join(cam_extrinsics_folder, new_filename))
+                        pbar.update(1)
+                    elif file == "file_name.txt":
+                        new_filename = f"{folder_num}__filename.txt"
+                        shutil.copy(os.path.join(root, file), os.path.join(filenames_folder, new_filename))
                         pbar.update(1)
 
     @staticmethod
