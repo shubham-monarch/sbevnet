@@ -11,6 +11,7 @@ import cv2
 import argparse
 import sys
 import yaml
+import json
 
 from sbevnet.models.network_sbevnet import SBEVNet
 from sbevnet.data_utils.bev_dataset import sbevnet_dataset
@@ -144,6 +145,16 @@ def evaluate_sbevnet(config_path: str):
         pin_memory=True
     )
     
+    # Load the test split left image list from the JSON file
+    with open(params['json_path'], 'r') as f:
+        dataset_json = json.load(f)
+
+    test_rgb_left = dataset_json['test']['rgb_left']
+    
+    logger.warning("───────────────────────────────\n  ")
+    logger.warning(f"test_rgb_left: {test_rgb_left}")
+    logger.warning("───────────────────────────────\n  ")
+
     logger.warning(f'=================')    
     logger.warning(f'Test dataset size: {len(test_dataset)}')
     logger.warning(f'=================\n')
@@ -156,7 +167,7 @@ def evaluate_sbevnet(config_path: str):
     # evaluation loop
     with torch.no_grad():
         for batch_idx, data in enumerate(tqdm(test_loader, desc="Evaluating")):
-            # if batch_idx > 0:
+            # if batch_idx > 5:
             #     break
             
             try:
@@ -183,13 +194,19 @@ def evaluate_sbevnet(config_path: str):
                     colored_pred = get_colored_segmentation_image(pred_np, config_path=color_map_path)
                     colored_pred = cv2.flip(colored_pred, 0)
                     
-                    # Load and resize left image
-                    left_idx = batch_idx * params['batch_size'] + i + 1
-                    left_img_path = os.path.join('data/model-dataset/test/left', f'{left_idx}__left.jpg')
+                    # Instead of constructing a filename from an index, retrieve it from the JSON test split.
+                    img_idx = batch_idx * params['batch_size'] + i  # zero-indexed
+                    left_img_file = test_rgb_left[img_idx]
+                    left_img_path = os.path.join('data/model-dataset', left_img_file)
                     
-                    logger.info(f'=================')
-                    logger.info(f'{left_img_path}')
-                    logger.info(f'=================\n')
+                    logger.info("───────────────────────────────\n  ")
+                    logger.info(f"left_img_file: {left_img_file}")
+                    logger.info(f"left_img_path: {left_img_path}")
+                    logger.info("───────────────────────────────\n  ")
+
+                    # logger.info(f'=================')
+                    # logger.info(f'{left_img_path}')
+                    # logger.info(f'=================\n')
                     
                     left_img = cv2.imread(left_img_path)
                     if left_img is None:
@@ -201,7 +218,13 @@ def evaluate_sbevnet(config_path: str):
                     combined_image = np.hstack((left_img_resized, cv2.flip(colored_pred, 0)))
                     combined_dir = os.path.join(pred_dir, f'combined')
                     os.makedirs(combined_dir, exist_ok=True)
-                    combined_path = os.path.join(combined_dir, f'pred_{left_idx:04d}.png')
+                    combined_path = os.path.join(combined_dir, f'{left_img_file}')
+
+                    logger.info("───────────────────────────────\n  ")
+                    logger.info(f"combined_path: {combined_path}")
+                    logger.info("───────────────────────────────\n  ")
+
+                    os.makedirs(os.path.dirname(combined_path), exist_ok=True)
                     cv2.imwrite(combined_path, combined_image)
             
             except Exception as e:
