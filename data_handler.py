@@ -4,7 +4,7 @@ import os
 import random
 import shutil
 from tqdm import tqdm
-from typing import List, Dict
+from typing import List, Dict, Union, Any
 import cv2
 import json
 import numpy as np
@@ -95,16 +95,19 @@ class S3_DataHandler:
         self.logger.error("───────────────────────────────\n")
     
     @staticmethod
-    def download_s3_folder(s3_uri, local_dir):
-        """Recursively download an S3 folder to a local directory
+    def download_s3_folder(s3_uri: Union[str, List[str]], local_dir: str) -> None:
+        """Recursively download an S3 folder or a list of S3 folders to a local directory.
         
         Args:
-            s3_uri (str): S3 URI in format s3://bucket-name/path/to/folder
-            local_dir (str): Local directory to download files to
+            s3_uri (Union[str, List[str]]): S3 URI in format s3://bucket-name/path/to/folder, or a list of such URIs.
+            local_dir (str): Local directory to download files to.
         """
-        
+        if isinstance(s3_uri, list):
+            for uri in s3_uri:
+                S3_DataHandler.download_s3_folder(uri, local_dir)
+            return
+
         logger = get_logger("DataHandler")
-    
         parsed_uri = urlparse(s3_uri)
         bucket_name = parsed_uri.netloc
         s3_folder = parsed_uri.path.lstrip('/')
@@ -117,7 +120,6 @@ class S3_DataHandler:
         
         s3_client = boto3.client('s3')
         paginator = s3_client.get_paginator('list_objects_v2')
-        total_files = 0
         objects = []
         for page in paginator.paginate(Bucket=bucket_name, Prefix=s3_folder):
             objects.extend(page.get('Contents', []))
@@ -362,13 +364,22 @@ class ModelDataHandler:
 
         # remove masks containing more than 80% of any label
         total_cnt = 0
-        for label in labels_to_remove:
-            cnt, _ = ModelDataHandler._remove_outliers(os.path.join(model_train_dir, 'seg-masks-mono'), label, 0.8)
-            total_cnt += cnt
+        total_train_cnt = 0
+        total_test_cnt = 0
         
-        logger.info("───────────────────────────────")
-        logger.info(f"Removed {total_cnt} masks with label outliers")
-        logger.info("───────────────────────────────\n  ")
+        for label in labels_to_remove:
+            train_cnt, _ = ModelDataHandler._remove_outliers(os.path.join(model_train_dir, 'seg-masks-mono'), label, 0.8)
+            test_cnt, _ = ModelDataHandler._remove_outliers(os.path.join(model_test_dir, 'seg-masks-mono'), label, 0.8)
+            
+            total_train_cnt += train_cnt
+            total_test_cnt += test_cnt
+            total_cnt += train_cnt + test_cnt
+        
+        logger.warning("───────────────────────────────")
+        logger.warning(f"Removed {total_cnt} masks with label outliers")
+        logger.warning(f"Removed {total_train_cnt} masks with label outliers in train")
+        logger.warning(f"Removed {total_test_cnt} masks with label outliers in test")
+        logger.warning("───────────────────────────────\n  ")
 
         # populate json file
         ModelDataHandler._populate_json(os.path.join(model_dir, 'dataset.json'), model_dir, model_train_dir, model_test_dir)
@@ -384,25 +395,25 @@ class ModelDataHandler:
         """
         logger = get_logger("DataHandler")
         with open(config_path, 'r') as f:
-            config = yaml.safe_load(f)
+            config: Dict[str, Any] = yaml.safe_load(f)
         
         # Extract S3 configuration from 's3_data_handler' section
-        s3_config = config.get('s3_data_handler', {})
-        s3_uri = s3_config.get('s3_uri')
-        base_dir_s3 = s3_config.get('base_dir')
-        aws_dir = os.path.join(base_dir_s3, "GT-aws")
-        s3_dest_dir = base_dir_s3
-        required_keys = s3_config.get('required_keys')
-        n_train = s3_config.get('n_train')
-        n_test = s3_config.get('n_test')
+        s3_config: Dict[str, Any] = config.get('s3_data_handler', {})
+        s3_uri: Union[str, List[str]] = s3_config.get('s3_uri')  # type: either str or list of strings
+        base_dir_s3: str = s3_config.get('base_dir')
+        aws_dir: str = os.path.join(base_dir_s3, "GT-aws")
+        s3_dest_dir: str = base_dir_s3
+        required_keys: Any = s3_config.get('required_keys')
+        n_train: int = s3_config.get('n_train')
+        n_test: int = s3_config.get('n_test')
         
         # Extract output directories from 'model_data_handler' section
-        model_config = config.get('model_data_handler', {})
-        base_dir_model = model_config.get('base_dir')
-        gt_train = os.path.join(base_dir_model, "GT-train")
-        gt_test = os.path.join(base_dir_model, "GT-test")
-        model_dataset = os.path.join(base_dir_model, "model-dataset")
-        labels_to_remove = model_config.get('labels_to_remove', [0])
+        model_config: Dict[str, Any] = config.get('model_data_handler', {})
+        base_dir_model: str = model_config.get('base_dir')
+        gt_train: str = os.path.join(base_dir_model, "GT-train")
+        gt_test: str = os.path.join(base_dir_model, "GT-test")
+        model_dataset: str = os.path.join(base_dir_model, "model-dataset")
+        labels_to_remove: List = model_config.get('labels_to_remove', [0])
 
         if not os.path.exists(aws_dir) or not os.listdir(aws_dir):
             os.makedirs(aws_dir, exist_ok=True)

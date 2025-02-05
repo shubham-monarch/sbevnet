@@ -233,7 +233,7 @@
 
 - add scripts / bash folder
 
-- __ to _ conversion
++ __ to _ conversion
 - better comments
 - add 'download bev-folder from s3' in data-handler.py  
 - refactoring + better comments in data-handler.py
@@ -320,6 +320,9 @@ fine-tuning
 - set gate-class weight to 0
 - scheduler
 - warm-ups
+- drop-out
+- add regularalization 
+- add cross-validation
 
 
 
@@ -342,8 +345,6 @@ fine-tuning
 - read training scripts
 - fill void points with navigable-space 
 - just predict navigable-space, obstacles and feed. 
-- add warm-up
-- major refactoring
 - integrate gt in evaluate.py
 - visulalize img + gt + pred in one-frame
 - add real-time inference
@@ -365,21 +366,47 @@ fine-tuning
 - [inspect] inspect gate-label outliers in GT seg-masks
 
 - refactor bev-dataset.py
-- [model-dataset-generation] add original folder reference in model-dataset, if possible URI
++ [model-dataset-generation] add original folder reference in model-dataset, if possible URI
 - just predict navigable-space, obstacles and feed. 
-- script that takes in bev-dairy uri and makes it ready for evaluation.sh
++ script that takes in bev-dairy uri and makes it ready for evaluation.sh
 - add gt-combined folder that contains mask + left-img
 + [model-dataset-generation] remove invalid seg-masks
 + regenerate bev_seg_mask with better navigable-space representation
 - script to scp [gt-seg-mask + left-img] or [pred-seg-mask + left-img] to local 
 + aggregate average class % in train / test data 
 - script to evaluate on train-data instead of validation-data
-- start data-augmentation pipeline
+- [feat] start data-augmentation pipeline
 - use the label-cnt distribution data to adjust crosssEntropyLoss weights 
-- curious case of gate-label outliers
-- how does the cam-extrinsics vary across the files? 
+- [inspect] how does the cam-extrinsics vary across the files? 
+- add mIoU calculation in evaluate.py
+- fix validation loss oscillation
 
 
 + script to directly predict on a leaf-folder
-- correspondance with images, gt-seg-imgs and prediction even correct is wrong
+- script to support list of s3 uris
++ [bug] correspondance with images, gt-seg-imgs and prediction even correct is wrong
+- prepare list of leaf-folders with significant tilt across frames
 - fix rotation
++ something is wrong in leaf-eval.sh frames
+- script to plot mIOU over frames
+- search for segmentation metrics
+- compare mIOU of weighted cross entropy vs focal loss
+- refactor evaluate.py -> evaluate_sbevnet
++ [bug] model-dataset entries are not sequential
+
++ refactor model-data-generator for better folder management
++ load labels to outlier-filter from generate-model-data.yaml
++ generate s3 uri as part of model-dataset
+
+- priority collapsing in gt-seg-masks
+- do sequential collapsing, collapse low priority points followed by high priority points
+- check overlap in priority collapsing
+- remove strictly unwanted labels [i.e. tractor-hood / glare / void ] from left-segmented.ply before generating the gt-seg-masks
+- radius filering for poles / other classess
+
+- [bug] gt-seg mask data is wrong in some cases
+ 
++ [feat] add evaluate-svo.py
+- retrain without gh-dairy / grimius
+- [feat] support for List[s3_uris] in data-generator-s3.py
+- data-agumnetation with focus on under-represented classes

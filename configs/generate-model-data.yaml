@@ -7,8 +7,8 @@ s3_data_handler:
     - "right.jpg"
     - "seg-mask-mono.png"
     - "seg-mask-rgb.png"
-  n_train: 2200          # Training sample count for GT dataset
-  n_test: 400            # Test sample count for GT dataset
+  n_train: 1600          # Training sample count for GT dataset
+  n_test: 300            # Test sample count for GT dataset
 
 # Output directories
 model_data_handler:
