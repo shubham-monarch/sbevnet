@@ -1,6 +1,7 @@
 # zed svo config
 svo_file: "svo-eval/front_2024-02-13-10-02-14.svo"
-sampling_freq: 50
+sampling_freq: 1
+frame_cnt: 100
 output_dir: "svo-eval/GT-aws"
 
 # S3 configuration

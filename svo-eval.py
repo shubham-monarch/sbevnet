@@ -22,8 +22,9 @@ class EvalSVO:
         svo_file = config.get('svo_file')
         output_dir = config.get('output_dir')
         sampling_freq = config.get('sampling_freq')
+        frame_cnt = config.get('frame_cnt', -1)
         
-        EvalSVO.generate_svo_train_data(svo_file, output_dir, sampling_freq)
+        EvalSVO.generate_svo_train_data(svo_file, output_dir, sampling_freq, frame_cnt)
 
         # download leaf-folder and generate model-dataset
         ModelDataHandler.generate_model_dataset(config_path)
@@ -32,11 +33,8 @@ class EvalSVO:
         evaluate_sbevnet(config_path)
 
     @staticmethod
-    def generate_svo_train_data(svo_file: str, output_dir: str, sampling_freq: int = 1) -> None:
+    def generate_svo_train_data(svo_file: str, output_dir: str, sampling_freq: int = 1, frame_cnt: int = -1) -> None:
         logger = get_logger("generate_svo_train_data")
-        
-        # assert not (Path(output_dir).exists() and any(Path(output_dir).iterdir())), \
-        #     f"Output directory {output_dir} is not empty"
         
         if Path(output_dir).exists() and any(Path(output_dir).iterdir()):
             logger.warning(f"───────────────────────────────")
@@ -58,8 +56,12 @@ class EvalSVO:
         frame_idx = 0
 
         total_frames = zed.get_svo_number_of_frames()
+        if frame_cnt > 0:
+            total_frames = min(total_frames, frame_cnt)
         with tqdm(total=total_frames, desc="Processing SVO", unit="frame") as pbar:
             while True:
+                if frame_cnt > 0 and frame_idx >= frame_cnt:
+                    break
                 if zed.grab(runtime_parameters) != sl.ERROR_CODE.SUCCESS:
                     break
                 if frame_idx % sampling_freq == 0:
