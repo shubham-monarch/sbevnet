@@ -6,7 +6,7 @@ from data_handler import ModelDataHandler
 from helpers import get_logger
 from evaluate import evaluate_sbevnet
 
-class LeafEval: 
+class EvalLeaf: 
 
     @staticmethod
     def evaluate_leaf_folder(config_path: str): 
@@ -28,7 +28,7 @@ def main():
     parser.add_argument('--config', type=str, required=True, help='Path to YAML configuration file')
     args = parser.parse_args()
     
-    LeafEval.evaluate_leaf_folder(args.config)
+    EvalLeaf.evaluate_leaf_folder(args.config)
 
 if __name__ == "__main__":
     main()
