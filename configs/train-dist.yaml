@@ -31,7 +31,7 @@ do_ipm_feats: false
 fixed_cam_confs: false
 
 # training parameters
-batch_size: 4
+batch_size: 9
 num_epochs: 200
 learning_rate: 0.0001
 num_workers: 4

@@ -404,34 +404,44 @@ def train(rank: int, world_size: int, params: dict) -> None:
                 lrs.append(optimizer.param_groups[0]['lr'])
                 miou_values.append(epoch_miou)
                 
-                # Plot training/validation loss and learning rate/mIoU in two subplots
+                # Plot training loss, validation loss, and learning rate in the same plot
                 plt.figure(figsize=(12,10))
-                ax1 = plt.subplot(211)
-                ax1.plot(range(1, len(losses) + 1), losses, 'b-', label='Training Loss')
-                ax1.plot(range(1, len(val_losses) + 1), val_losses, 'r-', label='Validation Loss')
-                ax1.set_xlabel('Epoch')
-                ax1.set_ylabel('Loss')
-                ax1.set_title('Training and Validation Loss')
-                ax1.grid(True, alpha=0.3)
-                ax1.legend()
+                ax = plt.subplot(111)
+                ax.plot(range(1, len(losses) + 1), losses, 'b-', label='Training Loss')
+                ax.plot(range(1, len(val_losses) + 1), val_losses, 'r-', label='Validation Loss')
+                ax.set_xlabel('Epoch')
+                ax.set_ylabel('Loss')
+                ax.set_title('Training/Validation Loss & Learning Rate')
+                ax.grid(True, alpha=0.3)
 
-                ax2 = plt.subplot(212)
+                ax2 = ax.twinx()
                 ax2.plot(range(1, len(lrs) + 1), lrs, 'g-', label='Learning Rate')
-                ax2.set_xlabel('Epoch')
                 ax2.set_ylabel('Learning Rate', color='g')
                 ax2.tick_params(axis='y', labelcolor='g')
-                ax2b = ax2.twinx()
-                ax2b.plot(range(1, len(miou_values) + 1), miou_values, 'm-', label='mIoU')
-                ax2b.set_ylabel('mIoU', color='m')
-                ax2b.tick_params(axis='y', labelcolor='m')
+
+                lines1, labels1 = ax.get_legend_handles_labels()
                 lines2, labels2 = ax2.get_legend_handles_labels()
-                lines3, labels3 = ax2b.get_legend_handles_labels()
-                ax2b.legend(lines2 + lines3, labels2 + labels3, loc='upper center')
+                ax2.legend(lines1 + lines2, labels1 + labels2, loc='upper center')
                 plt.tight_layout()
 
                 save_path = os.path.join(save_dir, 'training_plot.png')
                 os.makedirs(os.path.dirname(save_path), exist_ok=True)
                 plt.savefig(save_path)
+                plt.close()
+                
+                # Plot mIoU in a separate plot
+                plt.figure(figsize=(8,6))
+                plt.plot(range(1, len(miou_values) + 1), miou_values, 'm-', label='mIoU')
+                plt.xlabel('Epoch')
+                plt.ylabel('mIoU')
+                plt.title('Mean Intersection over Union (mIoU) Over Epochs')
+                plt.grid(True, alpha=0.3)
+                plt.legend(loc='best')
+                plt.tight_layout()
+                
+                miou_save_path = os.path.join(save_dir, 'miou_plot.png')
+                os.makedirs(os.path.dirname(miou_save_path), exist_ok=True)
+                plt.savefig(miou_save_path)
                 plt.close()
 
                 # Save checkpoint for current epoch
