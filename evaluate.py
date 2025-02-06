@@ -205,12 +205,12 @@ def evaluate_sbevnet(config_path: str):
                     # left_img_path = os.path.join('data/model-dataset', left_img_file)
                     left_img_path = os.path.join(params['s3_data_handler']['base_dir'], f"model-dataset", left_img_file)
                     
-                    logger.info("───────────────────────────────\n  ")
-                    logger.info(f"left_img_file: {left_img_file}")
-                    logger.info(f"left_img_path: {left_img_path}")
-                    logger.info("───────────────────────────────\n  ")
+                    # logger.info("───────────────────────────────\n  ")
+                    # logger.info(f"left_img_file: {left_img_file}")
+                    # logger.info(f"left_img_path: {left_img_path}")
+                    # logger.info("───────────────────────────────\n  ")
 
-                    # logger.info(f'=================')
+                    # # logger.info(f'=================')
                     # logger.info(f'{left_img_path}')
                     # logger.info(f'=================\n')
                     
@@ -226,9 +226,9 @@ def evaluate_sbevnet(config_path: str):
                     os.makedirs(combined_dir, exist_ok=True)
                     combined_path = os.path.join(combined_dir, f'{left_img_file}')
 
-                    logger.info("───────────────────────────────\n  ")
-                    logger.info(f"combined_path: {combined_path}")
-                    logger.info("───────────────────────────────\n  ")
+                    # logger.info("───────────────────────────────\n  ")
+                    # logger.info(f"combined_path: {combined_path}")
+                    # logger.info("───────────────────────────────\n  ")
 
                     os.makedirs(os.path.dirname(combined_path), exist_ok=True)
                     cv2.imwrite(combined_path, combined_image)

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Run the SVO evaluation Python script with the config parameter
-python3 svo-eval.py --config configs/svo-eval.yaml
+# Run the SVO evaluation Python script with the config parameter using the fourth GPU (index 3)
+python3 svo_eval.py --config configs/svo-eval.yaml
 
 if [ $? -eq 0 ]; then
     echo "SVO evaluation completed successfully"
