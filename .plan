@@ -326,6 +326,15 @@ fine-tuning
 
 
 
+- [feat] start data-augmentation pipeline
+- priority collapsing in gt-seg-masks
+- do sequential collapsing, collapse low priority points followed by high priority points
+- check overlap in priority collapsing
+- remove strictly unwanted labels [i.e. tractor-hood / glare / void ] from left-segmented.ply before generating the gt-seg-masks
+- radius filering for poles / other classess
+
+
+
 + significance of background class
 - how is validation loss being calculated?
 + add seed
@@ -372,18 +381,16 @@ fine-tuning
 - add gt-combined folder that contains mask + left-img
 + [model-dataset-generation] remove invalid seg-masks
 + regenerate bev_seg_mask with better navigable-space representation
-- script to scp [gt-seg-mask + left-img] or [pred-seg-mask + left-img] to local 
+- [feat] script to scp [gt-seg-mask + left-img] or [pred-seg-mask + left-img] to local 
 + aggregate average class % in train / test data 
 - script to evaluate on train-data instead of validation-data
-- [feat] start data-augmentation pipeline
 - use the label-cnt distribution data to adjust crosssEntropyLoss weights 
 - [inspect] how does the cam-extrinsics vary across the files? 
 - add mIoU calculation in evaluate.py
-- fix validation loss oscillation
+- fix vsalidation loss oscillation
 
 
 + script to directly predict on a leaf-folder
-- script to support list of s3 uris
 + [bug] correspondance with images, gt-seg-imgs and prediction even correct is wrong
 - prepare list of leaf-folders with significant tilt across frames
 - fix rotation
@@ -398,15 +405,16 @@ fine-tuning
 + load labels to outlier-filter from generate-model-data.yaml
 + generate s3 uri as part of model-dataset
 
-- priority collapsing in gt-seg-masks
-- do sequential collapsing, collapse low priority points followed by high priority points
-- check overlap in priority collapsing
-- remove strictly unwanted labels [i.e. tractor-hood / glare / void ] from left-segmented.ply before generating the gt-seg-masks
-- radius filering for poles / other classess
 
 - [bug] gt-seg mask data is wrong in some cases
  
 + [feat] add evaluate-svo.py
 - retrain without gh-dairy / grimius
-- [feat] support for List[s3_uris] in data-generator-s3.py
++ [feat] support for List[s3_uris] in data-generator-s3.py
+
 - data-agumnetation with focus on under-represented classes
+- plot mIOU along with train/validation loss
+- explore dice-loss
+- explore dice-loss + focal-loss
+- wouldn't it be a good idea to increase the range of [x,z] so that model can capture more data?  
+- label specific miou scores per epoch
