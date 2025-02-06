@@ -21,6 +21,7 @@ import argparse
 import random
 import numpy as np
 import sys
+from torch.cuda.amp import GradScaler, autocast
 
 from sbevnet.models.network_sbevnet import SBEVNet
 from sbevnet.data_utils.bev_dataset import sbevnet_dataset
@@ -89,6 +90,113 @@ def seed_worker(worker_id):
     random.seed(worker_seed)
     np.random.seed(worker_seed)
     torch.manual_seed(worker_seed)
+
+
+def move_data_to_device(data, device):
+    """
+    Recursively moves tensors in nested data structures (dict, list, tuple) to the specified device.
+    """
+    if isinstance(data, dict):
+        return {key: move_data_to_device(value, device) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [move_data_to_device(item, device) for item in data]
+    elif isinstance(data, tuple):
+        return tuple(move_data_to_device(item, device) for item in data)
+    elif isinstance(data, torch.Tensor):
+        return data.to(device)
+    return data
+
+
+def train_one_epoch(network, train_loader, optimizer, criterion, scaler, device, epoch, logger, is_main_process):
+    """
+    Executes one training epoch.
+    """
+    epoch_loss = 0.0
+    if is_main_process:
+        pbar = tqdm(total=len(train_loader), desc=f'Epoch {epoch+1} Training')
+    for batch_idx, data in enumerate(train_loader):
+        try:
+            data = move_data_to_device(data, device)
+            optimizer.zero_grad()
+            if not isinstance(data, dict):
+                raise TypeError("Expected 'data' to be a dictionary")
+            with autocast():
+                output = network(data)
+                target = move_data_to_device(data['top_seg'], device)
+                loss = criterion(output['top_seg'], target)
+            scaler.scale(loss).backward()
+            
+            # Unscale gradients before clipping
+            scaler.unscale_(optimizer)
+            # Clip gradients to a maximum norm (adjust the value as needed)
+            torch.nn.utils.clip_grad_norm_(network.parameters(), max_norm=1.0)
+            
+            scaler.step(optimizer)
+            scaler.update()
+            epoch_loss += loss.item()
+            if is_main_process:
+                pbar.set_postfix({'loss': f'{loss.item():.4f}'})
+                pbar.update()
+        except Exception as e:
+            logger.error(f'Error in batch {batch_idx}: {str(e)}')
+            continue
+    if is_main_process:
+        pbar.close()
+    return epoch_loss
+
+
+def validate_one_epoch(network, val_loader, criterion, device, logger, is_main_process, epoch, num_classes, ignore_index=-100):
+    """
+    Executes one validation epoch and computes the mIoU while ignoring the background class (label 0).
+
+    Returns:
+        epoch_val_loss: accumulated loss over the epoch
+        miou: mean Intersection over Union across classes (ignoring label 0)
+    """
+    epoch_val_loss = 0.0
+    total_intersections = torch.zeros(num_classes, device=device, dtype=torch.float64)
+    total_unions = torch.zeros(num_classes, device=device, dtype=torch.float64)
+    if is_main_process:
+        pbar_val = tqdm(total=len(val_loader), desc=f'Epoch {epoch+1} Validation')
+    with torch.no_grad():
+        for batch_idx, data in enumerate(val_loader):
+            try:
+                data = move_data_to_device(data, device)
+                if not isinstance(data, dict):
+                    raise TypeError("Expected 'data' to be a dictionary")
+                with autocast():
+                    output = network(data)
+                    target = move_data_to_device(data['top_seg'], device)
+                    loss = criterion(output['top_seg'], target)
+                epoch_val_loss += loss.item()
+                pred = torch.argmax(output['top_seg'], dim=1)
+                valid_mask = target != ignore_index
+                # Skip label 0 (background) by iterating from 1 to num_classes-1
+                for c in range(1, num_classes):
+                    pred_c = (pred == c)
+                    target_c = (target == c)
+                    intersection = ((pred_c & target_c) & valid_mask).sum().to(torch.float64)
+                    union = ((pred_c | target_c) & valid_mask).sum().to(torch.float64)
+                    total_intersections[c] += intersection
+                    total_unions[c] += union
+                if is_main_process:
+                    pbar_val.set_postfix({'loss': f'{loss.item():.4f}'})
+                    pbar_val.update()
+            except Exception as e:
+                logger.error(f'Error in validation batch {batch_idx}: {str(e)}')
+                continue
+    if is_main_process:
+        pbar_val.close()
+    dist.all_reduce(total_intersections, op=dist.ReduceOp.SUM)
+    dist.all_reduce(total_unions, op=dist.ReduceOp.SUM)
+    # Compute per-class IoU for classes 1 to N-1 (ignoring the background class)
+    iou_per_class = torch.where(
+        total_unions > 0,
+        total_intersections / total_unions,
+        torch.zeros_like(total_intersections)
+    )
+    miou = iou_per_class[1:].mean().item()
+    return epoch_val_loss, miou
 
 
 def train(rank: int, world_size: int, params: dict) -> None:
@@ -202,9 +310,13 @@ def train(rank: int, world_size: int, params: dict) -> None:
         else:
             criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=-100).to(rank)
         
-        # Fixed learning rate of 0.0001
-        optimizer = optim.Adam(network.parameters(), lr=0.0001)
-        # optimizer = optim.Adam(network.parameters(), lr=0.00001)
+        # Initialize the optimizer and scheduler
+        base_lr = params.get("learning_rate", 0.0001)  # Use a configurable base learning rate
+        optimizer = optim.Adam(network.parameters(), lr=base_lr, weight_decay=1e-4)
+        lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=5, factor=0.5)
+
+        # Define warmup parameters
+        warmup_epochs = params.get("warmup_epochs", 5)  # Number of epochs for warmup
 
         val_dataset = sbevnet_dataset(
             json_path='data/model-dataset/dataset.json',
@@ -238,127 +350,88 @@ def train(rank: int, world_size: int, params: dict) -> None:
         
         losses = []
         val_losses = []
-        learning_rates = []
+        lrs = []
+        miou_values = []
         best_val_loss = float('inf')
         best_train_loss = float('inf')
         patience = 20
         epochs_no_improve = 0
         
+        scaler = GradScaler()
+        
         for epoch in range(params['num_epochs']):
-            train_sampler.set_epoch(epoch + seed)  # Seed based on initial seed + epoch
+            train_sampler.set_epoch(epoch + seed)
             network.train()
-            epoch_loss = 0.0
-            
-            if is_main_process:
-                pbar = tqdm(total=len(train_loader), desc=f'Epoch {epoch+1} Training')
-            
-            for batch_idx, data in enumerate(train_loader):
-                try:
-                    # Move data to device
-                    for key in data:
-                        if isinstance(data[key], torch.Tensor):
-                            data[key] = data[key].to(rank)
-                        elif isinstance(data[key], list):
-                            data[key] = [item.to(rank) if isinstance(item, torch.Tensor) else item for item in data[key]]
-
-                    # Forward pass
-                    optimizer.zero_grad()
-                    
-                    if not isinstance(data, dict):
-                        raise TypeError("Expected 'data' to be a dictionary")
-                    
-                    output = network(data)
-                    target = data['top_seg'].to(rank)
-                    loss = criterion(output['top_seg'], target)
-
-                    # Backward pass and optimize
-                    loss.backward()
-                    optimizer.step()
-                    
-                    epoch_loss += loss.item()
-                    
-                    # Update progress bar only on main process
-                    if is_main_process:
-                        pbar.set_postfix({'loss': f'{loss.item():.4f}'})
-                        pbar.update()
-                    
-                except Exception as e:
-                    logger.error(f'Error in batch {batch_idx}: {str(e)}')
-                    continue
-            
-            if is_main_process:
-                pbar.close()
-            
-            # Synchronize processes before computing metrics
+            epoch_loss = train_one_epoch(network, train_loader, optimizer, criterion, scaler, rank, epoch, logger, is_main_process)
             dist.barrier()
+            epoch_loss_tensor = torch.tensor(epoch_loss / len(train_loader), device=rank)
+            dist.all_reduce(epoch_loss_tensor, op=dist.ReduceOp.SUM)
+            avg_epoch_loss = epoch_loss_tensor.item() / world_size
             
-            # Calculate average epoch loss across all processes
-            epoch_loss = torch.tensor(epoch_loss / len(train_loader), device=rank)
-            dist.all_reduce(epoch_loss, op=dist.ReduceOp.SUM)
-            avg_epoch_loss = epoch_loss.item() / world_size
-            
-            # Validation loop
             network.eval()
-            epoch_val_loss = 0.0
-            
-            if is_main_process:
-                pbar_val = tqdm(total=len(val_loader), desc=f'Epoch {epoch+1} Validation')
-            
-            with torch.no_grad():
-                for batch_idx, data in enumerate(val_loader):
-                    try:
-                        # Move data to device
-                        for key in data:
-                            if isinstance(data[key], torch.Tensor):
-                                data[key] = data[key].to(rank)
-                            elif isinstance(data[key], list):
-                                data[key] = [item.to(rank) if isinstance(item, torch.Tensor) else item for item in data[key]]
-
-                        # Forward pass
-                        if not isinstance(data, dict):
-                            raise TypeError("Expected 'data' to be a dictionary")
-                        
-                        output = network(data)
-                        target = data['top_seg'].to(rank)
-                        loss = criterion(output['top_seg'], target)
-                        
-                        epoch_val_loss += loss.item()
-                        
-                        if is_main_process:
-                            pbar_val.set_postfix({'loss': f'{loss.item():.4f}'})
-                            pbar_val.update()
-                    
-                    except Exception as e:
-                        logger.error(f'Error in validation batch {batch_idx}: {str(e)}')
-                        continue
-            
-            if is_main_process:
-                pbar_val.close()
-            
-            # Synchronize processes before computing metrics
+            epoch_val_loss, epoch_miou = validate_one_epoch(network, val_loader, criterion, rank, logger, is_main_process, epoch, params['n_classes_seg'])
             dist.barrier()
+            epoch_val_loss_tensor = torch.tensor(epoch_val_loss / len(val_loader), device=rank)
+            dist.all_reduce(epoch_val_loss_tensor, op=dist.ReduceOp.SUM)
+            avg_epoch_val_loss = epoch_val_loss_tensor.item() / world_size
             
-            # Calculate average epoch loss across all processes
-            epoch_val_loss = torch.tensor(epoch_val_loss / len(val_loader), device=rank)
-            dist.all_reduce(epoch_val_loss, op=dist.ReduceOp.SUM)
-            avg_epoch_val_loss = epoch_val_loss.item() / world_size
+            # Update learning rate with warmup and scheduler adjustments, synchronizing across processes
+            if epoch < warmup_epochs:
+                current_lr = base_lr * ((epoch + 1) / warmup_epochs)
+                current_lr_tensor = torch.tensor(current_lr, device=rank) if is_main_process else torch.tensor(0.0, device=rank)
+                dist.broadcast(current_lr_tensor, src=0)
+                current_lr_bcast = current_lr_tensor.item()
+                for pg in optimizer.param_groups:
+                    pg['lr'] = current_lr_bcast
+                if is_main_process:
+                    logger.info(f"Warmup epoch {epoch+1}/{warmup_epochs}: Setting learning rate to {current_lr_bcast:.6f}")
+            else:
+                if is_main_process:
+                    lr_scheduler.step(avg_epoch_val_loss)
+                    new_lr = optimizer.param_groups[0]['lr']
+                    new_lr_tensor = torch.tensor(new_lr, device=rank)
+                else:
+                    new_lr_tensor = torch.tensor(0.0, device=rank)
+                dist.broadcast(new_lr_tensor, src=0)
+                new_lr = new_lr_tensor.item()
+                for pg in optimizer.param_groups:
+                    pg['lr'] = new_lr
             
             if is_main_process:
-                logger.info(f'Epoch {epoch+1} - Average Training Loss: {avg_epoch_loss:.4f}, Average Validation Loss: {avg_epoch_val_loss:.4f}')
+                logger.info(f'Epoch {epoch+1} - Average Training Loss: {avg_epoch_loss:.4f}, Average Validation Loss: {avg_epoch_val_loss:.4f}, mIoU: {epoch_miou:.4f}')
                 losses.append(avg_epoch_loss)
                 val_losses.append(avg_epoch_val_loss)
+                lrs.append(optimizer.param_groups[0]['lr'])
+                miou_values.append(epoch_miou)
                 
-                # Plot loss
-                plt.figure(figsize=(10,6))
-                plt.plot(range(1, len(losses) + 1), losses, 'b-', label='Training Loss')
-                plt.plot(range(1, len(val_losses) + 1), val_losses, 'r-', label='Validation Loss')
-                plt.xlabel('Epoch')
-                plt.ylabel('Loss')
-                plt.title('Training and Validation Loss vs Epoch')
-                plt.grid(True, alpha=0.3)
-                plt.legend()
+                # Plot training/validation loss and learning rate/mIoU in two subplots
+                plt.figure(figsize=(12,10))
+                ax1 = plt.subplot(211)
+                ax1.plot(range(1, len(losses) + 1), losses, 'b-', label='Training Loss')
+                ax1.plot(range(1, len(val_losses) + 1), val_losses, 'r-', label='Validation Loss')
+                ax1.set_xlabel('Epoch')
+                ax1.set_ylabel('Loss')
+                ax1.set_title('Training and Validation Loss')
+                ax1.grid(True, alpha=0.3)
+                ax1.legend()
+
+                ax2 = plt.subplot(212)
+                ax2.plot(range(1, len(lrs) + 1), lrs, 'g-', label='Learning Rate')
+                ax2.set_xlabel('Epoch')
+                ax2.set_ylabel('Learning Rate', color='g')
+                ax2.tick_params(axis='y', labelcolor='g')
+                ax2b = ax2.twinx()
+                ax2b.plot(range(1, len(miou_values) + 1), miou_values, 'm-', label='mIoU')
+                ax2b.set_ylabel('mIoU', color='m')
+                ax2b.tick_params(axis='y', labelcolor='m')
+                lines2, labels2 = ax2.get_legend_handles_labels()
+                lines3, labels3 = ax2b.get_legend_handles_labels()
+                ax2b.legend(lines2 + lines3, labels2 + labels3, loc='upper center')
                 plt.tight_layout()
-                plt.savefig(os.path.join(save_dir, 'training_plot.png'))
+
+                save_path = os.path.join(save_dir, 'training_plot.png')
+                os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                plt.savefig(save_path)
                 plt.close()
 
                 # Save checkpoint for current epoch
@@ -370,6 +443,8 @@ def train(rank: int, world_size: int, params: dict) -> None:
                     'val_loss': avg_epoch_val_loss,
                     'losses': losses,
                     'val_losses': val_losses,
+                    'learning_rates': lrs,
+                    'miou': miou_values,
                 }
                 
                 # Save checkpoint for current epoch
@@ -390,6 +465,12 @@ def train(rank: int, world_size: int, params: dict) -> None:
                     best_train_loss = avg_epoch_loss
                     torch.save(checkpoint, os.path.join(save_dir, 'best_train_model.pth'))
                     logger.info(f'New best training model saved with loss: {best_train_loss:.4f}')
+
+            if is_main_process:
+                writer.add_scalar("Loss/train", avg_epoch_loss, epoch)
+                writer.add_scalar("Loss/val", avg_epoch_val_loss, epoch)
+                writer.add_scalar("Learning Rate", optimizer.param_groups[0]['lr'], epoch)
+                writer.add_scalar("mIoU", epoch_miou, epoch)
 
         if is_main_process:
             writer.close()
