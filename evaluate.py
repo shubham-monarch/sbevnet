@@ -52,11 +52,12 @@ def calculate_iou(pred, target, n_classes):
     
     return ious
 
-def evaluate_sbevnet(config_path: str):
+def evaluate_sbevnet(config_path: str, enable_GT: bool = False):
     """Evaluate SBEVNet model using provided configuration files.
-    
+
     Args:
-        config_path: Path to the evaluation configuration YAML file
+        config_path: Path to the evaluation configuration YAML file.
+        enable_GT: Whether to include GT-masks in the prediction results.
     """
     logger = get_logger("evaluate")
     
@@ -71,18 +72,12 @@ def evaluate_sbevnet(config_path: str):
     params['cy'] *= scale_y
     params['f'] *= scale_x
     
-    # mkdir predictions
     pred_dir = params['predictions_dir']
-
-    # predictions directory must be empty
     assert not (os.path.exists(pred_dir) and os.listdir(pred_dir)), "Predictions directory must be empty"
     os.makedirs(pred_dir, exist_ok=True)
     
-    # Get GPU ID from config with default 0
     gpu_id = params.get('gpu_id', 0)
     device = torch.device(f'cuda:{gpu_id}' if torch.cuda.is_available() else 'cpu')
-
-    # Set the default CUDA device to ensure new tensors are allocated on cuda:gpu_id
     torch.cuda.set_device(gpu_id)
     
     logger.warning(f'==============')
@@ -110,7 +105,6 @@ def evaluate_sbevnet(config_path: str):
         fixed_cam_confs=params['fixed_cam_confs']
     ).to(device)
     
-    # load checkpoint
     if os.path.exists(params['checkpoint_path']):
         checkpoint = torch.load(params['checkpoint_path'], map_location=device)
         network.load_state_dict(checkpoint['model_state_dict'])
@@ -119,14 +113,11 @@ def evaluate_sbevnet(config_path: str):
         logger.error(f"No checkpoint found at {params['checkpoint_path']}")
         return
     
-    # set network to evaluation mode
     network.eval()
     
-    # load test dataset
     test_dataset = sbevnet_dataset(
         json_path=params['json_path'],
         dataset_split='test',
-        # dataset_split='train',
         do_ipm_rgb=params['do_ipm_rgb'],
         do_ipm_feats=params['do_ipm_feats'],
         fixed_cam_confs=params['fixed_cam_confs'],
@@ -147,93 +138,60 @@ def evaluate_sbevnet(config_path: str):
 
     logger.warning("───────────────────────────────\n  ")
     logger.warning(f"params['json_path']: {params['json_path']}")
-    # logger.warning(f"params['s3_dest_dir']: {params['s3_dest_dir']}")
     logger.warning("───────────────────────────────\n  ")
     
-    # Load the test split left image list from the JSON file
     with open(params['json_path'], 'r') as f:
         dataset_json = json.load(f)
-
     left_img_list = dataset_json['test']['rgb_left']
-    seg_mask_list = dataset_json['test']['top_seg']
+    if enable_GT:
+        seg_mask_list = dataset_json['test']['top_seg']
     
-    # logger.warning("───────────────────────────────\n  ")
-    # logger.warning(f"left_img_list: {left_img_list}")
-    # logger.warning(f"seg_mask_list: {seg_mask_list}")
-    # logger.warning("───────────────────────────────\n  ")
-
-    # logger.warning(f'=================')    
-    # logger.warning(f'Test dataset size: {len(test_dataset)}')
-    # logger.warning(f'=================\n')
-    
-    
-    # initialize metrics storage
     total_ious = [0] * params['n_classes_seg']
     total_samples = 0
     
-    # evaluation loop
     with torch.no_grad():
         for batch_idx, data in enumerate(tqdm(test_loader, desc="Evaluating")):
-            # if batch_idx > 5:
-            #     break
-            
             try:
-                # move data to device
                 for key in data:
                     if isinstance(data[key], torch.Tensor):
                         data[key] = data[key].to(device)
                     elif isinstance(data[key], list):
                         data[key] = [item.to(device) if isinstance(item, torch.Tensor) else item 
-                                   for item in data[key]]
+                                     for item in data[key]]
 
-                # forward pass
                 output = network(data)
+                pred = output['top_seg'].argmax(1)
                 
-                # get predictions
-                pred = output['top_seg']  # [B, H, W]                
-                pred = output['top_seg'].argmax(1)  # [B, H, W]
-
-                # Save predictions
                 for i in range(pred.size(0)):
                     pred_np = pred[i].cpu().numpy()
-                        
-                    # Save colored visualization
                     colored_pred = get_colored_segmentation_image(pred_np, config_path=color_map_path)
                     colored_pred = cv2.flip(colored_pred, 0)
+                    img_idx = batch_idx * params['batch_size'] + i
                     
-                    # Instead of constructing a filename from an index, retrieve it from the JSON test split.
-                    img_idx = batch_idx * params['batch_size'] + i  # zero-indexed
+                    left_img_path = os.path.join(params['s3_data_handler']['base_dir'], "model-dataset", left_img_list[img_idx])
                     
-                    # left_img = left_img_list[img_idx]
-                    # seg_mask_file = seg_mask_list[img_idx]
-
-                    # left_img_path = os.path.join('data/model-dataset', left_img_file)
-                    left_img_path = os.path.join(params['s3_data_handler']['base_dir'],\
-                                                  f"model-dataset", left_img_list[img_idx])
-                    seg_mask_mono_path = os.path.join(params['s3_data_handler']['base_dir'],\
-                                                  f"model-dataset", seg_mask_list[img_idx])
+                    if enable_GT:
+                        seg_mask_mono_path = os.path.join(params['s3_data_handler']['base_dir'], "model-dataset", seg_mask_list[img_idx])
+                        seg_mask_mono = cv2.imread(seg_mask_mono_path, cv2.IMREAD_GRAYSCALE)
+                        seg_mask_rgb = get_colored_segmentation_image(seg_mask_mono, config_path=color_map_path)
+                        seg_mask_rgb = cv2.flip(seg_mask_rgb, 0)
+                        seg_mask_rgb = cv2.resize(seg_mask_rgb, (256, 256), interpolation=cv2.INTER_LINEAR)
                     
-                    seg_mask_mono = cv2.imread(seg_mask_mono_path, cv2.IMREAD_GRAYSCALE)
-                    seg_mask_rgb = get_colored_segmentation_image(seg_mask_mono, config_path=color_map_path)
-                    seg_mask_rgb = cv2.flip(seg_mask_rgb, 0)
-                    seg_mask_rgb = cv2.resize(seg_mask_rgb, (256, 256), interpolation=cv2.INTER_LINEAR)
-
                     left_img = cv2.imread(left_img_path)
                     if left_img is None:
                         logger.error(f'Failed to read image at {left_img_path}')
                         continue
                     left_img_resized = cv2.resize(left_img, (256, 256), interpolation=cv2.INTER_LINEAR)
                     
-                    # Combine and save
-                    combined_image = np.hstack((seg_mask_rgb, left_img_resized, cv2.flip(colored_pred, 0)))
-                    combined_dir = os.path.join(pred_dir, f'combined')
+                    if enable_GT:
+                        combined_image = np.hstack((seg_mask_rgb, left_img_resized, cv2.flip(colored_pred, 0)))
+                    else:
+                        combined_image = np.hstack((left_img_resized, cv2.flip(colored_pred, 0)))
+                    
+                    combined_dir = os.path.join(pred_dir, 'combined')
                     os.makedirs(combined_dir, exist_ok=True)
                     combined_path = os.path.join(combined_dir, f'{left_img_list[img_idx]}')
-
-                    # logger.info("───────────────────────────────\n  ")
-                    # logger.info(f"combined_path: {combined_path}")
-                    # logger.info("───────────────────────────────\n  ")
-
+                    
                     os.makedirs(os.path.dirname(combined_path), exist_ok=True)
                     cv2.imwrite(combined_path, combined_image)
             
@@ -246,6 +204,8 @@ def main():
     parser = argparse.ArgumentParser(description='Evaluate SBEVNet model')
     parser.add_argument('--config', type=str, default='configs/evaluate.yaml', 
                        help='Path to evaluation config file')
+    parser.add_argument('--enable_GT', type=bool, default=False, 
+                       help='Enable GT-masks in the prediction results')
     args = parser.parse_args()
     
     # Validate config files exist
@@ -253,7 +213,7 @@ def main():
         print(f"Error: Config file {args.config} not found")
         sys.exit(1)
         
-    evaluate_sbevnet(args.config)
+    evaluate_sbevnet(args.config, args.enable_GT)
 
 if __name__ == '__main__':
     main() 
