@@ -63,7 +63,7 @@ class S3_DataHandler:
             dst = os.path.join(dst_dir, str(idx))
             os.makedirs(dst_dir, exist_ok=True)
             shutil.copytree(src, dst, dirs_exist_ok=True)
-            # Create a file that stores the relative path of the folder from src
+             # Create a file that stores the relative path of the folder from src
             with open(os.path.join(dst, "file_name.txt"), "w") as f:
                 f.write(folder)
 
@@ -141,12 +141,16 @@ class S3_DataHandler:
         │   ├── left.jpg
         │   ├── right.jpg
         │   ├── seg-mask-mono.png
-        │   └── seg-mask-rgb.png
+        │   ├── seg-mask-rgb.png
+        │   ├── cam-extrinsics.npy
+        │   └── file_name.txt
         ├── 2
         │   ├── left.jpg
         │   ├── right.jpg
         │   ├── seg-mask-mono.png
-        │   └── seg-mask-rgb.png
+        │   ├── seg-mask-rgb.png
+        │   ├── cam-extrinsics.npy
+        │   └── file_name.txt
         ├── ...
         """
         
@@ -328,25 +332,55 @@ class ModelDataHandler:
                     break
 
     @staticmethod
-    def _remove_outliers(mask_dir: str, target_label: int, threshold: float) -> Tuple[int, List[str]]:
-        '''Remove masks with more than threshold % of the target label'''
+    def _remove_outliers(mask_dir: str, labels_to_remove: List[int], threshold: float) -> Tuple[int, List[str]]:
+        '''Remove masks with more than threshold % of any of the target labels'''
         logger = get_logger("DataHandlerModel")
         masks = get_files_from_folder(mask_dir, ['.png'])
         cnt = 0
         files = []
         for mask_path in tqdm(masks, desc="Removing label outliers"):
             seg_mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-            label_mask_cnt = np.sum(seg_mask == target_label)
-            if label_mask_cnt / seg_mask.size >= threshold:
-                cnt += 1
-                files.append(os.path.basename(mask_path))
-                ModelDataHandler._remove_mask_from_model_dataset(mask_path)
-        
+            for label in labels_to_remove:
+                label_mask_cnt = np.sum(seg_mask == label)
+                if label_mask_cnt / seg_mask.size >= threshold:
+                    cnt += 1
+                    files.append(os.path.basename(mask_path))
+                    ModelDataHandler._remove_mask_from_model_dataset(mask_path)
+                    break
         return cnt, files
 
     @staticmethod
-    def generate_MODEL_train_test(GT_train: str, GT_test: str, model_train_dir: str, model_test_dir: str, model_dir: str, labels_to_remove: List[int]) -> None:
+    def _remove_axis_angle_outliers(cam_extrinsics_dir: str) -> Tuple[int, List[str]]:
+        """Remove files with axis angle outliers in the given cam_extrinsics folder."""
+        logger = get_logger("DataHandlerModel")
+        npy_files = get_files_from_folder(cam_extrinsics_dir, ['.npy'])
+        cnt = 0
+        files = []
+        for npy_path in tqdm(npy_files, desc="Removing axis angle outliers"):
+            matrix = np.load(npy_path)
+            if matrix.shape != (4, 4):
+                logger.warning(f"File {npy_path} does not contain a 4x4 matrix. Skipping.")
+                continue
+            rotation = matrix[:3, :3]
+            rotation_vector, _ = cv2.Rodrigues(rotation)
+            rotation_vector = rotation_vector.flatten()
+            
+            x_axis_valid = 0.3 <= rotation_vector[0] <= 0.525
+            y_axis_valid = -0.01 <= rotation_vector[1] <= 0.01
+            z_axis_valid = -0.075 <= rotation_vector[2] <= 0.1
+
+            if not (x_axis_valid and y_axis_valid and z_axis_valid):
+                cnt += 1
+                files.append(os.path.basename(npy_path))
+                ModelDataHandler._remove_mask_from_model_dataset(npy_path)
+        return cnt, files
+
+    @staticmethod
+    def generate_MODEL_train_test(GT_train: str, GT_test: str, 
+                                  model_train_dir: str, model_test_dir: str, model_dir: str, 
+                                  labels_to_remove: List[int]) -> None:
         """Generate model train and test datasets."""
+        
         logger = get_logger("DataHandlerModel")
 
         ModelDataHandler._restructure_GT_folder(GT_train, model_train_dir)
@@ -362,18 +396,10 @@ class ModelDataHandler:
         ModelDataHandler._remap_mask_labels(os.path.join(model_train_dir, 'seg-masks-mono'))
         ModelDataHandler._remap_mask_labels(os.path.join(model_test_dir, 'seg-masks-mono'))
 
-        # remove masks containing more than 80% of any label
-        total_cnt = 0
-        total_train_cnt = 0
-        total_test_cnt = 0
-        
-        for label in labels_to_remove:
-            train_cnt, _ = ModelDataHandler._remove_outliers(os.path.join(model_train_dir, 'seg-masks-mono'), label, 0.8)
-            test_cnt, _ = ModelDataHandler._remove_outliers(os.path.join(model_test_dir, 'seg-masks-mono'), label, 0.8)
-            
-            total_train_cnt += train_cnt
-            total_test_cnt += test_cnt
-            total_cnt += train_cnt + test_cnt
+        # remove outlier masks for the specified labels from train and test dirs
+        total_train_cnt, _ = ModelDataHandler._remove_outliers(os.path.join(model_train_dir, 'seg-masks-mono'), labels_to_remove, 0.8)
+        total_test_cnt, _ = ModelDataHandler._remove_outliers(os.path.join(model_test_dir, 'seg-masks-mono'), labels_to_remove, 0.8)
+        total_cnt = total_train_cnt + total_test_cnt
         
         logger.warning("───────────────────────────────")
         logger.warning(f"Removed {total_cnt} masks with label outliers")
@@ -381,7 +407,18 @@ class ModelDataHandler:
         logger.warning(f"Removed {total_test_cnt} masks with label outliers in test")
         logger.warning("───────────────────────────────\n  ")
 
-        # populate json file
+        # remove axis angle outliers from cam-extrinsics
+        train_axis_cnt, _ = ModelDataHandler._remove_axis_angle_outliers(
+            os.path.join(model_train_dir, 'cam-extrinsics'))
+        test_axis_cnt, _ = ModelDataHandler._remove_axis_angle_outliers(
+            os.path.join(model_test_dir, 'cam-extrinsics'))
+        
+        logger.warning("───────────────────────────────")
+        logger.warning(f"Removed {train_axis_cnt + test_axis_cnt} axis angle outliers from cam-extrinsics")
+        logger.warning(f"Removed {train_axis_cnt} axis angle outliers in train")
+        logger.warning(f"Removed {test_axis_cnt} axis angle outliers in test")
+        logger.warning("───────────────────────────────\n  ")
+
         ModelDataHandler._populate_json(os.path.join(model_dir, 'dataset.json'), model_dir, model_train_dir, model_test_dir)
 
     @staticmethod
