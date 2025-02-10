@@ -332,7 +332,7 @@ class ModelDataHandler:
                     break
 
     @staticmethod
-    def _remove_outliers(mask_dir: str, labels_to_remove: List[int], threshold: float) -> Tuple[int, List[str]]:
+    def _remove_label_outliers(mask_dir: str, labels_to_remove: List[int], threshold: float) -> Tuple[int, List[str]]:
         '''Remove masks with more than threshold % of any of the target labels'''
         logger = get_logger("DataHandlerModel")
         masks = get_files_from_folder(mask_dir, ['.png'])
@@ -397,8 +397,8 @@ class ModelDataHandler:
         ModelDataHandler._remap_mask_labels(os.path.join(model_test_dir, 'seg-masks-mono'))
 
         # remove outlier masks for the specified labels from train and test dirs
-        total_train_cnt, _ = ModelDataHandler._remove_outliers(os.path.join(model_train_dir, 'seg-masks-mono'), labels_to_remove, 0.8)
-        total_test_cnt, _ = ModelDataHandler._remove_outliers(os.path.join(model_test_dir, 'seg-masks-mono'), labels_to_remove, 0.8)
+        total_train_cnt, _ = ModelDataHandler._remove_label_outliers(os.path.join(model_train_dir, 'seg-masks-mono'), labels_to_remove, 0.8)
+        total_test_cnt, _ = ModelDataHandler._remove_label_outliers(os.path.join(model_test_dir, 'seg-masks-mono'), labels_to_remove, 0.8)
         total_cnt = total_train_cnt + total_test_cnt
         
         logger.warning("───────────────────────────────")
