@@ -323,7 +323,7 @@ fine-tuning
 - drop-out
 - add regularalization 
 - add cross-validation
-
+- [test] test exclusively on frames not part of occ-dataset
 
 
 - [feat] start data-augmentation pipeline
@@ -413,8 +413,32 @@ fine-tuning
 + [feat] support for List[s3_uris] in data-generator-s3.py
 
 - data-agumnetation with focus on under-represented classes
-- plot mIOU along with train/validation loss
++ plot mIOU along with train/validation loss
 - explore dice-loss
 - explore dice-loss + focal-loss
 - wouldn't it be a good idea to increase the range of [x,z] so that model can capture more data?  
 - label specific miou scores per epoch
+
+- [data-augmentation] train it on patches of different dimensions
+
+- [feat] script to upload weight files
+- tune fence weights
+- remove feeder
+- add occ-masks
+- generate seg-mask for x= [-5, 5] and [2,12]
+- naming mechanism for uploading gt-seg-mask data folders to s3
+- figure out passing rectangular masks to sbevnet
+- [feat] script to automatically backup and sync milestones
+
+- fix gt-seg mask error
+- fix get_grid_one
+
+- support for rectangular masks
+- filter out masks with outlier values for camera extrinsics
+- expand the horizontal range of the mask to capture more points
+- what values of z-range would filter out the hood for the first frame in a sequence? 
+- what values of z-range would filter out the feed pusher? 
+- generte occ-mask for the rectified pcd to ascertain the above values.
+- is there a need to add an occlusion mask? 
+- establish the scaling factor
+- [bug] filename generation is wrong

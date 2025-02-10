@@ -123,6 +123,8 @@ def crop_resize_mask(mask_path: str) -> np.ndarray:
     assert mask_cropped.shape == (256,256), f"Expected mask shape to be (256, 256), but got {mask_cropped.shape}"
     return mask_cropped
 
+
+
 def show_help():
     """Show help and available commands including parameter hints."""
     logger = get_logger('show_help')
