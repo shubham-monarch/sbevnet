@@ -15,7 +15,7 @@ import argparse
 import yaml
 from typing import Tuple
 
-from helpers import get_logger, flip_mask, get_files_from_folder
+from helpers import get_logger, flip_mask, get_files_from_folder, calculate_modified_z_outlier_bounds
 
 
 class S3_DataHandler:
@@ -351,11 +351,11 @@ class ModelDataHandler:
 
     @staticmethod
     def _remove_axis_angle_outliers(cam_extrinsics_dir: str) -> Tuple[int, List[str]]:
-        """Remove files with axis angle outliers in the given cam_extrinsics folder."""
+        """Remove files with axis angle outliers in the given cam_extrinsics folder using modified z-score bounds."""
         logger = get_logger("DataHandlerModel")
         npy_files = get_files_from_folder(cam_extrinsics_dir, ['.npy'])
-        cnt = 0
-        files = []
+        valid_files = []
+        rvec_x_list, rvec_y_list, rvec_z_list, rvec_mag_list = [], [], [], []
         for npy_path in tqdm(npy_files, desc="Removing axis angle outliers"):
             matrix = np.load(npy_path)
             if matrix.shape != (4, 4):
@@ -364,16 +364,47 @@ class ModelDataHandler:
             rotation = matrix[:3, :3]
             rotation_vector, _ = cv2.Rodrigues(rotation)
             rotation_vector = rotation_vector.flatten()
-            
-            x_axis_valid = 0.3 <= rotation_vector[0] <= 0.525
-            y_axis_valid = -0.01 <= rotation_vector[1] <= 0.01
-            z_axis_valid = -0.075 <= rotation_vector[2] <= 0.1
-
-            if not (x_axis_valid and y_axis_valid and z_axis_valid):
-                cnt += 1
-                files.append(os.path.basename(npy_path))
-                ModelDataHandler._remove_mask_from_model_dataset(npy_path)
-        return cnt, files
+            norm = np.linalg.norm(rotation_vector)
+            rvec_mag_list.append(norm)
+            if norm > 1e-6:
+                rotation_vector = rotation_vector / norm
+            rvec_x_list.append(rotation_vector[0])
+            rvec_y_list.append(rotation_vector[1])
+            rvec_z_list.append(rotation_vector[2])
+            valid_files.append(npy_path)
+        
+        if not valid_files:
+            logger.error("No valid rotation vectors found in provided folder.")
+            return 0, []
+        
+        valid_files = np.array(valid_files)
+        rvec_x = np.array(rvec_x_list)
+        rvec_y = np.array(rvec_y_list)
+        rvec_z = np.array(rvec_z_list)
+        rvec_mag = np.array(rvec_mag_list)
+        
+        lb_x, ub_x = calculate_modified_z_outlier_bounds(rvec_x)
+        lb_y, ub_y = calculate_modified_z_outlier_bounds(rvec_y)
+        lb_z, ub_z = calculate_modified_z_outlier_bounds(rvec_z)
+        lb_mag, ub_mag = calculate_modified_z_outlier_bounds(rvec_mag)
+        
+        mask_x = (rvec_x >= lb_x) & (rvec_x <= ub_x)
+        mask_y = (rvec_y >= lb_y) & (rvec_y <= ub_y)
+        mask_z = (rvec_z >= lb_z) & (rvec_z <= ub_z)
+        mask_mag = (rvec_mag >= lb_mag) & (rvec_mag <= ub_mag)
+        
+        # Identify files as outliers if any of the x, z, or magnitude components is outside its bounds
+        outlier_indices = np.where(~mask_x | ~mask_z | ~mask_mag)[0]
+        
+        cnt = 0
+        outlier_files = []
+        for idx in sorted(outlier_indices, key=lambda i: int(os.path.basename(valid_files[i]).split('__')[0])):
+            file = valid_files[idx]
+            ModelDataHandler._remove_mask_from_model_dataset(file)
+            cnt += 1
+            outlier_files.append(os.path.basename(file))
+    
+        return cnt, outlier_files
 
     @staticmethod
     def generate_MODEL_train_test(GT_train: str, GT_test: str, 

@@ -123,8 +123,6 @@ def crop_resize_mask(mask_path: str) -> np.ndarray:
     assert mask_cropped.shape == (256,256), f"Expected mask shape to be (256, 256), but got {mask_cropped.shape}"
     return mask_cropped
 
-
-
 def show_help():
     """Show help and available commands including parameter hints."""
     logger = get_logger('show_help')
@@ -230,6 +228,25 @@ def main():
     }
     
     fire.Fire(commands)
+
+def calculate_modified_z_outlier_bounds(data, threshold=3.5):
+    """
+    Calculate robust outlier bounds using the modified z-score method based on MAD.
+    
+    Args:
+        data (np.array): A numpy array of numerical data.
+        threshold (float): The modified z-score threshold to consider a point as an inlier.
+        
+    Returns:
+        tuple: A tuple containing the lower and upper bounds for outlier detection.
+    """
+    med = np.median(data)
+    mad = np.median(np.abs(data - med))
+    if mad < 1e-6:
+        return med, med
+    lower_bound = med - threshold * mad / 0.6745
+    upper_bound = med + threshold * mad / 0.6745
+    return lower_bound, upper_bound
 
 if __name__ == "__main__":
     main()
