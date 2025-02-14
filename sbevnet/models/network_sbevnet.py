@@ -343,28 +343,39 @@ class SBEVNet(nn.Module):
         # self.logger.info(f"=================\n")
         
         
-        if self.do_ipm_rgb:
-            img_ipm = data['ipm_rgb']
+        # if self.do_ipm_rgb:
+        #     img_ipm = data['ipm_rgb']
         
-        cam_confs:Dict[str, Any] = {}
-        cam_confs['f'] = self.sys_confs['f']
-        cam_confs['cx'] = self.sys_confs['cx']
-        cam_confs['cy'] = self.sys_confs['cy']
-        cam_confs['tx'] = self.sys_confs['tx']
+        # cam_confs:Dict[str, Any] = {}
+        # cam_confs['f'] = self.sys_confs['f']
+        # cam_confs['cx'] = self.sys_confs['cx']
+        # cam_confs['cy'] = self.sys_confs['cy']
+        # cam_confs['tx'] = self.sys_confs['tx']
             
+        # if not self.fixed_cam_confs:
+        #     cam_confs['R'] = data['cam_confs']
+        #     # # assert cam_confs.shape[-1] == 4 
+        #     # # assert len(cam_confs.shape) == 2
+        #     # self.logger.warning(f"=================")
+        #     # self.logger.warning(f"cam_confs.shape: {cam_confs.shape}")
+        #     # self.logger.warning(f"cam_confs: {cam_confs}")
+        #     # self.logger.warning(f"=================\n")
+        # # else:
+        # #     # cam_conf = [self.sys_confs['f'] , self.sys_confs['cx'] , self.sys_confs['cy'] , self.sys_confs['tx']]
+        # #     # bs = left.shape[0]
+        # #     # cam_confs = [cam_conf]*bs 
+        
         if not self.fixed_cam_confs:
-            cam_confs['R'] = data['cam_confs']
-            # # assert cam_confs.shape[-1] == 4 
-            # # assert len(cam_confs.shape) == 2
-            # self.logger.warning(f"=================")
-            # self.logger.warning(f"cam_confs.shape: {cam_confs.shape}")
-            # self.logger.warning(f"cam_confs: {cam_confs}")
-            # self.logger.warning(f"=================\n")
-        # else:
-        #     # cam_conf = [self.sys_confs['f'] , self.sys_confs['cx'] , self.sys_confs['cy'] , self.sys_confs['tx']]
-        #     # bs = left.shape[0]
-        #     # cam_confs = [cam_conf]*bs 
+            cam_confs = data['cam_confs']
+            assert cam_confs.shape[-1] == 4 
+            assert len(cam_confs.shape) == 2 
+        else:
+            cam_conf = [self.sys_confs['f'] , self.sys_confs['cx'] , self.sys_confs['cy'] , self.sys_confs['tx']]
+            bs = left.shape[0]
+            cam_confs = [cam_conf]*bs 
             
+
+
         if self.do_ipm_feats: 
             ipm_m = data['ipm_feats_m']
             assert ipm_m.shape[-1] == 3*3 + 2 
