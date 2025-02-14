@@ -394,7 +394,8 @@ class ModelDataHandler:
         mask_mag = (rvec_mag >= lb_mag) & (rvec_mag <= ub_mag)
         
         # Identify files as outliers if any of the x, z, or magnitude components is outside its bounds
-        outlier_indices = np.where(~mask_x | ~mask_z | ~mask_mag)[0]
+        # outlier_indices = np.where(~mask_x | ~mask_z | ~mask_mag)[0]
+        outlier_indices = np.where(~mask_z)[0]
         
         cnt = 0
         outlier_files = []
