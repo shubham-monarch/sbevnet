@@ -311,12 +311,14 @@ def train(rank: int, world_size: int, params: dict) -> None:
             criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=-100).to(rank)
         
         # Initialize the optimizer and scheduler
-        base_lr = params.get("learning_rate", 0.0001)  # Use a configurable base learning rate
-        optimizer = optim.Adam(network.parameters(), lr=base_lr, weight_decay=1e-4)
-        lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=5, factor=0.5)
-
-        # Define warmup parameters
-        warmup_epochs = params.get("warmup_epochs", 5)  # Number of epochs for warmup
+        base_lr = params.get("initial_learning_rate", 0.001)  # Use a configurable base learning rate
+        optimizer = optim.Adam(network.parameters(), lr=base_lr, weight_decay=1e-4, betas=(0.9, 0.999))
+        lr_scheduler = ReduceLROnPlateau(optimizer, 
+                                         mode='min', 
+                                         patience=6, 
+                                         factor=0.8, 
+                                         min_lr=1e-6,
+                                         verbose=True)
 
         val_dataset = sbevnet_dataset(
             json_path='data/model-dataset/dataset.json',
@@ -375,27 +377,17 @@ def train(rank: int, world_size: int, params: dict) -> None:
             dist.all_reduce(epoch_val_loss_tensor, op=dist.ReduceOp.SUM)
             avg_epoch_val_loss = epoch_val_loss_tensor.item() / world_size
             
-            # Update learning rate with warmup and scheduler adjustments, synchronizing across processes
-            if epoch < warmup_epochs:
-                current_lr = base_lr * ((epoch + 1) / warmup_epochs)
-                current_lr_tensor = torch.tensor(current_lr, device=rank) if is_main_process else torch.tensor(0.0, device=rank)
-                dist.broadcast(current_lr_tensor, src=0)
-                current_lr_bcast = current_lr_tensor.item()
-                for pg in optimizer.param_groups:
-                    pg['lr'] = current_lr_bcast
-                if is_main_process:
-                    logger.info(f"Warmup epoch {epoch+1}/{warmup_epochs}: Setting learning rate to {current_lr_bcast:.6f}")
+            # Update learning rate with scheduler adjustments, synchronizing across processes
+            if is_main_process:
+                lr_scheduler.step(avg_epoch_val_loss)
+                new_lr = optimizer.param_groups[0]['lr']
+                new_lr_tensor = torch.tensor(new_lr, device=rank)
             else:
-                if is_main_process:
-                    lr_scheduler.step(avg_epoch_val_loss)
-                    new_lr = optimizer.param_groups[0]['lr']
-                    new_lr_tensor = torch.tensor(new_lr, device=rank)
-                else:
-                    new_lr_tensor = torch.tensor(0.0, device=rank)
-                dist.broadcast(new_lr_tensor, src=0)
-                new_lr = new_lr_tensor.item()
-                for pg in optimizer.param_groups:
-                    pg['lr'] = new_lr
+                new_lr_tensor = torch.tensor(0.0, device=rank)
+            dist.broadcast(new_lr_tensor, src=0)
+            new_lr = new_lr_tensor.item()
+            for pg in optimizer.param_groups:
+                pg['lr'] = new_lr
             
             if is_main_process:
                 logger.info(f'Epoch {epoch+1} - Average Training Loss: {avg_epoch_loss:.4f}, Average Validation Loss: {avg_epoch_val_loss:.4f}, mIoU: {epoch_miou:.4f}')
