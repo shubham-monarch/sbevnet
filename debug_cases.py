@@ -68,7 +68,7 @@ def calculate_iqr_outlier_bounds(data):
     upper_bound = Q3 + 1.5 * IQR
     return lower_bound, upper_bound
 
-def get_cam_extrinsics_distribution(folder_path: str):
+def get_cam_extrinsics_distribution(folder_path: str = "data/model-dataset/train/cam-extrinsics"):
     """Plot the distribution of rotation vector components extracted from camera extrinsics (.npy files).
     
     For each .npy file in folder_path, loads a 4x4 matrix, extracts its top-left 3x3 rotation matrix, converts it 
