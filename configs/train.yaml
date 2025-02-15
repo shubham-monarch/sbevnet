@@ -1,21 +1,24 @@
-# image dimensions
+# This configuration is nearly identical to train-dist.yaml,
+# with distributed settings removed (distributed: false) for non-distributed training.
+
+distributed: false
+
+# Image and network parameters
 image_w: 640
 image_h: 480
 max_disp: 64
 
-# segmentation and heatmap parameters
-n_classes_seg: 6
+# Segmentation and heatmap settings
+n_classes_seg: 14
 n_hmap: 256
 
-# depth range (in meters)
-xmin: 0.0001
-xmax: 5
+# Depth and horizontal ranges (in meters)
+xmin: 2.0
+xmax: 7.0
+ymin: -2.0
+ymax: 3.0
 
-# horizontal range (in meters)
-ymin: -2.5
-ymax: 2.5
-
-# camera parameters
+# Camera intrinsics and extrinsics
 cx: 964.989
 cy: 569.276
 f: 1093.2768
@@ -23,17 +26,36 @@ tx: 0.12
 camera_ext_x: 0.0
 camera_ext_y: 0.0
 
-# additional parameters for SBEVNet
+# IPM options and fixed camera configuration
 do_ipm_rgb: false
 do_ipm_feats: false
-fixed_cam_confs: false
+fixed_cam_confs: true
 
-# training parameters
-batch_size: 4
-num_epochs: 200
-learning_rate: 0.0001
-
-# dataset parameters
+# Additional options for segmentation masks
 do_mask: false
 do_top_seg: true
 zero_mask: false
+
+# Training parameters
+learning_rate: 0.001           # Using key "learning_rate" (equivalent to initial_learning_rate)
+batch_size: 9
+num_epochs: 200
+num_workers: 4
+
+# Paths
+dataset_path: data/model-dataset/dataset.json
+save_dir: checkpoints
+
+# Class weights (to be normalized in code if needed)
+class_weights: [0, 0.1, 0.05, 0.1, 0, 0.1, 0.1, 0, 0, 0, 0.05, 0.0, 0, 0]
+
+# Early stopping configuration (optional)
+early_stopping_patience: 20
+
+# Loss configuration
+loss_type: cross_entropy         # Set to "focal" to use FocalLoss
+focal_gamma: 2.0
+
+# Seed and deterministic settings
+random_seed: 420
+deterministic: false
