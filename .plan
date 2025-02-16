@@ -61,9 +61,9 @@
 * get rid of ground points in GT
 + check unet implementation
 - toogle number of classes, 6 vs 5
-- establish correspondance with eval files and dataset files
++ establish correspondance with eval files and dataset files
 + add segmentation mask 
-- ignoring void labels
++ ignoring void labels
 * check for degeneracy
 + model is getting stuck at local minima, need to tune learning rate
 + reduce mask size from 400 * 400 to 200 * 200
@@ -85,9 +85,8 @@
 <!-- tune training params -->
 * enable saving of intermediate epochs 
 + plot epoch loss
-- decide on the the epoch count
++ decide on the the epoch count
 + increase batch size
-- figure out learning rate stretegy -> [use crestereo]
 - tune learning rate (refer crestereo)
 
 
@@ -102,7 +101,7 @@
 <!-- aws based bev-generator -->
 + start aws based data-generation pipeline
 + index to track processed files
-- ipm rgb 
++ ipm rgb 
 - occlusion mask
 + add index.json
 
@@ -115,27 +114,19 @@
 - move mavis.yaml to config
 - add test.yaml, train.yaml and eval.yaml
 
-- stereo rectification 
++ stereo rectification 
 - add augmentation for minor classes
 - add hidden points mask
 - passing camera orientation
 
-- fix model image pre-processing step
 
 - add focal loss function
 - plot GT class-wise distribution
 - improve loss function
 - tune weighted cross entropy loss
-- change z-min to 0.5 in GT-seg-mask
++ change z-min to 0.5 in GT-seg-mask
 
 
-<!-- camera intrinsics scaling -->
-- write comparison script
-- establish camera intrinsics scaling params
-- camera baseline scaling
-- check fx vs fy scaling
-- disparity scaling
-- handle image resizing effect on disparity
 
 
 <!-- data augmentation -->
@@ -395,9 +386,9 @@ fine-tuning
 - prepare list of leaf-folders with significant tilt across frames
 - fix rotation
 + something is wrong in leaf-eval.sh frames
-- script to plot mIOU over frames
++ script to plot mIOU over frames
 - search for segmentation metrics
-- compare mIOU of weighted cross entropy vs focal loss
++ compare mIOU of weighted cross entropy vs focal loss
 - refactor evaluate.py -> evaluate_sbevnet
 + [bug] model-dataset entries are not sequential
 
@@ -417,21 +408,20 @@ fine-tuning
 - explore dice-loss
 - explore dice-loss + focal-loss
 - wouldn't it be a good idea to increase the range of [x,z] so that model can capture more data?  
-- label specific miou scores per epoch
 
 - [data-augmentation] train it on patches of different dimensions
 
 - [feat] script to upload weight files
-- tune fence weights
+- [tune] tune fence weights
 - remove feeder
 - add occ-masks
 - generate seg-mask for x= [-5, 5] and [2,12]
 - naming mechanism for uploading gt-seg-mask data folders to s3
-- figure out passing rectangular masks to sbevnet
+- [feat] figure out passing rectangular masks to sbevnet
 - [feat] script to automatically backup and sync milestones
 
 - fix gt-seg mask error
-- fix get_grid_one
+- [bug] fix get_grid_one
 
 - support for rectangular masks
 - filter out masks with outlier values for camera extrinsics
@@ -441,4 +431,47 @@ fine-tuning
 - generte occ-mask for the rectified pcd to ascertain the above values.
 - is there a need to add an occlusion mask? 
 - establish the scaling factor
-- [bug] filename generation is wrong
++ [bug] filename generation is wrong
+
++ significance of ipm features
+- what aren't we using nuscenes dataaset for training?
+
+paper details
+- use H_inverse for 3.4.1
+- use IPM
+- use beta
+- use ensemble
++ use cmd
+- change rate-loss decrease strategy
+
+
+- only z-based outlier filtering and not x-based
+- do simple pitch-correction and train and compare metrics + validation miou with milestones/4/
+- add cross-validation
+- add beta / initial learning rate from paper
+- get rid of mixed precision training
+- upload milestones to aws
+- [tune] tune max-disp using occ-mask-generator disp values
+
+- [bug] disparity scaling or upscaling is wrong [4 vs 3]
++ integrate ipm-rgb 
+- integrate ipm-features
+
+<!-- camera intrinsics scaling -->
+- write comparison script
+- establish camera intrinsics scaling params
+- camera baseline scaling
+- check fx vs fy scaling
+- disparity scaling
+- handle image resizing effect on disparity
+
+
+- clean seg-gt-masks
+- [feat] add segmented ipm-rgb as features to the model
+- [tune] tune bev world bounds using ipm-rgb
+- [feat] genearate [ipm-rgb | left-img | seg-mask] as part of model-dataset/ipm+img foler
+- [feat] label specific miou scores per epoch
+- figure out learning rate stretegy -> [use crestereo]
+- fix model image pre-processing step
+- add end-to-end data-augmentation pipeline
+
