@@ -19,6 +19,9 @@ def get_grid_one( cam_conf , img_h , img_w , n_hmap , xmax , xmin , ymax , ymin 
     cy = float( cy )
     tx = float( tx )
     
+    pitch_deg = 25
+    pitch_rad = np.deg2rad(pitch_deg)
+
     
     key = str(f) + str(cx) + str(cy) + str(tx)
     
@@ -26,10 +29,11 @@ def get_grid_one( cam_conf , img_h , img_w , n_hmap , xmax , xmin , ymax , ymin 
 
         for X in range(n_hmap):
             for Y in range(n_hmap):
-                # x: 
-                k = ((( f  / (((xmax-xmin)*X/n_hmap + xmin - camera_ext_x)/tx ) ))) / ( max_disp/2) - 1 
-                # y:
-                j = ((( f  / (((xmax-xmin)*X/n_hmap + xmin -camera_ext_x )/tx ) )*(((ymax-ymin)*Y/n_hmap + ymin - camera_ext_y )/tx) + cx)/(img_w/2) ) - 1 
+                x_coord = (xmax - xmin) * X / n_hmap + xmin - camera_ext_x
+                y_coord = (ymax - ymin) * Y / n_hmap + ymin - camera_ext_y
+
+                k = (f * np.cos(pitch_rad) / (x_coord / tx)) / (max_disp / 2) - 1
+                j = ((f / (x_coord / tx)) * (y_coord / tx) + cx) / (img_w / 2) - 1
 
                 remap_normed_inv[ Y ,X, 0 ] = k # depth is along x lol
                 remap_normed_inv[ Y , X  , 1 ] = j

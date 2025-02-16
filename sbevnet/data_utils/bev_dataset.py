@@ -266,10 +266,6 @@ def sbevnet_dataset(
 
     ):
     
-    logger.warning(f"=================")
-    logger.warning(f"do_top_seg: {do_top_seg}")
-    logger.warning(f"=================\n")
-
     localss = locals()
     print( "dataset argsss : " ,  { arg: localss[arg] for arg in inspect.getfullargspec(sbevnet_dataset ).args if arg != 'self'}) 
 
@@ -316,11 +312,15 @@ def sbevnet_dataset(
     
     
         
-    # if  do_ipm_rgb:
-    #     sub_datasets['ipm_rgb'] =  IPMLoader( jj[dataset_split]["top_ipm"]  )
+    if  do_ipm_rgb:
+        sub_datasets['ipm_rgb'] =  IPMLoader( jj[dataset_split]["ipm_rgb"]  )
 
     # if do_ipm_feats:
     #     sub_datasets['ipm_feats_m']= NPArrayLoader(  jj[dataset_split]["top_ipm_m"]  )
+
+    logger.warning("───────────────────────────────")
+    logger.warning(f"fixed_cam_confs: {fixed_cam_confs}")
+    logger.warning("───────────────────────────────")
 
     if not fixed_cam_confs:
         sub_datasets['cam_confs']= NPArrayLoader(   jj[dataset_split]["confs"]  ) 

@@ -207,7 +207,7 @@ class ModelDataHandler:
         seg_masks_rgb_folder = os.path.join(MODEL_dir, 'seg-masks-rgb')
         cam_extrinsics_folder = os.path.join(MODEL_dir, 'cam-extrinsics')
         filenames_folder = os.path.join(MODEL_dir, 'filenames')
-        
+        ipm_left_folder = os.path.join(MODEL_dir, 'ipm-left')
         # Create the target subfolders if they don't exist
         os.makedirs(left_folder, exist_ok=True)
         os.makedirs(right_folder, exist_ok=True)
@@ -215,6 +215,7 @@ class ModelDataHandler:
         os.makedirs(seg_masks_rgb_folder, exist_ok=True)
         os.makedirs(cam_extrinsics_folder, exist_ok=True)
         os.makedirs(filenames_folder, exist_ok=True)
+        os.makedirs(ipm_left_folder, exist_ok=True)
 
         # Count total files for progress bar (including file_name.txt files)
         total_files = 0
@@ -225,7 +226,8 @@ class ModelDataHandler:
                    file.endswith('-mono.png') or \
                    file.endswith('-rgb.png') or \
                    file.endswith('cam-extrinsics.npy') or \
-                   file == "file_name.txt":
+                   file == "file_name.txt" or \
+                   file.endswith('ipm-left.png'):
                     total_files += 1
 
         with tqdm(total=total_files, desc="Organizing Images") as pbar:
@@ -260,6 +262,10 @@ class ModelDataHandler:
                         new_filename = f"{folder_num}__filename.txt"
                         shutil.copy(os.path.join(root, file), os.path.join(filenames_folder, new_filename))
                         pbar.update(1)
+                    elif file.endswith('ipm-left.png'):
+                        new_filename = f"{folder_num}__ipm-left.png"
+                        shutil.copy(os.path.join(root, file), os.path.join(ipm_left_folder, new_filename))
+                        pbar.update(1)
 
     @staticmethod
     def _flip_masks(src_dir: str, dest_dir: str) -> None:
@@ -290,13 +296,15 @@ class ModelDataHandler:
                 "rgb_left": get_relative_files(os.path.join(model_train_dir, 'left'), IMG_EXTENSIONS),
                 "rgb_right": get_relative_files(os.path.join(model_train_dir, 'right'), IMG_EXTENSIONS),
                 "top_seg": get_relative_files(os.path.join(model_train_dir, 'seg-masks-mono'), ['.png']),
-                "confs": get_relative_files(os.path.join(model_train_dir, 'cam-extrinsics'), ['.npy']),
+                "ipm_rgb": get_relative_files(os.path.join(model_train_dir, 'ipm-left'), ['.png']),
+                #"confs": get_relative_files(os.path.join(model_train_dir, 'cam-extrinsics'), ['.npy']),
             },
             "test": {
                 "rgb_left": get_relative_files(os.path.join(model_test_dir, 'left'), IMG_EXTENSIONS),
                 "rgb_right": get_relative_files(os.path.join(model_test_dir, 'right'), IMG_EXTENSIONS),
                 "top_seg": get_relative_files(os.path.join(model_test_dir, 'seg-masks-mono'), ['.png']),
-                "confs": get_relative_files(os.path.join(model_test_dir, 'cam-extrinsics'), ['.npy']),
+                "ipm_rgb": get_relative_files(os.path.join(model_test_dir, 'ipm-left'), ['.png']),
+                #"confs": get_relative_files(os.path.join(model_test_dir, 'cam-extrinsics'), ['.npy']),
             }
         }
 
@@ -418,11 +426,17 @@ class ModelDataHandler:
         ModelDataHandler._restructure_GT_folder(GT_train, model_train_dir)
         ModelDataHandler._restructure_GT_folder(GT_test, model_test_dir)
 
-        # flip mono / rgb masks in model-train
+        # flip mono / rgb masks in model-train / model-test
         ModelDataHandler._flip_masks(os.path.join(model_train_dir, 'seg-masks-mono'),\
                            os.path.join(model_train_dir, 'seg-masks-mono'))
         ModelDataHandler._flip_masks(os.path.join(model_test_dir, 'seg-masks-rgb'),\
                            os.path.join(model_test_dir, 'seg-masks-rgb'))
+        
+        # flip ipm-left in model-train / model-test
+        ModelDataHandler._flip_masks(os.path.join(model_train_dir, 'ipm-left'),\
+                           os.path.join(model_train_dir, 'ipm-left'))
+        ModelDataHandler._flip_masks(os.path.join(model_test_dir, 'ipm-left'),\
+                           os.path.join(model_test_dir, 'ipm-left'))
         
         # remap label 255 to 0
         ModelDataHandler._remap_mask_labels(os.path.join(model_train_dir, 'seg-masks-mono'))

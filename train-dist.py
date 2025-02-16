@@ -264,6 +264,12 @@ def train(rank: int, world_size: int, params: dict) -> None:
             image_w=params['image_w'],
             image_h=params['image_h']
         )
+
+        logger.warning("───────────────────────────────")
+        logger.warning(f"Train dataset contains the following datasets:")
+        for k in train_dataset.data_loaders:
+            logger.warning(f"- {k}: {type(train_dataset.data_loaders[k])}")
+        logger.warning("───────────────────────────────")
         
         train_sampler = DistributedSampler(
             train_dataset,
