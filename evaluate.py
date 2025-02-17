@@ -171,7 +171,7 @@ def evaluate_sbevnet(config_path: str):
                 for i in range(pred.size(0)):
                     pred_np = pred[i].cpu().numpy()
                     colored_pred = get_colored_segmentation_image(pred_np, config_path=color_map_path)
-                    colored_pred = cv2.flip(colored_pred, 0)
+                    # colored_pred = cv2.flip(colored_pred, 0)
                     img_idx = batch_idx * params['batch_size'] + i
                     
                     left_img_path = os.path.join(params['s3_data_handler']['base_dir'], "model-dataset", left_img_list[img_idx])
@@ -179,16 +179,14 @@ def evaluate_sbevnet(config_path: str):
                     if enable_IPM:
                         ipm_left_path = os.path.join(params['s3_data_handler']['base_dir'], "model-dataset", ipm_left_list[img_idx])
                         ipm_left = cv2.imread(ipm_left_path)
-                        ipm_left_resized = cv2.resize(ipm_left, (256, 256), interpolation=cv2.INTER_LINEAR)
-                        ipm_left_resized = cv2.flip(ipm_left_resized, 0)
+                        ipm_left = cv2.flip(ipm_left, 0)
                         
                     if enable_GT:
                         seg_mask_mono_path = os.path.join(params['s3_data_handler']['base_dir'], "model-dataset", seg_mask_list[img_idx])
                         seg_mask_mono = cv2.imread(seg_mask_mono_path, cv2.IMREAD_GRAYSCALE)
                         seg_mask_rgb = get_colored_segmentation_image(seg_mask_mono, config_path=color_map_path)
                         seg_mask_rgb = cv2.flip(seg_mask_rgb, 0)
-                        seg_mask_rgb = cv2.resize(seg_mask_rgb, (256, 256), interpolation=cv2.INTER_LINEAR)
-                    
+                        
                     left_img = cv2.imread(left_img_path)
                     if left_img is None:
                         logger.error(f'Failed to read image at {left_img_path}')
@@ -196,14 +194,16 @@ def evaluate_sbevnet(config_path: str):
                     left_img_resized = cv2.resize(left_img, (256, 256), interpolation=cv2.INTER_LINEAR)
                     
                     if enable_IPM:
-                        combined_image = np.hstack((seg_mask_rgb, left_img_resized, ipm_left_resized, cv2.flip(colored_pred, 0)))
-                    elif enable_GT:
-                        combined_image = np.hstack((seg_mask_rgb, left_img_resized, cv2.flip(colored_pred, 0)))
+                        combined_image = np.hstack((seg_mask_rgb, left_img_resized, ipm_left, cv2.flip(colored_pred, 0)))
+                        # combined_image = np.hstack((seg_mask_rgb, left_img_resized, ipm_left, colored_pred))
+
+                    # elif enable_GT:
+                    #     combined_image = np.hstack((seg_mask_rgb, left_img_resized, cv2.flip(colored_pred, 0)))
                     else:
                         combined_image = np.hstack((left_img_resized, cv2.flip(colored_pred, 0)))
                     
                     combined_dir = os.path.join(pred_dir, 'combined')
-                    os.makedirs(combined_dir, exist_ok=True)
+                    # os.makedirs(combined_dir, exist_ok=True)
                     combined_path = os.path.join(combined_dir, f'{left_img_list[img_idx]}')
                     
                     os.makedirs(os.path.dirname(combined_path), exist_ok=True)
