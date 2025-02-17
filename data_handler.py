@@ -436,12 +436,18 @@ class ModelDataHandler:
         ModelDataHandler._restructure_GT_folder(GT_train, model_train_dir)
         ModelDataHandler._restructure_GT_folder(GT_test, model_test_dir)
 
-        # flip mono / rgb masks in model-train / model-test
+        # flip seg-masks-mono in model-train / model-test
         ModelDataHandler._flip_masks(os.path.join(model_train_dir, 'seg-masks-mono'),\
                            os.path.join(model_train_dir, 'seg-masks-mono'))
+        ModelDataHandler._flip_masks(os.path.join(model_test_dir, 'seg-masks-mono'),\
+                           os.path.join(model_test_dir, 'seg-masks-mono'))
+        
+        # flip seg-masks-rgb in model-train / model-test
+        ModelDataHandler._flip_masks(os.path.join(model_train_dir, 'seg-masks-rgb'),\
+                           os.path.join(model_train_dir, 'seg-masks-rgb'))
         ModelDataHandler._flip_masks(os.path.join(model_test_dir, 'seg-masks-rgb'),\
                            os.path.join(model_test_dir, 'seg-masks-rgb'))
-        
+
         # flip ipm-left in model-train / model-test
         ModelDataHandler._flip_masks(os.path.join(model_train_dir, 'ipm-left'),\
                            os.path.join(model_train_dir, 'ipm-left'))
