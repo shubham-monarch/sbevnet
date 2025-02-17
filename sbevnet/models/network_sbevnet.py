@@ -276,10 +276,10 @@ class SBEVNet(nn.Module):
         refimg_fea     = self.feature_extraction(left)
         targetimg_fea  = self.feature_extraction(right)
 
-        self.logger.warning("───────────────────────────────")
-        self.logger.warning(f"refimg_fea: {refimg_fea.shape}")
-        self.logger.warning(f"targetimg_fea: {targetimg_fea.shape}")
-        self.logger.warning("───────────────────────────────")
+        # self.logger.warning("───────────────────────────────")
+        # self.logger.warning(f"refimg_fea: {refimg_fea.shape}")
+        # self.logger.warning(f"targetimg_fea: {targetimg_fea.shape}")
+        # self.logger.warning("───────────────────────────────")
 
         if self.do_ipm_feats:
             feat_ipm = warp_p_scale( refimg_fea , ipm_m , self.sys_confs  )
@@ -291,9 +291,9 @@ class SBEVNet(nn.Module):
         
         fea = self.ster_bev_feats(cost0 , sys_confs=self.sys_confs ,cam_confs=cam_confs )
 
-        self.logger.warning("───────────────────────────────")
-        self.logger.warning(f"fea: {fea.shape}")
-        self.logger.warning("───────────────────────────────")
+        # self.logger.warning("───────────────────────────────")
+        # self.logger.warning(f"fea: {fea.shape}")
+        # self.logger.warning("───────────────────────────────")
 
         if self.do_ipm_rgb:
             fea = torch.cat( [ fea ,  img_ipm ] , dim=1 )
