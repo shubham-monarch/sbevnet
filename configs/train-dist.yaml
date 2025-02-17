@@ -8,8 +8,8 @@ n_classes_seg: 14
 n_hmap: 256
 
 # depth range (in meters)
-xmin: 2.0
-xmax: 7.0
+xmin: 4.0
+xmax: 9.0
 
 # horizontal range (in meters)
 ymin: -2.0
@@ -29,7 +29,7 @@ camera_ext_y: 0.0
 fixed_cam_confs: true
 
 # training parameters
-batch_size: 9
+batch_size: 4
 num_epochs: 200
 initial_learning_rate: 0.001
 num_workers: 4
@@ -47,6 +47,9 @@ do_ipm_feats: true
 # paths
 dataset_path: "data/model-dataset/dataset.json"
 save_dir: "checkpoints"
+
+# labels-ids to ignore
+labels_to_ignore: [0, 4, 7, 8, 9, 11, 12, 13]
 
 # training configuration
 # focal_loss_class_weights: [0, 0.4, 0.01, 0.1, 0, 0.8, 0.1, 0, 0, 0, 0.8, 0.2, 0, 0.2]

@@ -148,12 +148,13 @@ class HMapLoader(data.Dataset):
 
 class SegLoader(data.Dataset):
     
-    def __init__(self , f_list ,mask_segs=False , explicit_mask=None , resize=None , do_transpose=False  ):
+    def __init__(self , f_list ,mask_segs=False , explicit_mask=None , resize=None , do_transpose=False , labels_to_ignore=None  ):
         self.f_list = f_list
         self.mask_segs = mask_segs
         self.explicit_mask = explicit_mask
         self.resize = resize
         self.do_transpose = do_transpose
+        self.labels_to_ignore = labels_to_ignore
 
         self.logger = get_logger("seg_loader")
 
@@ -163,7 +164,8 @@ class SegLoader(data.Dataset):
             f"mask_segs={self.mask_segs}, "
             f"explicit_mask={self.explicit_mask}, "
             f"resize={self.resize}, "
-            f"do_transpose={self.do_transpose}"
+            f"do_transpose={self.do_transpose}, "
+            f"labels_to_ignore={self.labels_to_ignore}"
         )
         self.logger.warning("=================\n")
 
@@ -197,9 +199,13 @@ class SegLoader(data.Dataset):
                 mask = load_mask(self.explicit_mask[index])
                 seg_img[mask<0.5] = -100
             else:
-                # void and ground are ignored
-                seg_img[seg_img == 0] = -100
-                # seg_img[seg_img == 2] = -100
+                # Build list of labels to ignore. Always ignore label 0.
+                ignore_labels = list(self.labels_to_ignore) if self.labels_to_ignore is not None else []
+                if 0 not in ignore_labels:
+                    ignore_labels.append(0)
+                # Set all ignored labels to -100
+                for label in ignore_labels:
+                    seg_img[seg_img == label] = -100
 
         # self.logger.info(f"=================")
         # self.logger.info(f"seg_img.shape: {seg_img.shape}")
@@ -262,7 +268,8 @@ def sbevnet_dataset(
     do_ipm_feats=False , fixed_cam_confs=True , 
     do_mask=True ,  do_top_seg=True ,  
     zero_mask=False ,
-    image_w = 512 , image_h=288 
+    image_w = 512 , image_h=288 ,
+    labels_to_ignore=None
 
     ):
     
@@ -308,7 +315,7 @@ def sbevnet_dataset(
 
     if do_top_seg:
         # sub_datasets['top_seg'] = SegLoader(jj[dataset_split]["top_seg"]  ,mask_segs=mask_imgs , explicit_mask=mask , resize=None , do_transpose=True  )
-        sub_datasets['top_seg'] = SegLoader(jj[dataset_split]["top_seg"]  ,mask_segs=mask_imgs , explicit_mask=mask , resize=None , do_transpose=False  )
+        sub_datasets['top_seg'] = SegLoader(jj[dataset_split]["top_seg"]  ,mask_segs=mask_imgs , explicit_mask=mask , resize=None , do_transpose=False , labels_to_ignore=labels_to_ignore  )
     
     
         
