@@ -315,8 +315,8 @@ def sbevnet_dataset(
     if  do_ipm_rgb:
         sub_datasets['ipm_rgb'] =  IPMLoader( jj[dataset_split]["ipm_rgb"]  )
 
-    # if do_ipm_feats:
-    #     sub_datasets['ipm_feats_m']= NPArrayLoader(  jj[dataset_split]["top_ipm_m"]  )
+    if do_ipm_feats:
+        sub_datasets['ipm_feats_m']= NPArrayLoader(  jj[dataset_split]["top_ipm_m"]  )
 
     logger.warning("───────────────────────────────")
     logger.warning(f"fixed_cam_confs: {fixed_cam_confs}")

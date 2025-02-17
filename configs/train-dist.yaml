@@ -42,7 +42,7 @@ zero_mask: false
 
 # additional parameters for SBEVNet
 do_ipm_rgb: true
-do_ipm_feats: false
+do_ipm_feats: true
 
 # paths
 dataset_path: "data/model-dataset/dataset.json"

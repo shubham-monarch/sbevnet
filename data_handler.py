@@ -208,6 +208,8 @@ class ModelDataHandler:
         cam_extrinsics_folder = os.path.join(MODEL_dir, 'cam-extrinsics')
         filenames_folder = os.path.join(MODEL_dir, 'filenames')
         ipm_left_folder = os.path.join(MODEL_dir, 'ipm-left')
+        H_img_to_bev_folder = os.path.join(MODEL_dir, 'H_img_to_bev')
+
         # Create the target subfolders if they don't exist
         os.makedirs(left_folder, exist_ok=True)
         os.makedirs(right_folder, exist_ok=True)
@@ -216,6 +218,7 @@ class ModelDataHandler:
         os.makedirs(cam_extrinsics_folder, exist_ok=True)
         os.makedirs(filenames_folder, exist_ok=True)
         os.makedirs(ipm_left_folder, exist_ok=True)
+        os.makedirs(H_img_to_bev_folder, exist_ok=True)
 
         # Count total files for progress bar (including file_name.txt files)
         total_files = 0
@@ -227,7 +230,8 @@ class ModelDataHandler:
                    file.endswith('-rgb.png') or \
                    file.endswith('cam-extrinsics.npy') or \
                    file == "file_name.txt" or \
-                   file.endswith('ipm-left.png'):
+                   file.endswith('ipm-left.png') or \
+                   file.endswith('H_img_to_bev.npy'):
                     total_files += 1
 
         with tqdm(total=total_files, desc="Organizing Images") as pbar:
@@ -266,6 +270,10 @@ class ModelDataHandler:
                         new_filename = f"{folder_num}__ipm-left.png"
                         shutil.copy(os.path.join(root, file), os.path.join(ipm_left_folder, new_filename))
                         pbar.update(1)
+                    elif file.endswith('H_img_to_bev.npy'):
+                        new_filename = f"{folder_num}__H_img_to_bev.npy"
+                        shutil.copy(os.path.join(root, file), os.path.join(H_img_to_bev_folder, new_filename))
+                        pbar.update(1)
 
     @staticmethod
     def _flip_masks(src_dir: str, dest_dir: str) -> None:
@@ -297,6 +305,7 @@ class ModelDataHandler:
                 "rgb_right": get_relative_files(os.path.join(model_train_dir, 'right'), IMG_EXTENSIONS),
                 "top_seg": get_relative_files(os.path.join(model_train_dir, 'seg-masks-mono'), ['.png']),
                 "ipm_rgb": get_relative_files(os.path.join(model_train_dir, 'ipm-left'), ['.png']),
+                "top_ipm_m": get_relative_files(os.path.join(model_train_dir, 'H_img_to_bev'), ['.npy']),
                 #"confs": get_relative_files(os.path.join(model_train_dir, 'cam-extrinsics'), ['.npy']),
             },
             "test": {
@@ -304,6 +313,7 @@ class ModelDataHandler:
                 "rgb_right": get_relative_files(os.path.join(model_test_dir, 'right'), IMG_EXTENSIONS),
                 "top_seg": get_relative_files(os.path.join(model_test_dir, 'seg-masks-mono'), ['.png']),
                 "ipm_rgb": get_relative_files(os.path.join(model_test_dir, 'ipm-left'), ['.png']),
+                "top_ipm_m": get_relative_files(os.path.join(model_test_dir, 'H_img_to_bev'), ['.npy']),
                 #"confs": get_relative_files(os.path.join(model_test_dir, 'cam-extrinsics'), ['.npy']),
             }
         }
