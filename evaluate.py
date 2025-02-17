@@ -52,17 +52,20 @@ def calculate_iou(pred, target, n_classes):
     
     return ious
 
-def evaluate_sbevnet(config_path: str, enable_GT: bool = False):
+def evaluate_sbevnet(config_path: str):
     """Evaluate SBEVNet model using provided configuration files.
 
     Args:
         config_path: Path to the evaluation configuration YAML file.
-        enable_GT: Whether to include GT-masks in the prediction results.
     """
     logger = get_logger("evaluate")
     
     with open(config_path, 'r') as file:
         params = yaml.safe_load(file)
+    # Load the new flags from the config
+    enable_GT  = params.get("enable_GT", False)
+    enable_IPM = params.get("enable_IPM", False)
+    
     color_map_path = params.get('color_map', 'configs/Mavis.yaml')
 
     scale_x = float(640 / 1920)
@@ -143,9 +146,12 @@ def evaluate_sbevnet(config_path: str, enable_GT: bool = False):
     with open(params['json_path'], 'r') as f:
         dataset_json = json.load(f)
     left_img_list = dataset_json['test']['rgb_left']
+    
     if enable_GT:
         seg_mask_list = dataset_json['test']['top_seg']
-    
+    if enable_IPM:
+        ipm_left_list = dataset_json['test']['ipm_rgb']
+
     total_ious = [0] * params['n_classes_seg']
     total_samples = 0
     
@@ -170,6 +176,12 @@ def evaluate_sbevnet(config_path: str, enable_GT: bool = False):
                     
                     left_img_path = os.path.join(params['s3_data_handler']['base_dir'], "model-dataset", left_img_list[img_idx])
                     
+                    if enable_IPM:
+                        ipm_left_path = os.path.join(params['s3_data_handler']['base_dir'], "model-dataset", ipm_left_list[img_idx])
+                        ipm_left = cv2.imread(ipm_left_path)
+                        ipm_left_resized = cv2.resize(ipm_left, (256, 256), interpolation=cv2.INTER_LINEAR)
+                        ipm_left_resized = cv2.flip(ipm_left_resized, 0)
+                        
                     if enable_GT:
                         seg_mask_mono_path = os.path.join(params['s3_data_handler']['base_dir'], "model-dataset", seg_mask_list[img_idx])
                         seg_mask_mono = cv2.imread(seg_mask_mono_path, cv2.IMREAD_GRAYSCALE)
@@ -183,7 +195,9 @@ def evaluate_sbevnet(config_path: str, enable_GT: bool = False):
                         continue
                     left_img_resized = cv2.resize(left_img, (256, 256), interpolation=cv2.INTER_LINEAR)
                     
-                    if enable_GT:
+                    if enable_IPM:
+                        combined_image = np.hstack((seg_mask_rgb, left_img_resized, ipm_left_resized, cv2.flip(colored_pred, 0)))
+                    elif enable_GT:
                         combined_image = np.hstack((seg_mask_rgb, left_img_resized, cv2.flip(colored_pred, 0)))
                     else:
                         combined_image = np.hstack((left_img_resized, cv2.flip(colored_pred, 0)))
@@ -204,16 +218,14 @@ def main():
     parser = argparse.ArgumentParser(description='Evaluate SBEVNet model')
     parser.add_argument('--config', type=str, default='configs/evaluate.yaml', 
                        help='Path to evaluation config file')
-    parser.add_argument('--enable_GT', type=bool, default=False, 
-                       help='Enable GT-masks in the prediction results')
     args = parser.parse_args()
     
-    # Validate config files exist
     if not os.path.exists(args.config):
         print(f"Error: Config file {args.config} not found")
         sys.exit(1)
         
-    evaluate_sbevnet(args.config, args.enable_GT)
+    # Call evaluate_sbevnet with only the config path
+    evaluate_sbevnet(args.config)
 
 if __name__ == '__main__':
     main() 

@@ -4,6 +4,5 @@
 exec >> logs/evaluate.log 2>&1
 
 python evaluate.py \
-    --config configs/evaluate.yaml \
-    --enable_GT True
+    --config configs/evaluate.yaml
     

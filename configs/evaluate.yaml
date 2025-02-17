@@ -28,8 +28,8 @@ camera_ext_x: 0.0
 camera_ext_y: 0.0
 
 # additional parameters for SBEVNet
-do_ipm_rgb: false
-do_ipm_feats: false
+do_ipm_rgb: true
+do_ipm_feats: true
 fixed_cam_confs: true
 
 # training parameters
@@ -51,3 +51,7 @@ batch_size: 1
 do_top_seg: false
 predictions_dir: 'predictions'
 gpu_id: 3
+
+# New flags loaded in evaluate.py
+enable_GT: true
+enable_IPM: true
