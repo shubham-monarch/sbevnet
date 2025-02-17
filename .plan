@@ -60,7 +60,7 @@
 * regenerate GT data with less black / blue regions
 * get rid of ground points in GT
 + check unet implementation
-- toogle number of classes, 6 vs 5
++ toogle number of classes, 6 vs 5
 + establish correspondance with eval files and dataset files
 + add segmentation mask 
 + ignoring void labels
@@ -109,18 +109,18 @@
 - fix black patches
 - convert black to naviagble spaces
 - add visibility mask
-- refactoring
++ refactoring
 - parametrize intrinsics scaling factor
-- move mavis.yaml to config
-- add test.yaml, train.yaml and eval.yaml
++ move mavis.yaml to config
++ add test.yaml, train.yaml and eval.yaml
 
 + stereo rectification 
 - add augmentation for minor classes
 - add hidden points mask
-- passing camera orientation
++ passing camera orientation
 
 
-- add focal loss function
++ add focal loss function
 - plot GT class-wise distribution
 - improve loss function
 - tune weighted cross entropy loss
@@ -139,15 +139,15 @@
 - write testing class
 - figure out eval-results logging mechanism 
 - segmenent input data by class
-- introduce seeding mechanism
-- fix eval-video.py
-- fix eval-model.py
++ introduce seeding mechanism
++ fix eval-video.py
++ fix eval-model.py
 - check sbevnet utils
 - EvalClass 
 - integrate eval cases
 - metrics ?
-- train / eval / test split
-- processing bev-aws to bev-model pipeline
++ train / eval / test split
++ processing bev-aws to bev-model pipeline
 - utility to classify dataset into [object / pole / vineyard ] heavy
 
 
@@ -178,19 +178,19 @@
 
 <!-- training utils -->
 - ability to resume from last epoch / checkpoint
-- log every epoch 
+* log every epoch 
 + plot validation error with train plot
 - add test.yaml
-- run model without camera intrinsics scaling
-- fix train-dist logging
++ run model without camera intrinsics scaling
++ fix train-dist logging
 - integrate json path in train.yaml
 - use tensorboard, weights, biases
 + plot validation loss for overfitting detection
 - plot loss metrics for test-data
 + add GT to test folder
-- generate validation dataset
++ generate validation dataset
 + integrate validation dataset in dist-train.py
-- refactor train-dist.py
++ refactor train-dist.py
 
 
 <!-- fix poor validation set performance -->
@@ -201,7 +201,7 @@
 * reset tensorboard canvas on exit
 + ditch tensorboard interface
 - shift GT train-data in z-direction
-- use ignore index in loss function
++ use ignore index in loss function
 - try focal loss
 - [debug] add original filename in model-dataset/seg-mask-rgb
 - test RJM / gallo separately
@@ -213,36 +213,36 @@
 - special handling for void class in loss function
 - does eval model accept x,y param? 
 
-- handle void class through the loss function
++ handle void class through the loss function
 - what could the void class encode?
 - would adding occlusion mask fix the void mask problem?  
 - revisit GT generation, verify camera tilt values? 
-- check validation loss trend without intrinsics scaling
++ check validation loss trend without intrinsics scaling
 - tune validation loss calculations
-- predictions code is wrong 
-- wrong stichhing of img | img-mask
++ predictions code is wrong 
++ wrong stichhing of img | img-mask
 
 - add scripts / bash folder
 
 + __ to _ conversion
-- better comments
-- add 'download bev-folder from s3' in data-handler.py  
-- refactoring + better comments in data-handler.py
++ better comments
++ add 'download bev-folder from s3' in data-handler.py  
++ refactoring + better comments in data-handler.py
 
 
-- add rotation matrix support to get_grid_one
-- write unit test for get_grid_one
-- integrate rotation matrix into train.py
-- move pytest(s) to the test folder
-- test original get_grid_one with pytest
-- fix get_grid_one pytest
+* add rotation matrix support to get_grid_one
+* write unit test for get_grid_one
+* integrate rotation matrix into train.py
+* move pytest(s) to the test folder
+* test original get_grid_one with pytest
+* fix get_grid_one pytest
 - pass batch-size to bev_cost_utils.py
 
-- add focal-loss
++ add focal-loss
 - is disparity scaling (/f) correct in get_grid_one?
-- clipping in get_grid_one
-- increase automation level in data-handler.py
-- move validation-patience to train-dist.yaml
+* clipping in get_grid_one
++ increase automation level in data-handler.py
++ move validation-patience to train-dist.yaml
 
 - convert void to ground labels
 - add learning rate scheduler ==> [Exponential Decay / Step Decay / Cosine Annealing /ReduceLROnPlateau] 
@@ -253,16 +253,16 @@
 - compare validation loss for get_grid_one [1 vs 2]
 - is the new get_grid_one correct?
 
-- training on only vine stems + poles followwd by fine tuning on other classes
+* training on only vine stems + poles followwd by fine tuning on other classes
 
 
 <!-- sbevnet  -->
 - check sbevnet utils
-- EvalClass 
+* EvalClass 
 - integrate eval cases
 - metrics ?
 - train / eval / test split
-- processing bev-aws to bev-model pipeline
++ processing bev-aws to bev-model pipeline
 - utility to classify dataset into [object / pole / vineyard ] heavy
 + add as submodule to stereo-occ
 - train one class at a time
@@ -271,34 +271,33 @@
 - pytorch fabric
 - check occ-mask integration in sbevnet
 - data augmentation
-- undo tilt correction in sbevnet_get_grid_one
++ undo tilt correction in sbevnet_get_grid_one
 - fix / review disparity scaling in sbevnet
 - fix / review / improve image pre-processing step 
 - [debug] sbvenet with only [canopy + navigable-space] as output
-- stereo rectification 
++ stereo rectification 
 - handle image resizing effect on disparity
-- z / y swap
++ z / y swap
 - transpose effect
 - review disparity scaling
 
 
 + end to end data-handling in data-handler.py
 + refactor data-handler.py
-- refactor train-dist.py
-- refactor sbevnet
-- add scripts folder
-- simplify dataloaders
++ refactor train-dist.py
++ refactor sbevnet
+* simplify dataloaders
 + separate model-dataset generation
-- do not measure void classes for loss calculations during evaluation
++ do not measure void classes for loss calculations during evaluation
 - fix get_grid_one + data warping
 - examine disparity scaling
 - examine image pre-processing step 
 - add / revisit data-augmentation step
 - add regularalization 
 - figure out fine-tuning strategies
-- label-wise training
+* label-wise training
 - option to resume training
-- option to visualize results at each epoch
++ option to visualize results at each epoch
 - add ensembling
 - what does the nature of the train-validation plot say?
 - possible to train + eval simultaneously / alternately?
@@ -307,8 +306,8 @@
 
 fine-tuning
 - remove gate-class outliers from train-data
-- remove void-class outliers from train-data
-- set gate-class weight to 0
++ remove void-class outliers from train-data
++ set gate-class weight to 0
 - scheduler
 - warm-ups
 - drop-out
@@ -318,20 +317,14 @@ fine-tuning
 
 
 - [feat] start data-augmentation pipeline
-- priority collapsing in gt-seg-masks
-- do sequential collapsing, collapse low priority points followed by high priority points
-- check overlap in priority collapsing
-- remove strictly unwanted labels [i.e. tractor-hood / glare / void ] from left-segmented.ply before generating the gt-seg-masks
-- radius filering for poles / other classess
-
 
 
 + significance of background class
-- how is validation loss being calculated?
++ how is validation loss being calculated?
 + add seed
 + save best-train / best-val / latest.pth
 + save all intermediate epochs
-- class-wise training
+* class-wise training
 - co-relation betweeen train / validation loss
 - fine tuning strategy
 - train on single farm
@@ -344,30 +337,30 @@ fine-tuning
 - handling cases with class imbalanace
 - read training scripts
 - fill void points with navigable-space 
-- just predict navigable-space, obstacles and feed. 
-- integrate gt in evaluate.py
-- visulalize img + gt + pred in one-frame
+* just predict navigable-space, obstacles and feed. 
++ integrate gt in evaluate.py
++ visulalize img + gt + pred in one-frame
 - add real-time inference
-- what params can be stripped off from the evaluate.yaml 
++ what params can be stripped off from the evaluate.yaml 
 + rename to evaluate.py 
 - is it good strategy to train one class at a time and then fine tune on other classes
 - common training strategy in class imbalance
-- add script to combine eval predictions with gt-predictions / left-image
++ add script to combine eval predictions with gt-predictions / left-image
 - read evaluation scripts
 - mIoU? 
 - focal loss + class imbalance
 - training in class imbalance situations
-- using weighted cross-entropy loss
++ using weighted cross-entropy loss
 - how to tune focalLoss? 
 - when to use focalLoss vs CELoss
 - figure out a way to save predictions / loss-curves across training runs
-- visulalize gt + pred in one-frame
++ visulalize gt + pred in one-frame
 - better predictions + training-plot logging mechanism
 - [inspect] inspect gate-label outliers in GT seg-masks
 
-- refactor bev-dataset.py
+* refactor bev-dataset.py
 + [model-dataset-generation] add original folder reference in model-dataset, if possible URI
-- just predict navigable-space, obstacles and feed. 
+* just predict navigable-space, obstacles and feed. 
 + script that takes in bev-dairy uri and makes it ready for evaluation.sh
 - add gt-combined folder that contains mask + left-img
 + [model-dataset-generation] remove invalid seg-masks
@@ -376,7 +369,7 @@ fine-tuning
 + aggregate average class % in train / test data 
 - script to evaluate on train-data instead of validation-data
 - use the label-cnt distribution data to adjust crosssEntropyLoss weights 
-- [inspect] how does the cam-extrinsics vary across the files? 
++ [inspect] how does the cam-extrinsics vary across the files? 
 - add mIoU calculation in evaluate.py
 - fix vsalidation loss oscillation
 
@@ -389,7 +382,7 @@ fine-tuning
 + script to plot mIOU over frames
 - search for segmentation metrics
 + compare mIOU of weighted cross entropy vs focal loss
-- refactor evaluate.py -> evaluate_sbevnet
++ refactor evaluate.py -> evaluate_sbevnet
 + [bug] model-dataset entries are not sequential
 
 + refactor model-data-generator for better folder management
@@ -400,7 +393,7 @@ fine-tuning
 - [bug] gt-seg mask data is wrong in some cases
  
 + [feat] add evaluate-svo.py
-- retrain without gh-dairy / grimius
+* retrain without gh-dairy / grimius
 + [feat] support for List[s3_uris] in data-generator-s3.py
 
 - data-agumnetation with focus on under-represented classes
@@ -413,10 +406,9 @@ fine-tuning
 
 - [feat] script to upload weight files
 - [tune] tune fence weights
-- remove feeder
 - add occ-masks
 - generate seg-mask for x= [-5, 5] and [2,12]
-- naming mechanism for uploading gt-seg-mask data folders to s3
+* naming mechanism for uploading gt-seg-mask data folders to s3
 - [feat] figure out passing rectangular masks to sbevnet
 - [feat] script to automatically backup and sync milestones
 
@@ -424,31 +416,26 @@ fine-tuning
 - [bug] fix get_grid_one
 
 - support for rectangular masks
-- filter out masks with outlier values for camera extrinsics
-- expand the horizontal range of the mask to capture more points
-- what values of z-range would filter out the hood for the first frame in a sequence? 
-- what values of z-range would filter out the feed pusher? 
-- generte occ-mask for the rectified pcd to ascertain the above values.
-- is there a need to add an occlusion mask? 
++ filter out masks with outlier values for camera extrinsics
 - establish the scaling factor
 + [bug] filename generation is wrong
 
 + significance of ipm features
-- what aren't we using nuscenes dataaset for training?
+- what aren't we using nuscenes dataset for training?
 
 paper details
-- use H_inverse for 3.4.1
-- use IPM
-- use beta
++ use H_inverse for 3.4.1
++ use IPM
++ use beta
 - use ensemble
 + use cmd
 - change rate-loss decrease strategy
 
 
-- only z-based outlier filtering and not x-based
++ only z-based outlier filtering and not x-based
 - do simple pitch-correction and train and compare metrics + validation miou with milestones/4/
 - add cross-validation
-- add beta / initial learning rate from paper
++ add beta / initial learning rate from paper
 - get rid of mixed precision training
 - upload milestones to aws
 - [tune] tune max-disp using occ-mask-generator disp values
@@ -457,21 +444,52 @@ paper details
 + integrate ipm-rgb 
 - integrate ipm-features
 
-<!-- camera intrinsics scaling -->
-- write comparison script
-- establish camera intrinsics scaling params
-- camera baseline scaling
-- check fx vs fy scaling
-- disparity scaling
-- handle image resizing effect on disparity
+- [bug] handle image resizing effect on disparity
 
 
-- clean seg-gt-masks
 - [feat] add segmented ipm-rgb as features to the model
 - [tune] tune bev world bounds using ipm-rgb
 - [feat] genearate [ipm-rgb | left-img | seg-mask] as part of model-dataset/ipm+img foler
-- [feat] label specific miou scores per epoch
++ [feat] label specific miou scores per epoch
 - figure out learning rate stretegy -> [use crestereo]
-- fix model image pre-processing step
-- add end-to-end data-augmentation pipeline
+- [bug] fix model image pre-processing step
+
+- [pipeline] add end-to-end data-augmentation pipeline
+
+- [feat] add swin-transformer backbone
+- [inspect] checkout the other data files available in kitti dataset
+
+- [bug] update evaluate.yaml for ipm-rgb / ipm-m support
+
++ label-wise mou plots over frames
+- would increasing x-range lead to better training?
+- [bug] mismatch between ipm-orientation and GT/pred seg-masks orientation
+- [feat] generate x/ y/ z-axis angles as part of model dataset
+
+- [feat] script to compare predictions across multiple checkpoints folder
+
++ add labels_to_ignore in train-dist.yaml 
++ set weights for labels_to_ignore to 0 
++ use SegMaskLoader to ignore those labels
+
+- enable mixed precision training
+
+<!-- fix bev_mask_generator -->
+- improve fence co-ordinates
+- increase bev-range
+- hardcode ipm projection / H_img_to_bev
+- [tune] feed pusher is visible, tune z-range
+- remove not-needed label classes
+- priority collapsing in gt-seg-masks
+- do sequential collapsing, collapse low priority points followed by high priority points
+- check overlap in priority collapsing
+- remove strictly unwanted labels [i.e. tractor-hood / glare / void ] from left-segmented.ply before generating the gt-seg-masks
+- radius filtering for poles / other classess
+- remove feeder
+- expand the horizontal range of the mask to capture more points
+- what values of z-range would filter out the hood for the first frame in a sequence? 
+- what values of z-range would filter out the feed pusher? 
+- generte occ-mask for the rectified pcd to ascertain the above values.
+- is there a need to add an occlusion mask? 
+- clean seg-gt-masks
 
