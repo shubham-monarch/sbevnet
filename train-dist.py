@@ -384,7 +384,6 @@ def train(rank: int, world_size: int, params: dict) -> None:
             zero_mask=params['zero_mask'],
             image_w=params['image_w'],
             image_h=params['image_h'],
-            labels_to_ignore=params.get('labels_to_ignore')
         )
         
         val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank)
