@@ -107,7 +107,7 @@ def move_data_to_device(data, device):
     return data
 
 
-def train_one_epoch(network, train_loader, optimizer, criterion, device, epoch, logger, is_main_process):
+def train_one_epoch(network, train_loader, optimizer, criterion, device, epoch, logger, is_main_process, use_amp=False, scaler=None):
     epoch_loss = 0.0
     if is_main_process:
         pbar = tqdm(total=len(train_loader), desc=f'Epoch {epoch+1} Training')
@@ -118,14 +118,24 @@ def train_one_epoch(network, train_loader, optimizer, criterion, device, epoch, 
             if not isinstance(data, dict):
                 raise TypeError("Expected 'data' to be a dictionary")
             
-            # Forward pass without AMP
-            output = network(data)
-            target = move_data_to_device(data['top_seg'], device)
-            loss = criterion(output['top_seg'], target)
-            
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(network.parameters(), max_norm=1.0)
-            optimizer.step()
+            if use_amp:
+                with autocast():
+                    output = network(data)
+                    target = move_data_to_device(data['top_seg'], device)
+                    loss = criterion(output['top_seg'], target)
+                scaler.scale(loss).backward()
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(network.parameters(), max_norm=1.0)
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                output = network(data)
+                target = move_data_to_device(data['top_seg'], device)
+                loss = criterion(output['top_seg'], target)
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(network.parameters(), max_norm=1.0)
+                optimizer.step()
+
             epoch_loss += loss.item()
             
             if is_main_process:
@@ -139,7 +149,7 @@ def train_one_epoch(network, train_loader, optimizer, criterion, device, epoch, 
     return epoch_loss
 
 
-def validate_one_epoch(network, val_loader, criterion, device, logger, is_main_process, epoch, num_classes, labels_to_ignore, ignore_index=-100):
+def validate_one_epoch(network, val_loader, criterion, device, logger, is_main_process, epoch, num_classes, labels_to_ignore, ignore_index=-100, use_amp=False):
     """
     Executes one validation epoch and computes the mIoU while ignoring the background class (label 0).
 
@@ -159,10 +169,16 @@ def validate_one_epoch(network, val_loader, criterion, device, logger, is_main_p
                 if not isinstance(data, dict):
                     raise TypeError("Expected 'data' to be a dictionary")
                 
-                # Forward pass without AMP
-                output = network(data)
-                target = move_data_to_device(data['top_seg'], device)
-                loss = criterion(output['top_seg'], target)
+                if use_amp:
+                    with autocast():
+                        output = network(data)
+                        target = move_data_to_device(data['top_seg'], device)
+                        loss = criterion(output['top_seg'], target)
+                else:
+                    output = network(data)
+                    target = move_data_to_device(data['top_seg'], device)
+                    loss = criterion(output['top_seg'], target)
+                
                 epoch_val_loss += loss.item()
                 
                 pred = torch.argmax(output['top_seg'], dim=1)
@@ -364,7 +380,7 @@ def train(rank: int, world_size: int, params: dict) -> None:
         else:
             criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=-100).to(rank)
         # Initialize the optimizer and scheduler
-        base_lr = params.get("initial_learning_rate", 0.001)  # Use a configurable base learning rate
+        base_lr = params.get("initial_learning_rate", 0.001)  
         optimizer = optim.Adam(network.parameters(), lr=base_lr, weight_decay=1e-4, betas=(0.9, 0.999))
         lr_scheduler = ReduceLROnPlateau(optimizer, 
                                          mode='min', 
@@ -403,6 +419,10 @@ def train(rank: int, world_size: int, params: dict) -> None:
             logger.info(f'Training dataset size: {len(train_dataset)}')
             logger.info(f'Validation dataset size: {len(val_dataset)}')
         
+        # Determine if mixed precision training is enabled
+        mixed_precision = params.get('mixed_precision_training', False)
+        scaler = GradScaler() if mixed_precision else None
+        
         losses = []
         val_losses = []
         lrs = []
@@ -419,8 +439,10 @@ def train(rank: int, world_size: int, params: dict) -> None:
             train_sampler.set_epoch(epoch + seed)
             network.train()
             
-            # Note: removed 'scaler' from the call
-            epoch_loss = train_one_epoch(network, train_loader, optimizer, criterion, rank, epoch, logger, is_main_process)
+            epoch_loss = train_one_epoch(
+                network, train_loader, optimizer, criterion, rank, epoch, logger,
+                is_main_process, use_amp=mixed_precision, scaler=scaler
+            )
             dist.barrier()
             
             epoch_loss_tensor = torch.tensor(epoch_loss / len(train_loader), device=rank)
@@ -429,14 +451,14 @@ def train(rank: int, world_size: int, params: dict) -> None:
             
             network.eval()
             epoch_val_loss, epoch_miou, per_class_iou = validate_one_epoch(
-                network, val_loader, criterion, rank, logger, is_main_process, epoch, params['n_classes_seg'], labels_to_ignore
+                network, val_loader, criterion, rank, logger, is_main_process, epoch,
+                params['n_classes_seg'], labels_to_ignore, ignore_index=-100, use_amp=mixed_precision
             )
             dist.barrier()
             epoch_val_loss_tensor = torch.tensor(epoch_val_loss / len(val_loader), device=rank)
             dist.all_reduce(epoch_val_loss_tensor, op=dist.ReduceOp.SUM)
             avg_epoch_val_loss = epoch_val_loss_tensor.item() / world_size
             
-            # Update learning rate with scheduler adjustments, synchronizing across processes
             if is_main_process:
                 lr_scheduler.step(avg_epoch_val_loss)
                 new_lr = optimizer.param_groups[0]['lr']
@@ -458,7 +480,6 @@ def train(rank: int, world_size: int, params: dict) -> None:
                 for c in non_ignored_labels:
                     per_label_miou_values[c].append(per_class_iou[c])
                 
-                # Save checkpoint and best models
                 checkpoint = {
                     'epoch': epoch,
                     'model_state_dict': network.module.state_dict(),
@@ -484,7 +505,6 @@ def train(rank: int, world_size: int, params: dict) -> None:
                     torch.save(checkpoint, os.path.join(save_dir, 'best_train_model.pth'))
                     logger.info(f'New best training model saved with loss: {best_train_loss:.4f}')
                 
-                # Call the new plotting functions
                 plot_training_metrics(save_dir, losses, val_losses, lrs)
                 plot_miou_metrics(save_dir, miou_values, per_label_miou_values)
 
