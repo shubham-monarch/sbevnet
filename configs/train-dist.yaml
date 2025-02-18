@@ -65,3 +65,6 @@ focal_gamma: 2.0         # gamma parameter for FocalLoss
 # seed and deterministic settings
 random_seed: 420
 deterministic: false     # Toggle deterministic behavior
+
+# Enable mixed precision training
+mixed_precision_training: true

@@ -1,4 +1,3 @@
-
 import torch
 import torch.nn as nn
 import torchgeometry
@@ -86,14 +85,15 @@ def warp_p_scale( img , ipm_m , sys_confs  ):
     for i in range(img.shape[0]):
         s = mm[i , 10] /  img[i].shape[2]
         m[  i , : , :2 ] *= s 
-#         print("scale , " , s  ,  mm[i , 10] , img[i].shape[2] )
-    m = Variable( torch.from_numpy(m)).cuda()
+    # Cast the numpy array to a tensor in FP32 before sending to CUDA
+    m = torch.from_numpy(m).float().cuda()
     
-#     dbg[-1]  = mm
-    
-    ans =  torchgeometry.warp_perspective( img , m  , dsize=(sys_confs['n_hmap'] , sys_confs['n_hmap'] ))
-    ans = torch.flip(ans , (3,))
-    return ans.permute(0 , 1 , 3 , 2)
+    # Force the image to FP32 and disable autocast for the warp operation
+    img_fp32 = img.float()
+    with torch.cuda.amp.autocast(enabled=False):
+        ans = torchgeometry.warp_perspective(img_fp32, m, dsize=(sys_confs['n_hmap'], sys_confs['n_hmap']))
+    ans = torch.flip(ans, (3,))
+    return ans.permute(0, 1, 3, 2)
 
 
 
