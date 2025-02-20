@@ -3,12 +3,14 @@ import yaml
 import os
 from typing import List
 from pathlib import Path
-from data_handler import S3_DataHandler
 from helpers import get_logger
 import random
 import glob
 import shutil
-
+import cv2
+import numpy as np
+from data_handler import S3_DataHandler
+from svo_eval import EvalSVO
 
 class ImgS3Handler: 
 
@@ -87,7 +89,53 @@ class ImgS3Handler:
 
         return img_pairs_to_process
 
+    @staticmethod
+    def write_img_data_to_folder(output_dir: str, left_img: np.ndarray, right_img: np.ndarray, 
+                                ipm_left_img: np.ndarray, H_img_to_bev: np.ndarray):
+        """
+        Writes image data and homography matrix to a numbered subfolder.
+        """
+        
+        os.makedirs(output_dir, exist_ok=True)
+        
+        cv2.imwrite(os.path.join(output_dir, "left.jpg"), left_img)
+        cv2.imwrite(os.path.join(output_dir, "right.jpg"), right_img)
+        cv2.imwrite(os.path.join(output_dir, "ipm_left.jpg"), ipm_left_img)
+        np.save(os.path.join(output_dir, "H_img_to_bev.npy"), H_img_to_bev)
+
+    @staticmethod
+    def write_img_data_to_GT(GT_dir: str, img_pairs_to_process: List[List[str]], config_path: str):
+        os.makedirs(GT_dir, exist_ok=True)
+
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        
+        K = np.array(config['K']).astype(np.float32)
+        bev_size = int(config['bev_size'])  # ensure bev_size is integer
+        ground_height = float(config['ground_height'])  # ensure ground_height is float
+
+        # Adjust bev_region to match the coordinate system expected by H_img_to_bev
+        bev_region = {
+            'z_min': float(config['xmin']),  # forward direction
+            'z_max': float(config['xmax']),
+            'x_min': float(config['ymin']),  # lateral direction
+            'x_max': float(config['ymax'])
+        }
+
+        for idx, img_pair in enumerate(img_pairs_to_process):
+            left_img_path = img_pair[0]
+            right_img_path = img_pair[1]
+
+            left_img = cv2.imread(left_img_path)
+            right_img = cv2.imread(right_img_path)
+
+            # Get homography first to ensure it's computed correctly
+            H_img_to_bev = EvalSVO.H_img_to_bev(K, bev_region, bev_size, ground_height)
+            ipm_left_img = EvalSVO.generate_ipm_image(left_img, K, bev_region, bev_size, ground_height)
             
+            dest_folder = os.path.join(GT_dir, f"{idx}")
+            ImgS3Handler.write_img_data_to_folder(dest_folder, left_img, right_img, ipm_left_img, H_img_to_bev)
+
     @staticmethod
     def generate_GT_train_test(base_dir: str, folders_to_sample: List[str], num_images_to_sample: int):
         
@@ -101,9 +149,12 @@ class ImgS3Handler:
             folders_to_sample=folders_to_sample[:2],
             num_images_to_sample=num_images_to_sample
         )
+
+        ImgS3Handler.write_img_data_to_GT(
+            GT_dir=GT_test,
+            img_pairs_to_process=img_pairs_to_process,
+            config_path="configs/img-s3-handler.yaml")
         
-        for img_pair in img_pairs_to_process:
-            logger.info(f"-{img_pair}")
 
 def main():
     parser = argparse.ArgumentParser()
