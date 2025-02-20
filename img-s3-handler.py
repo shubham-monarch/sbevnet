@@ -73,6 +73,22 @@ class ImgS3Handler:
         return [(str(left), str(right)) for left, right in sampled_pairs]
 
     @staticmethod
+    def generate_sample_img_pairs(base_dir: str, folders_to_sample: List[str], num_images_to_sample: int):
+        
+        leaf_folders = S3_DataHandler._get_leaf_folders(base_dir)
+        valid_leaf_folders = ImgS3Handler.get_valid_leaf_folders(leaf_folders, folders_to_sample)
+
+        img_pairs_to_process = []
+        for folder in valid_leaf_folders:
+            sampled_pairs = ImgS3Handler.sample_img_pairs_from_folder(base_dir=base_dir, 
+                                                                      folder_path=folder, 
+                                                                      num_images_to_sample=num_images_to_sample)    
+            img_pairs_to_process.extend(sampled_pairs)
+
+        return img_pairs_to_process
+
+            
+    @staticmethod
     def generate_GT_train_test(base_dir: str, folders_to_sample: List[str], num_images_to_sample: int):
         
         logger = get_logger("ImgS3Handler")
@@ -80,37 +96,14 @@ class ImgS3Handler:
         GT_test = os.path.join(base_dir, "GT-test")
         os.makedirs(GT_test, exist_ok=True)
 
-        leaf_folders = S3_DataHandler._get_leaf_folders(base_dir)
-
-        logger.warning("───────────────────────────────")
-        logger.warning(f"leaf_folders: {leaf_folders[0]}")
-        logger.warning("───────────────────────────────")
-
+        img_pairs_to_process = ImgS3Handler.generate_sample_img_pairs(
+            base_dir=base_dir,
+            folders_to_sample=folders_to_sample[:2],
+            num_images_to_sample=num_images_to_sample
+        )
         
-
-        logger.info("───────────────────────────────")  
-        logger.info(f"len(leaf_folders): {len(leaf_folders)}")
-        logger.info("───────────────────────────────")
-       
-        valid_leaf_folders = ImgS3Handler.get_valid_leaf_folders(leaf_folders, folders_to_sample)
-
-        logger.info("───────────────────────────────")
-        logger.info(f"len(valid_leaf_folders): {len(valid_leaf_folders)}")
-        for folder in valid_leaf_folders:
-            logger.info(f"-{folder}")
-        logger.info("───────────────────────────────")
-
-        for valid_leaf_folder in valid_leaf_folders:
-            sampled_pairs = ImgS3Handler.sample_img_pairs_from_folder(base_dir=base_dir, folder_path=valid_leaf_folder, num_images_to_sample=num_images_to_sample)
-
-            logger.info("───────────────────────────────")
-            logger.info(f"len(sampled_pairs): {len(sampled_pairs)}")
-            logger.info("───────────────────────────────")
-
-            for img_pair in sampled_pairs:
-                logger.info(f"-{img_pair}")
-            
-            break
+        for img_pair in img_pairs_to_process:
+            logger.info(f"-{img_pair}")
 
 def main():
     parser = argparse.ArgumentParser()
