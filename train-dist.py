@@ -149,6 +149,22 @@ def train_one_epoch(network, train_loader, optimizer, criterion, device, epoch, 
     return epoch_loss
 
 
+def calculate_iou_modified(total_intersections_modified, total_unions_modified, num_classes, labels_to_ignore, valid_mask):
+    """Calculates modified mIoU, not penalizing predictions on pixels in labels_to_ignore."""
+    iou_per_class_modified = torch.where(
+        total_unions_modified > 0,
+        total_intersections_modified / total_unions_modified,
+        torch.zeros_like(total_intersections_modified)
+    )
+    valid_indices = [i for i in range(num_classes) if i not in labels_to_ignore]
+    if valid_indices:
+        valid_ious_modified = iou_per_class_modified[valid_indices]
+        miou_modified = valid_ious_modified.mean().item()
+    else:
+        miou_modified = 0.0
+    return miou_modified, iou_per_class_modified
+
+
 def validate_one_epoch(network, val_loader, criterion, device, logger, is_main_process, epoch, num_classes, labels_to_ignore, ignore_index=-100, use_amp=False):
     """
     Executes one validation epoch and computes the mIoU while ignoring the background class (label 0).
@@ -160,6 +176,8 @@ def validate_one_epoch(network, val_loader, criterion, device, logger, is_main_p
     epoch_val_loss = 0.0
     total_intersections = torch.zeros(num_classes, device=device, dtype=torch.float64)
     total_unions = torch.zeros(num_classes, device=device, dtype=torch.float64)
+    total_intersections_modified = torch.zeros(num_classes, device=device, dtype=torch.float64)
+    total_unions_modified = torch.zeros(num_classes, device=device, dtype=torch.float64)
     if is_main_process:
         pbar_val = tqdm(total=len(val_loader), desc=f'Epoch {epoch+1} Validation')
     with torch.no_grad():
@@ -168,7 +186,7 @@ def validate_one_epoch(network, val_loader, criterion, device, logger, is_main_p
                 data = move_data_to_device(data, device)
                 if not isinstance(data, dict):
                     raise TypeError("Expected 'data' to be a dictionary")
-                
+
                 if use_amp:
                     with autocast():
                         output = network(data)
@@ -178,20 +196,32 @@ def validate_one_epoch(network, val_loader, criterion, device, logger, is_main_p
                     output = network(data)
                     target = move_data_to_device(data['top_seg'], device)
                     loss = criterion(output['top_seg'], target)
-                
+
                 epoch_val_loss += loss.item()
-                
+
                 pred = torch.argmax(output['top_seg'], dim=1)
                 valid_mask = target != ignore_index
+                modified_valid_mask = valid_mask & ~torch.isin(target, torch.tensor(labels_to_ignore, device=target.device)) # Mask out pixels with labels in labels_to_ignore
+
                 for c in range(num_classes):
                     if c in labels_to_ignore:
                         continue
                     pred_c = (pred == c)
                     target_c = (target == c)
+
+                    # miou calculations (original)
                     intersection = ((pred_c & target_c) & valid_mask).sum().to(torch.float64)
                     union = ((pred_c | target_c) & valid_mask).sum().to(torch.float64)
                     total_intersections[c] += intersection
                     total_unions[c] += union
+
+                    # modified miou calculations (ignoring labels_to_ignore pixels)
+                    intersection_modified = ((pred_c & target_c) & modified_valid_mask).sum().to(torch.float64)
+                    union_modified = ((pred_c | target_c) & modified_valid_mask).sum().to(torch.float64)
+                    total_intersections_modified[c] += intersection_modified
+                    total_unions_modified[c] += union_modified
+
+
                 if is_main_process:
                     pbar_val.set_postfix({'loss': f'{loss.item():.4f}'})
                     pbar_val.update()
@@ -202,7 +232,17 @@ def validate_one_epoch(network, val_loader, criterion, device, logger, is_main_p
         pbar_val.close()
     dist.all_reduce(total_intersections, op=dist.ReduceOp.SUM)
     dist.all_reduce(total_unions, op=dist.ReduceOp.SUM)
-    # Compute per-class IoU only for valid labels (excluding labels_to_ignore)
+    dist.all_reduce(total_intersections_modified, op=dist.ReduceOp.SUM)
+    dist.all_reduce(total_unions_modified, op=dist.ReduceOp.SUM)
+
+    miou, iou_per_class = calculate_iou(total_intersections, total_unions, num_classes, labels_to_ignore) # Original IoU calculation
+    miou_modified, iou_per_class_modified = calculate_iou_modified(total_intersections_modified, total_unions_modified, num_classes, labels_to_ignore, modified_valid_mask) # Modified IoU calculation, passing modified_valid_mask
+
+    return epoch_val_loss, miou, iou_per_class.tolist(), miou_modified, iou_per_class_modified.tolist() # Return both miou and miou_modified
+
+
+def calculate_iou(total_intersections, total_unions, num_classes, labels_to_ignore):
+    """Calculates mIoU based on total intersections and unions, ignoring specified labels."""
     iou_per_class = torch.where(
         total_unions > 0,
         total_intersections / total_unions,
@@ -214,7 +254,16 @@ def validate_one_epoch(network, val_loader, criterion, device, logger, is_main_p
         miou = valid_ious.mean().item()
     else:
         miou = 0.0
-    return epoch_val_loss, miou, iou_per_class.tolist()
+    return miou, iou_per_class
+
+def load_class_colors():
+    """Loads and returns the class color and name mapping."""
+    return {
+        1: {'color': 'palevioletred', 'name': 'Obstacle'},
+        2: {'color': 'darkblue', 'name': 'Navigable Space'},
+        3: {'color': 'darkorange', 'name': 'Feed'},
+        5: {'color': 'dimgrey', 'name': 'Fence'}
+    }
 
 
 def plot_training_metrics(save_dir, losses, val_losses, lrs):
@@ -244,11 +293,19 @@ def plot_training_metrics(save_dir, losses, val_losses, lrs):
 
 
 def plot_miou_metrics(save_dir, overall_miou, per_label_miou):
+    class_info = load_class_colors()
     plt.figure(figsize=(8, 6))
     epochs = range(1, len(overall_miou) + 1)
-    plt.plot(epochs, overall_miou, 'm-', label='Overall mIoU')
+    plt.plot(epochs, overall_miou, 'k-', label='Overall mIoU') # Solid black for overall
     for label, values in per_label_miou.items():
-        plt.plot(epochs, values, label=f'Class {label} mIoU')
+        if label in class_info:
+            color = class_info[label]['color']
+            class_name = class_info[label]['name']
+        else:
+            color = None # default color
+            class_name = f"Class {label}"
+
+        plt.plot(epochs, values, linestyle='--', color=color, label=f'{class_name} mIoU') # Dashed lines for classes
     plt.xlabel('Epoch')
     plt.ylabel('mIoU')
     plt.title('mIoU per Class and Overall')
@@ -259,6 +316,32 @@ def plot_miou_metrics(save_dir, overall_miou, per_label_miou):
     miou_save_path = os.path.join(save_dir, 'miou_plot.png')
     os.makedirs(os.path.dirname(miou_save_path), exist_ok=True)
     plt.savefig(miou_save_path)
+    plt.close()
+
+
+def plot_miou_metrics_modified(save_dir, overall_miou_modified, per_label_miou_modified):
+    class_info = load_class_colors()
+    plt.figure(figsize=(8, 6))
+    epochs = range(1, len(overall_miou_modified) + 1)
+    plt.plot(epochs, overall_miou_modified, 'k-', label='Overall Modified mIoU') # Solid black for overall modified mIoU
+    for label, values in per_label_miou_modified.items():
+        if label in class_info:
+            color = class_info[label]['color']
+            class_name = class_info[label]['name']
+        else:
+            color = None # default color
+            class_name = f"Class {label}"
+        plt.plot(epochs, values, linestyle='--', color=color, label=f'{class_name} Modified mIoU') # Dashed lines for modified per-class mIoU
+    plt.xlabel('Epoch')
+    plt.ylabel('Modified mIoU')
+    plt.title('Modified mIoU per Class and Overall (Ignoring labels_to_ignore)')
+    plt.grid(True, alpha=0.3)
+    plt.legend(loc='best')
+    plt.tight_layout()
+
+    miou_save_path_modified = os.path.join(save_dir, 'miou_plot_modified.png')
+    os.makedirs(os.path.dirname(miou_save_path_modified), exist_ok=True)
+    plt.savefig(miou_save_path_modified)
     plt.close()
 
 
@@ -384,7 +467,7 @@ def train(rank: int, world_size: int, params: dict) -> None:
         optimizer = optim.Adam(network.parameters(), lr=base_lr, weight_decay=1e-4, betas=(0.9, 0.999))
         lr_scheduler = ReduceLROnPlateau(optimizer, 
                                          mode='min', 
-                                         patience=6, 
+                                         patience=5, 
                                          factor=0.8, 
                                          min_lr=1e-6,
                                          verbose=True)
@@ -427,9 +510,11 @@ def train(rank: int, world_size: int, params: dict) -> None:
         val_losses = []
         lrs = []
         miou_values = []
+        miou_values_modified = [] # List to store modified mIoU values
         labels_to_ignore = params.get('labels_to_ignore', [])
         non_ignored_labels = [c for c in range(params['n_classes_seg']) if c not in labels_to_ignore]
         per_label_miou_values = {c: [] for c in non_ignored_labels}
+        per_label_miou_values_modified = {c: [] for c in non_ignored_labels} # Dict to store modified per-label mIoU values
         best_val_loss = float('inf')
         best_train_loss = float('inf')
         patience = 20
@@ -450,7 +535,7 @@ def train(rank: int, world_size: int, params: dict) -> None:
             avg_epoch_loss = epoch_loss_tensor.item() / world_size
             
             network.eval()
-            epoch_val_loss, epoch_miou, per_class_iou = validate_one_epoch(
+            epoch_val_loss, epoch_miou, per_class_iou, epoch_miou_modified, per_class_iou_modified = validate_one_epoch( # Capture both miou and miou_modified
                 network, val_loader, criterion, rank, logger, is_main_process, epoch,
                 params['n_classes_seg'], labels_to_ignore, ignore_index=-100, use_amp=mixed_precision
             )
@@ -472,13 +557,15 @@ def train(rank: int, world_size: int, params: dict) -> None:
             
             if is_main_process:
                 logger.info(f'Epoch {epoch+1} - Average Training Loss: {avg_epoch_loss:.4f}, '
-                            f'Average Validation Loss: {avg_epoch_val_loss:.4f}, mIoU: {epoch_miou:.4f}')
+                            f'Average Validation Loss: {avg_epoch_val_loss:.4f}, mIoU: {epoch_miou:.4f}, Modified mIoU: {epoch_miou_modified:.4f}') # Log modified mIoU
                 losses.append(avg_epoch_loss)
                 val_losses.append(avg_epoch_val_loss)
                 lrs.append(optimizer.param_groups[0]['lr'])
                 miou_values.append(epoch_miou)
+                miou_values_modified.append(epoch_miou_modified) # Append modified mIoU values
                 for c in non_ignored_labels:
                     per_label_miou_values[c].append(per_class_iou[c])
+                    per_label_miou_values_modified[c].append(per_class_iou_modified[c]) # Append modified per-class mIoU values
                 
                 checkpoint = {
                     'epoch': epoch,
@@ -490,6 +577,7 @@ def train(rank: int, world_size: int, params: dict) -> None:
                     'val_losses': val_losses,
                     'learning_rates': lrs,
                     'miou': miou_values,
+                    'miou_modified': miou_values_modified # Save modified mIoU values in checkpoint
                 }
                 torch.save(checkpoint, os.path.join(save_dir, 'latest_checkpoint.pth'))
                 if avg_epoch_val_loss < best_val_loss:
@@ -507,11 +595,13 @@ def train(rank: int, world_size: int, params: dict) -> None:
                 
                 plot_training_metrics(save_dir, losses, val_losses, lrs)
                 plot_miou_metrics(save_dir, miou_values, per_label_miou_values)
+                plot_miou_metrics_modified(save_dir, miou_values_modified, per_label_miou_values_modified) # Plot modified mIoU metrics
 
                 writer.add_scalar("Loss/train", avg_epoch_loss, epoch)
                 writer.add_scalar("Loss/val", avg_epoch_val_loss, epoch)
                 writer.add_scalar("Learning Rate", optimizer.param_groups[0]['lr'], epoch)
                 writer.add_scalar("mIoU", epoch_miou, epoch)
+                writer.add_scalar("Modified_mIoU", epoch_miou_modified, epoch) # Log modified mIoU to TensorBoard
 
         if is_main_process:
             writer.close()
