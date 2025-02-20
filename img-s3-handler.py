@@ -129,12 +129,15 @@ class ImgS3Handler:
             left_img = cv2.imread(left_img_path)
             right_img = cv2.imread(right_img_path)
 
-            # Get homography first to ensure it's computed correctly
+            # generate H_img_to_bev matrix
+            (ref_height, ref_width) = (1080, 1920)
             H_img_to_bev = EvalSVO.H_img_to_bev(K, bev_region, bev_size, ground_height)
+            ipm_m = np.concatenate([H_img_to_bev.flatten(), [ref_height, ref_width]])
+            
             ipm_left_img = EvalSVO.generate_ipm_image(left_img, K, bev_region, bev_size, ground_height)
             
             dest_folder = os.path.join(GT_dir, f"{idx}")
-            ImgS3Handler.write_img_data_to_folder(dest_folder, left_img, right_img, ipm_left_img, H_img_to_bev)
+            ImgS3Handler.write_img_data_to_folder(dest_folder, left_img, right_img, ipm_left_img, ipm_m)
 
     @staticmethod
     def generate_GT_train_test(base_dir: str, folders_to_sample: List[str], num_images_to_sample: int):
