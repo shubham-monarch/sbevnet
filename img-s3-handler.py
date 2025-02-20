@@ -5,6 +5,9 @@ from typing import List
 from pathlib import Path
 from data_handler import S3_DataHandler
 from helpers import get_logger
+import random
+import glob
+import shutil
 
 
 class ImgS3Handler: 
@@ -21,6 +24,7 @@ class ImgS3Handler:
         
         S3_DataHandler.download_s3_folder(s3_uri, aws_dir)
 
+    @staticmethod
     def get_valid_leaf_folders(leaf_folders: List[str], folders_to_sample: List[str]) -> List[str]:
          
         valid_leaf_folders = set()
@@ -33,6 +37,40 @@ class ImgS3Handler:
         valid_leaf_folders = list(valid_leaf_folders)
         return valid_leaf_folders
 
+    @staticmethod
+    def sample_img_pairs_from_folder(base_dir: str, folder_path: str, num_images_to_sample: int) -> List[List[str]]:
+        """
+        Samples pairs of left and right images from a specified folder.
+
+        Args:
+            base_dir (str): The base directory to search within.
+            folder_path (str): The path to the folder containing the images, relative to base_dir.
+            num_images_to_sample (int): The number of image pairs to sample.
+
+        Returns:
+            List[List[str]]: A list of image pairs, where each pair is a list containing the 
+                             absolute paths to the left and right images as strings.  Returns
+                             an empty list if no pairs are found.
+        """
+        left_images = list(Path(base_dir / folder_path).rglob("*_left.jpg"))
+
+        logger = get_logger("ImgS3Handler")
+
+        logger.info("───────────────────────────────")
+        logger.info(f"folder_path: {folder_path}")
+        logger.info(f"len(left_images): {len(left_images)}")
+        logger.info("───────────────────────────────")
+
+        img_pairs = []
+        for left_img in left_images:
+            right_img = Path(str(left_img).replace("_left.jpg", "_right.jpg"))
+            if right_img.exists():
+                img_pairs.append((left_img, right_img))
+
+        num_samples = min(num_images_to_sample, len(img_pairs))
+        sampled_pairs = random.sample(img_pairs, num_samples)
+
+        return [(str(left), str(right)) for left, right in sampled_pairs]
 
     @staticmethod
     def generate_GT_train_test(base_dir: str, folders_to_sample: List[str], num_images_to_sample: int):
@@ -43,6 +81,12 @@ class ImgS3Handler:
         os.makedirs(GT_test, exist_ok=True)
 
         leaf_folders = S3_DataHandler._get_leaf_folders(base_dir)
+
+        logger.warning("───────────────────────────────")
+        logger.warning(f"leaf_folders: {leaf_folders[0]}")
+        logger.warning("───────────────────────────────")
+
+        
 
         logger.info("───────────────────────────────")  
         logger.info(f"len(leaf_folders): {len(leaf_folders)}")
@@ -55,7 +99,19 @@ class ImgS3Handler:
         for folder in valid_leaf_folders:
             logger.info(f"-{folder}")
         logger.info("───────────────────────────────")
-        
+
+        for valid_leaf_folder in valid_leaf_folders:
+            sampled_pairs = ImgS3Handler.sample_img_pairs_from_folder(base_dir=base_dir, folder_path=valid_leaf_folder, num_images_to_sample=num_images_to_sample)
+
+            logger.info("───────────────────────────────")
+            logger.info(f"len(sampled_pairs): {len(sampled_pairs)}")
+            logger.info("───────────────────────────────")
+
+            for img_pair in sampled_pairs:
+                logger.info(f"-{img_pair}")
+            
+            break
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, required=True, help='Path to config file')
