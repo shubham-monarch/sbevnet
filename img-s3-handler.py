@@ -91,7 +91,7 @@ class ImgS3Handler:
 
     @staticmethod
     def write_img_data_to_folder(output_dir: str, left_img: np.ndarray, right_img: np.ndarray, 
-                                ipm_left_img: np.ndarray, H_img_to_bev: np.ndarray):
+                                ipm_left_img: np.ndarray, H_img_to_bev: np.ndarray, filename: str = None):
         """
         Writes image data and homography matrix to a numbered subfolder.
         """
@@ -102,6 +102,10 @@ class ImgS3Handler:
         cv2.imwrite(os.path.join(output_dir, "right.jpg"), right_img)
         cv2.imwrite(os.path.join(output_dir, "ipm_left.jpg"), ipm_left_img)
         np.save(os.path.join(output_dir, "H_img_to_bev.npy"), H_img_to_bev)
+
+        if filename is not None:
+            with open(os.path.join(output_dir, "file_name.txt"), "w") as f:
+                f.write(filename)
 
     @staticmethod
     def write_img_data_to_GT(GT_dir: str, img_pairs_to_process: List[List[str]], config_path: str):
@@ -129,6 +133,7 @@ class ImgS3Handler:
             left_img = cv2.imread(left_img_path)
             right_img = cv2.imread(right_img_path)
 
+
             # generate H_img_to_bev matrix
             (ref_height, ref_width) = (1080, 1920)
             H_img_to_bev = EvalSVO.H_img_to_bev(K, bev_region, bev_size, ground_height)
@@ -137,7 +142,12 @@ class ImgS3Handler:
             ipm_left_img = EvalSVO.generate_ipm_image(left_img, K, bev_region, bev_size, ground_height)
             
             dest_folder = os.path.join(GT_dir, f"{idx}")
-            ImgS3Handler.write_img_data_to_folder(dest_folder, left_img, right_img, ipm_left_img, ipm_m)
+            ImgS3Handler.write_img_data_to_folder(dest_folder, 
+                                                  left_img, 
+                                                  right_img, 
+                                                  ipm_left_img, 
+                                                  ipm_m, 
+                                                  filename=str(Path(left_img_path).parent))
 
     @staticmethod
     def generate_GT_train_test(base_dir: str, folders_to_sample: List[str], num_images_to_sample: int):
