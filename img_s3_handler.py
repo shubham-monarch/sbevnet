@@ -1,7 +1,7 @@
 import argparse
 import yaml
 import os
-from typing import List
+from typing import List, Any, Dict
 from pathlib import Path
 from helpers import get_logger
 import random
@@ -9,8 +9,11 @@ import glob
 import shutil
 import cv2
 import numpy as np
-from data_handler import S3_DataHandler
+
+
+from data_handler import S3_DataHandler, ModelDataHandler
 from svo_eval import EvalSVO
+
 
 class ImgS3Handler: 
 
@@ -100,7 +103,7 @@ class ImgS3Handler:
         
         cv2.imwrite(os.path.join(output_dir, "left.jpg"), left_img)
         cv2.imwrite(os.path.join(output_dir, "right.jpg"), right_img)
-        cv2.imwrite(os.path.join(output_dir, "ipm_left.jpg"), ipm_left_img)
+        cv2.imwrite(os.path.join(output_dir, "ipm-left.png"), ipm_left_img)
         np.save(os.path.join(output_dir, "H_img_to_bev.npy"), H_img_to_bev)
 
         if filename is not None:
@@ -150,13 +153,22 @@ class ImgS3Handler:
                                                   filename=str(Path(left_img_path).parent))
 
     @staticmethod
-    def generate_GT_train_test(base_dir: str, folders_to_sample: List[str], num_images_to_sample: int):
+    def generate_GT_train_test(config_path: str):
         
         logger = get_logger("ImgS3Handler")
 
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        
+        s3_config = config['s3_data_handler']
+        base_dir = s3_config['base_dir']
+        folders_to_sample = s3_config['folders_to_sample']
+        num_images_to_sample = s3_config['num_images_to_sample']
+
         GT_test = os.path.join(base_dir, "GT-test")
         os.makedirs(GT_test, exist_ok=True)
-
+        assert not (os.path.exists(GT_test) and os.listdir(GT_test))
+        
         img_pairs_to_process = ImgS3Handler.generate_sample_img_pairs(
             base_dir=base_dir,
             folders_to_sample=folders_to_sample[:2],
@@ -166,31 +178,66 @@ class ImgS3Handler:
         ImgS3Handler.write_img_data_to_GT(
             GT_dir=GT_test,
             img_pairs_to_process=img_pairs_to_process,
-            config_path="configs/img-s3-handler.yaml")
+            config_path=config_path)
+    
+    @staticmethod
+    def generate_model_dataset(config_path: str):
+        
+        logger = get_logger("ImgS3Handler")
+        
+        with open(config_path, 'r') as f:
+            config: Dict[str, Any] = yaml.safe_load(f)
+
+        s3_config = config['s3_data_handler']
+        base_dir = s3_config['base_dir']
+        aws_dir = os.path.join(base_dir, "GT-aws")
+
+
+        ImgS3Handler.fetch_s3_svo_images(
+            s3_uri=s3_config['s3_uri'],
+            aws_dir=aws_dir
+        )
+
+        ImgS3Handler.generate_GT_train_test(config_path=config_path)
+
+        GT_test_dir = os.path.join(base_dir, "GT-test")
+        model_folder = os.path.join(base_dir, "model-dataset")
+
+        ModelDataHandler._restructure_GT_folder(GT_test_dir, model_folder)
+        ModelDataHandler._flip_masks(os.path.join(model_folder, 'seg-masks-mono'),\
+                           os.path.join(model_folder, 'seg-masks-mono'))
+        
+        ModelDataHandler._populate_json(os.path.join(model_folder, 'dataset.json'), model_folder, model_folder, model_folder)
+
+
         
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=str, required=True, help='Path to config file')
-    args = parser.parse_args()
+# def main():
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument('--config', type=str, required=True, help='Path to config file')
+#     args = parser.parse_args()
     
-    with open(args.config, 'r') as f:
-        config = yaml.safe_load(f)
+#     # with open(args.config, 'r') as f:
+#     #     config = yaml.safe_load(f)
     
-    s3_config = config['s3_data_handler']
-    base_dir = s3_config['base_dir']
-    aws_dir = os.path.join(base_dir, "GT-aws")
+#     # s3_config = config['s3_data_handler']
+#     # base_dir = s3_config['base_dir']
+#     # aws_dir = os.path.join(base_dir, "GT-aws")
 
-    ImgS3Handler.fetch_s3_svo_images(
-        s3_uri=s3_config['s3_uri'],
-        aws_dir=aws_dir
-    )
+#     # ImgS3Handler.fetch_s3_svo_images(
+#     #     s3_uri=s3_config['s3_uri'],
+#     #     aws_dir=aws_dir
+#     # )
 
-    ImgS3Handler.generate_GT_train_test(
-        base_dir=base_dir,
-        folders_to_sample=s3_config['folders_to_sample'],
-        num_images_to_sample=s3_config['num_images_to_sample']
-    )
+#     # ImgS3Handler.generate_GT_train_test(
+#     #     base_dir=base_dir,
+#     #     folders_to_sample=s3_config['folders_to_sample'],
+#     #     num_images_to_sample=s3_config['num_images_to_sample']
+#     # )
 
-if __name__ == "__main__":
-    main()
+#     ImgS3Handler.generate_model_dataset(
+#         config_path=args.config
+#     )
+
+# if __name__ == "__main__":
+#     main()
