@@ -1,5 +1,0 @@
-# S3 configuration
-s3_data_handler:
-  s3_uri: "s3://occupancy-dataset/svo-images/"
-  base_dir: "svo-images"       
-  

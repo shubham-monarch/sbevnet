@@ -1,0 +1,69 @@
+# S3 configuration
+s3_data_handler:
+  s3_uri: "s3://occupancy-dataset/svo-images/"
+  base_dir: "imgs-s3"    
+  num_images_to_sample: 10
+  folders_to_sample: [chino_valley, grimius, ghdairy, open_sky, coolidge, mccarty, mineral_king]   
+  # folders_to_sample: [ghdairy, open_sky, coolidge, mccarty, mineral_king]   
+
+
+
+# EVALUATION SPECIFIC PARAMETERS
+
+# segmentation and heatmap parameters
+# image dimensions
+image_w: 640
+image_h: 480
+max_disp: 64
+
+n_classes_seg: 14
+n_hmap: 256
+
+# depth range (in meters)
+xmin: 4.0
+xmax: 9.0
+
+# horizontal range (in meters)
+ymin: -2.0
+ymax: 3.0
+
+# camera parameters
+cx: 964.989
+cy: 569.276
+f: 1094.49
+tx: 0.12
+camera_ext_x: 0.0
+camera_ext_y: 0.0
+
+# additional parameters for SBEVNet
+do_ipm_rgb: true
+do_ipm_feats: true
+fixed_cam_confs: true
+
+
+# dataset parameters
+json_path: "imgs-s3/model-dataset/dataset.json"
+color_map: "configs/Mavis.yaml"
+do_mask: false
+do_top_seg: false
+zero_mask: false
+
+# evaluation specific parameters
+checkpoint_path: "checkpoints/best_val_model.pth"
+batch_size: 1
+predictions_dir: "imgs-s3/predictions"
+gpu_id: 3 
+
+# ipm parameters
+ground_height: 2.07
+ipm_bev_size: 256
+
+camera_matrix:
+  - [1094.49, 0, 964.989]
+  - [0, 1094.49, 569.276]
+  - [0, 0, 1]
+
+# visualization parameters
+enable_GT: false
+enable_IPM: true
+

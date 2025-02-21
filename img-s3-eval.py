@@ -1,12 +1,14 @@
 import argparse
 
-from img_s3_handler import ImgS3Handler
+from img_s3_data_handler import ImgS3DataHandler
+from evaluate import evaluate_sbevnet
+
 
 class ImgS3Eval: 
 
     @staticmethod
     def generate_model_dataset(config_path: str):
-        ImgS3Handler.generate_model_dataset(config_path=config_path)
+        ImgS3DataHandler.generate_model_dataset(config_path=config_path)
 
 
 
@@ -16,7 +18,9 @@ def main():
     args = parser.parse_args()
     
     ImgS3Eval.generate_model_dataset(config_path=args.config)
+    evaluate_sbevnet(config_path=args.config)
 
+    ImgS3DataHandler.restructure_predictions_folder(config_path=args.config)
 
 if __name__ == "__main__":
     main()

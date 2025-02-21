@@ -15,7 +15,7 @@ from data_handler import S3_DataHandler, ModelDataHandler
 from svo_eval import EvalSVO
 
 
-class ImgS3Handler: 
+class ImgS3DataHandler: 
 
     @staticmethod
     def fetch_s3_svo_images(s3_uri: str, aws_dir: str):
@@ -62,8 +62,7 @@ class ImgS3Handler:
         logger = get_logger("ImgS3Handler")
 
         logger.info("───────────────────────────────")
-        logger.info(f"folder_path: {folder_path}")
-        logger.info(f"len(left_images): {len(left_images)}")
+        logger.info(f"Sampling {num_images_to_sample} image pairs from {folder_path}")
         logger.info("───────────────────────────────")
 
         img_pairs = []
@@ -80,12 +79,22 @@ class ImgS3Handler:
     @staticmethod
     def generate_sample_img_pairs(base_dir: str, folders_to_sample: List[str], num_images_to_sample: int):
         
+        logger = get_logger("ImgS3Handler")
         leaf_folders = S3_DataHandler._get_leaf_folders(base_dir)
-        valid_leaf_folders = ImgS3Handler.get_valid_leaf_folders(leaf_folders, folders_to_sample)
+
+        # logger.info("───────────────────────────────")
+        # logger.info(f"Leaf folders: {leaf_folders}")
+        # logger.info("───────────────────────────────")
+
+        valid_leaf_folders = ImgS3DataHandler.get_valid_leaf_folders(leaf_folders, folders_to_sample)
+
+        # logger.info("───────────────────────────────")
+        # logger.info(f"Valid leaf folders: {valid_leaf_folders}")
+        # logger.info("───────────────────────────────")
 
         img_pairs_to_process = []
         for folder in valid_leaf_folders:
-            sampled_pairs = ImgS3Handler.sample_img_pairs_from_folder(base_dir=base_dir, 
+            sampled_pairs = ImgS3DataHandler.sample_img_pairs_from_folder(base_dir=base_dir, 
                                                                       folder_path=folder, 
                                                                       num_images_to_sample=num_images_to_sample)    
             img_pairs_to_process.extend(sampled_pairs)
@@ -147,7 +156,7 @@ class ImgS3Handler:
             ipm_left_img = EvalSVO.generate_ipm_image(left_img, K, bev_region, bev_size, ground_height)
             
             dest_folder = os.path.join(GT_dir, f"{idx}")
-            ImgS3Handler.write_img_data_to_folder(dest_folder, 
+            ImgS3DataHandler.write_img_data_to_folder(dest_folder, 
                                                   left_img_resized, 
                                                   right_img_resized, 
                                                   ipm_left_img, 
@@ -171,13 +180,13 @@ class ImgS3Handler:
         os.makedirs(GT_test, exist_ok=True)
         assert not (os.path.exists(GT_test) and os.listdir(GT_test))
         
-        img_pairs_to_process = ImgS3Handler.generate_sample_img_pairs(
+        img_pairs_to_process = ImgS3DataHandler.generate_sample_img_pairs(
             base_dir=base_dir,
-            folders_to_sample=folders_to_sample[:2],
+            folders_to_sample=folders_to_sample,
             num_images_to_sample=num_images_to_sample
         )
 
-        ImgS3Handler.write_img_data_to_GT(
+        ImgS3DataHandler.write_img_data_to_GT(
             GT_dir=GT_test,
             img_pairs_to_process=img_pairs_to_process,
             config_path=config_path)
@@ -195,51 +204,67 @@ class ImgS3Handler:
         aws_dir = os.path.join(base_dir, "GT-aws")
 
 
-        ImgS3Handler.fetch_s3_svo_images(
+        ImgS3DataHandler.fetch_s3_svo_images(
             s3_uri=s3_config['s3_uri'],
             aws_dir=aws_dir
         )
 
-        ImgS3Handler.generate_GT_train_test(config_path=config_path)
+        ImgS3DataHandler.generate_GT_train_test(config_path=config_path)
 
         GT_test_dir = os.path.join(base_dir, "GT-test")
         model_folder = os.path.join(base_dir, "model-dataset")
 
         ModelDataHandler._restructure_GT_folder(GT_test_dir, model_folder)
-        ModelDataHandler._flip_masks(os.path.join(model_folder, 'seg-masks-mono'),\
-                           os.path.join(model_folder, 'seg-masks-mono'))
+        ModelDataHandler._flip_masks(os.path.join(model_folder, 'ipm-left'),\
+                           os.path.join(model_folder, 'ipm-left'))
         
         ModelDataHandler._populate_json(os.path.join(model_folder, 'dataset.json'), model_folder, model_folder, model_folder)
 
+    @staticmethod
+    def restructure_predictions_folder(config_path: str):
+        logger = get_logger("ImgS3Handler")
 
+        with open(config_path, 'r') as f:
+            config: Dict[str, Any] = yaml.safe_load(f)
+            
+        base_dir = config['s3_data_handler']['base_dir']
+        predictions_dir = os.path.join(base_dir, "predictions")
+        model_dataset_dir = os.path.join(base_dir, "model-dataset")
+        filenames_dir = os.path.join(model_dataset_dir, "filenames")
         
+        for root, _, files in os.walk(predictions_dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                file_index = file.split("__")[0]
 
-# def main():
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument('--config', type=str, required=True, help='Path to config file')
-#     args = parser.parse_args()
-    
-#     # with open(args.config, 'r') as f:
-#     #     config = yaml.safe_load(f)
-    
-#     # s3_config = config['s3_data_handler']
-#     # base_dir = s3_config['base_dir']
-#     # aws_dir = os.path.join(base_dir, "GT-aws")
+                filename_path = os.path.join(filenames_dir, f"{file_index}__filename.txt")
+                with open(filename_path, 'r') as f:
+                    svo_name = f.read().strip()
+                    svo_folder = str(Path(svo_name).parent).replace("imgs-s3/GT-aws/", "")
 
-#     # ImgS3Handler.fetch_s3_svo_images(
-#     #     s3_uri=s3_config['s3_uri'],
-#     #     aws_dir=aws_dir
-#     # )
+                new_pred_dir = os.path.join(predictions_dir, svo_folder)
+                os.makedirs(new_pred_dir, exist_ok=True)
+                new_file_path = os.path.join(new_pred_dir, file)
+                shutil.copy(file_path, new_file_path)
 
-#     # ImgS3Handler.generate_GT_train_test(
-#     #     base_dir=base_dir,
-#     #     folders_to_sample=s3_config['folders_to_sample'],
-#     #     num_images_to_sample=s3_config['num_images_to_sample']
-#     # )
 
-#     ImgS3Handler.generate_model_dataset(
-#         config_path=args.config
-#     )
-
-# if __name__ == "__main__":
-#     main()
+        # Get all numbered prediction folders
+        pred_folders = glob.glob(os.path.join(predictions_dir, "[0-9]*"))
+        
+        for pred_folder in pred_folders:
+            # Get corresponding filename from model-dataset
+            folder_name = os.path.basename(pred_folder)
+            filename_path = os.path.join(model_dataset_dir, folder_name, "file_name.txt")
+            
+            with open(filename_path, 'r') as f:
+                original_path = f.read().strip()
+            
+            # Create parent directory structure in predictions
+            parent_dir = os.path.basename(original_path)
+            new_pred_dir = os.path.join(predictions_dir, parent_dir)
+            os.makedirs(new_pred_dir, exist_ok=True)
+            
+            # Move prediction folder to new location
+            new_folder_path = os.path.join(new_pred_dir, folder_name)
+            shutil.move(pred_folder, new_folder_path)
+            
