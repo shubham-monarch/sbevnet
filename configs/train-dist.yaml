@@ -7,6 +7,14 @@ max_disp: 64
 n_classes_seg: 14
 n_hmap: 256
 
+# # depth range (in meters)
+# xmin: 4.2
+# xmax: 17.2
+
+# # horizontal range (in meters)
+# ymin: -7.0
+# ymax: 6.0
+
 # depth range (in meters)
 xmin: 4.0
 xmax: 9.0
@@ -14,6 +22,7 @@ xmax: 9.0
 # horizontal range (in meters)
 ymin: -2.0
 ymax: 3.0
+
 
 # camera parameters
 cx: 964.989
@@ -29,8 +38,8 @@ camera_ext_y: 0.0
 fixed_cam_confs: true
 
 # training parameters
-batch_size: 4
-num_epochs: 200
+batch_size: 8
+num_epochs: 1000
 initial_learning_rate: 0.001
 num_workers: 4
 num_gpus: 3
@@ -49,7 +58,7 @@ dataset_path: "data/model-dataset/dataset.json"
 save_dir: "checkpoints"
 
 # labels-ids to ignore
-labels_to_ignore: [0, 4, 7, 8, 9, 11, 12, 13]
+labels_to_ignore: [0, 4, 6, 7, 8, 9, 10, 11, 12, 13]
 
 # training configuration
 # focal_loss_class_weights: [0, 0.4, 0.01, 0.1, 0, 0.8, 0.1, 0, 0, 0, 0.8, 0.2, 0, 0.2]
@@ -59,12 +68,12 @@ class_weights: [0, 0.1, 0.05, 0.1, 0, 0.1, 0.1, 0, 0, 0, 0.05, 0.0, 0, 0]
 early_stopping_patience: 20
 
 # loss configuration
-loss_type: cross_entropy         # set to "focal" to use FocalLoss, or "cross_entropy" for the default
+loss_type: cross_entropy  # set to "focal" to use FocalLoss, or "cross_entropy" for the default
 focal_gamma: 2.0         # gamma parameter for FocalLoss
 
 # seed and deterministic settings
 random_seed: 420
-deterministic: false     # Toggle deterministic behavior
+deterministic: true     # Toggle deterministic behavior
 
 # Enable mixed precision training
 mixed_precision_training: true

@@ -2,7 +2,7 @@
 s3_data_handler:
   s3_uri: "s3://occupancy-dataset/svo-images/"
   base_dir: "imgs-s3"    
-  num_images_to_sample: 10
+  num_images_to_sample: 100
   folders_to_sample: [chino_valley, grimius, ghdairy, open_sky, coolidge, mccarty, mineral_king]   
   # folders_to_sample: [ghdairy, open_sky, coolidge, mccarty, mineral_king]   
 

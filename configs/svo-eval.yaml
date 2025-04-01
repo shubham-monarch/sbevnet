@@ -1,7 +1,8 @@
 # zed svo config
-svo_file: "svo-eval/front_2024-02-13-09-52-14.svo"
-sampling_freq: 5
-frame_cnt: 10000
+svo_file: "svo-eval/front_2024-02-13-09-42-14.svo"
+sampling_freq: 1
+frame_cnt: 100
+start_frame_idx: 1430
 output_dir: "svo-eval/GT-aws"
 
 # S3 configuration
@@ -11,6 +12,9 @@ s3_data_handler:
   required_keys:
     - "left.jpg"
     - "right.jpg"
+    - "ipm-left.png"
+    - "H_img_to_bev.npy"
+
   n_train: 0
   n_test: -1
 
@@ -24,13 +28,19 @@ image_w: 640
 image_h: 480
 max_disp: 64
 
+# xmin: 4.2
+# xmax: 17.2
+
+# ymin: -7.0
+# ymax: 6.0
+
 # segmentation and heatmap parameters
 n_classes_seg: 14
 n_hmap: 256
 
 # depth range (in meters)
-xmin: 2.0
-xmax: 7.0
+xmin: 4.0
+xmax: 9.0
 
 # horizontal range (in meters)
 ymin: -2.0
@@ -45,25 +55,34 @@ camera_ext_x: 0.0
 camera_ext_y: 0.0
 
 # additional parameters for SBEVNet
-do_ipm_rgb: false
-do_ipm_feats: false
+do_ipm_rgb: true
+do_ipm_feats: true
 fixed_cam_confs: true
 
-# training parameters
-batch_size: 4
-num_epochs: 200
-learning_rate: 0.0001
 
 # dataset parameters
 json_path: "svo-eval/model-dataset/dataset.json"
 color_map: "configs/Mavis.yaml"
 do_mask: false
-do_top_seg: true
+do_top_seg: false
 zero_mask: false
 
 # evaluation specific parameters
+# checkpoint_path: "milestones/8/best_val_model.pth"
 checkpoint_path: "checkpoints/best_val_model.pth"
 batch_size: 1
-do_top_seg: false
 predictions_dir: "svo-eval/predictions"
 gpu_id: 3 
+
+# ipm parameters
+ground_height: 2.07
+ipm_bev_size: 256
+
+camera_matrix:
+  - [1090.536, 0, 954.99]
+  - [0, 1090.536, 523.12]
+  - [0, 0, 1]
+
+# visualization parameters
+enable_GT: false
+enable_IPM: true

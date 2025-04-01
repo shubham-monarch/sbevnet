@@ -193,24 +193,28 @@ def evaluate_sbevnet(config_path: str):
                         continue
                     left_img_resized = cv2.resize(left_img, (256, 256), interpolation=cv2.INTER_LINEAR)
                     
-                    if enable_IPM:
-                        combined_image = np.hstack((seg_mask_rgb, left_img_resized, ipm_left, cv2.flip(colored_pred, 0)))
-                        # combined_image = np.hstack((seg_mask_rgb, left_img_resized, ipm_left, colored_pred))
+                    combined_image = None
 
-                    # elif enable_GT:
-                    #     combined_image = np.hstack((seg_mask_rgb, left_img_resized, cv2.flip(colored_pred, 0)))
-                    else:
-                        combined_image = np.hstack((left_img_resized, cv2.flip(colored_pred, 0)))
+                    if enable_GT:
+                        combined_image = np.hstack((seg_mask_rgb, left_img_resized))
+
+                    if enable_IPM:
+                        if combined_image is None:
+                            combined_image = np.hstack((left_img_resized, ipm_left))
+                        else:
+                            combined_image = np.hstack((combined_image, ipm_left))
+                        
+                    combined_image = np.hstack((combined_image, cv2.flip(colored_pred, 0)))
+
                     
                     combined_dir = os.path.join(pred_dir, 'combined')
-                    # os.makedirs(combined_dir, exist_ok=True)
                     combined_path = os.path.join(combined_dir, f'{left_img_list[img_idx]}')
                     
                     os.makedirs(os.path.dirname(combined_path), exist_ok=True)
                     cv2.imwrite(combined_path, combined_image)
             
             except Exception as e:
-                logger.error(f'Error in batch {batch_idx}: {str(e)}')
+                logger.exception(f"Error in batch {batch_idx}")
                 continue
 
 def main():

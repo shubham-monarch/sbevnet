@@ -18,6 +18,8 @@ sync.expect
 leaf-eval/*
 svo-eval/*
 milestones/**
+imgs-s3/**
+
 
 # OS generated files #
 ######################

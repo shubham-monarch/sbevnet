@@ -1,6 +1,6 @@
 # S3 configuration
 s3_data_handler:
-  s3_uri: "s3://occupancy-dataset/bev-dairy-18-02-25/"
+  s3_uri: "s3://occupancy-dataset/bev-dairy-21-02-25/"
   base_dir: "data"       # Base directory for downloads and S3 destination
   required_keys:
     - "left.jpg"
@@ -11,8 +11,8 @@ s3_data_handler:
     - "ipm-left.png"
     - "H_img_to_bev.npy"
 
-  n_train: 30          # Training sample count for GT dataset
-  n_test: 5           # Test sample count for GT dataset
+  n_train: 2912          # Training sample count for GT dataset
+  n_test: 400         # Test sample count for GT dataset
 
 # Output directories
 model_data_handler:

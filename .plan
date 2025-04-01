@@ -325,7 +325,7 @@ fine-tuning
 + save best-train / best-val / latest.pth
 + save all intermediate epochs
 * class-wise training
-- co-relation betweeen train / validation loss
+* co-relation betweeen train / validation loss
 - fine tuning strategy
 - train on single farm
 - explore best practices around incorporating validation loss in training
@@ -365,7 +365,7 @@ fine-tuning
 - add gt-combined folder that contains mask + left-img
 + [model-dataset-generation] remove invalid seg-masks
 + regenerate bev_seg_mask with better navigable-space representation
-- [feat] script to scp [gt-seg-mask + left-img] or [pred-seg-mask + left-img] to local 
+* [feat] script to scp [gt-seg-mask + left-img] or [pred-seg-mask + left-img] to local 
 + aggregate average class % in train / test data 
 - script to evaluate on train-data instead of validation-data
 - use the label-cnt distribution data to adjust crosssEntropyLoss weights 
@@ -404,13 +404,11 @@ fine-tuning
 
 - [data-augmentation] train it on patches of different dimensions
 
-- [feat] script to upload weight files
 - [tune] tune fence weights
 - add occ-masks
 - generate seg-mask for x= [-5, 5] and [2,12]
 * naming mechanism for uploading gt-seg-mask data folders to s3
 - [feat] figure out passing rectangular masks to sbevnet
-- [feat] script to automatically backup and sync milestones
 
 - fix gt-seg mask error
 - [bug] fix get_grid_one
@@ -459,14 +457,11 @@ paper details
 - [feat] add swin-transformer backbone
 - [inspect] checkout the other data files available in kitti dataset
 
-- [bug] update evaluate.yaml for ipm-rgb / ipm-m support
++ [bug] update evaluate.yaml for ipm-rgb / ipm-m support
 
 + label-wise mou plots over frames
 - would increasing x-range lead to better training?
-- [bug] mismatch between ipm-orientation and GT/pred seg-masks orientation
-- [feat] generate x/ y/ z-axis angles as part of model dataset
-
-- [feat] script to compare predictions across multiple checkpoints folder
++ [bug] mismatch between ipm-orientation and GT/pred seg-masks orientation
 
 + add labels_to_ignore in train-dist.yaml 
 + set weights for labels_to_ignore to 0 
@@ -474,7 +469,8 @@ paper details
 
 - enable mixed precision training
 
-- significance of miou
+<!-- data-augmentation -->
++ significance of miou
 - refer crestereo for data-augmentation
 - can we introduce cropping for data augmnetation? 
 - segmentation mask based augmentation 
@@ -486,12 +482,12 @@ paper details
 - camera axis angles
 - label distribution
 
-- [bug] seg-mask / ipm-rgb orientation being passed to model is wrong
++ [bug] seg-mask / ipm-rgb orientation being passed to model is wrong
 
 <!-- fix bev_mask_generator -->
 - improve fence co-ordinates
-- increase bev-range
-- hardcode ipm projection / H_img_to_bev
++ increase bev-range
++ hardcode ipm projection / H_img_to_bev
 - [tune] feed pusher is visible, tune z-range
 - remove not-needed label classes
 - priority collapsing in gt-seg-masks
@@ -500,7 +496,7 @@ paper details
 - remove strictly unwanted labels [i.e. tractor-hood / glare / void ] from left-segmented.ply before generating the gt-seg-masks
 - radius filtering for poles / other classess
 - remove feeder
-- expand the horizontal range of the mask to capture more points
++ expand the horizontal range of the mask to capture more points
 - what values of z-range would filter out the hood for the first frame in a sequence? 
 - what values of z-range would filter out the feed pusher? 
 - generate occ-mask for the rectified pcd to ascertain the above values.
@@ -513,3 +509,53 @@ paper details
 - decrease rate on validation/ train loss spike
 - manual override for learning rate
 - how does training resumption work?
+
++ [feat] enable ipm-rgb + ipm-feat generation in svo-eval.py
+- [feat] generate x/ y/ z-axis angles as part of model dataset
+- [feat] script to compare predictions across multiple checkpoints folder
+- [feat] script to automatically backup and sync milestones
+
+
+- better output management in svo-eval/predictions
+- name output-folder with svo-filename + range
++ automatic fetching from sg-new-data
++ categorising output into farm-wise folders
+- [pipeline] end to end svo-predictions
+- fetch from sg-new-data + categorise input/output into folders
+
+- remove night scenes
+- [bug] svo-eval ipm-generation is wrong
++ remove labels outlier filtering
++ why are we flipping ipm-mask before uplaoding? 
+
+- typical terminal learning rate?
+- add combined / data-metrics folder in model-dataset
+- add images-eval-s3.py
+
+- encode bev-mask information in bev-daiy-s3 json files
+- encode model-dist.yaml in checkpoints
+
+- images-eval-s3.py
+
+
+
+
+demo 
+- add images-eval-s3.py
+- add combined / data-metrics folder in modsel-dataset
+- comparison of GT across the multiple bev-dairy-projects
+- better renaming for bev-s3-datasets
+
+- run img-eval-s3 on milestones/7/8/9/10
+
+- [img-left | ipm-left | pred] --> validation
+- [img-left | ipm-left | pred] --> img-s3-eval 
+
+- integrated ipm-rgb generation
+- added data-set metric folder 
+- added some checks to weed out axis-outliers from GT
+- training stable till 120/ 130 epochs
+- feed / navigable is fine
+- fixed depth / scaling issue
+- added camera pitch correction
+- make evaluation video set

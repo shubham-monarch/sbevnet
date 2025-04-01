@@ -11,6 +11,14 @@ max_disp: 64
 n_classes_seg: 14
 n_hmap: 256
 
+# # depth range (in meters)
+# xmin: 4.2
+# xmax: 17.2
+
+# # horizontal range (in meters)
+# ymin: -7.0
+# ymax: 6.0
+
 # depth range (in meters)
 xmin: 4.0
 xmax: 9.0
@@ -18,6 +26,7 @@ xmax: 9.0
 # horizontal range (in meters)
 ymin: -2.0
 ymax: 3.0
+
 
 # camera parameters
 cx: 964.989
@@ -41,10 +50,11 @@ zero_mask: false
 
 # evaluation specific parameters
 checkpoint_path: 'checkpoints/best_val_model.pth'
+# checkpoint_path: 'milestones/8/best_val_model.pth'
 batch_size: 1
 predictions_dir: 'predictions'
 gpu_id: 3
 
-# flags loaded in evaluate.py
+# visualization parameters
 enable_GT: true
 enable_IPM: true

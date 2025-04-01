@@ -1,0 +1,42 @@
+s3_data_handler:
+  base_dir: "data"
+
+image_w: 640
+image_h: 480
+max_disp: 64
+
+n_classes_seg: 14
+n_hmap: 256
+
+xmin: 2.0
+xmax: 7.0
+
+ymin: -2.0
+ymax: 3.0
+
+cx: 964.989
+cy: 569.276
+f: 1093.2768
+tx: 0.12
+camera_ext_x: 0.0
+camera_ext_y: 0.0
+
+do_ipm_rgb: true
+do_ipm_feats: true
+fixed_cam_confs: true
+
+batch_size: 1
+
+json_path: "data/model-dataset/dataset.json"
+color_map: "configs/Mavis.yaml"
+do_mask: false
+do_top_seg: false
+zero_mask: false
+
+gpu_id: 3
+
+enable_IPM: true
+
+checkpoint_dirs:
+  - "checkpoints"
+  - "milestones/5/"

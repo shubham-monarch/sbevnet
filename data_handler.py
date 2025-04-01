@@ -458,16 +458,16 @@ class ModelDataHandler:
         ModelDataHandler._remap_mask_labels(os.path.join(model_train_dir, 'seg-masks-mono'))
         ModelDataHandler._remap_mask_labels(os.path.join(model_test_dir, 'seg-masks-mono'))
 
-        # remove outlier masks for the specified labels from train and test dirs
-        total_train_cnt, _ = ModelDataHandler._remove_label_outliers(os.path.join(model_train_dir, 'seg-masks-mono'), labels_to_remove, 0.8)
-        total_test_cnt, _ = ModelDataHandler._remove_label_outliers(os.path.join(model_test_dir, 'seg-masks-mono'), labels_to_remove, 0.8)
-        total_cnt = total_train_cnt + total_test_cnt
+        # # remove outlier masks for the specified labels from train and test dirs
+        # total_train_cnt, _ = ModelDataHandler._remove_label_outliers(os.path.join(model_train_dir, 'seg-masks-mono'), labels_to_remove, 0.8)
+        # total_test_cnt, _ = ModelDataHandler._remove_label_outliers(os.path.join(model_test_dir, 'seg-masks-mono'), labels_to_remove, 0.8)
+        # total_cnt = total_train_cnt + total_test_cnt
         
-        logger.warning("───────────────────────────────")
-        logger.warning(f"Removed {total_cnt} masks with label outliers")
-        logger.warning(f"Removed {total_train_cnt} masks with label outliers in train")
-        logger.warning(f"Removed {total_test_cnt} masks with label outliers in test")
-        logger.warning("───────────────────────────────\n  ")
+        # logger.warning("───────────────────────────────")
+        # logger.warning(f"Removed {total_cnt} masks with label outliers")
+        # logger.warning(f"Removed {total_train_cnt} masks with label outliers in train")
+        # logger.warning(f"Removed {total_test_cnt} masks with label outliers in test")
+        # logger.warning("───────────────────────────────\n  ")
 
         # remove axis angle outliers from cam-extrinsics
         train_axis_cnt, _ = ModelDataHandler._remove_axis_angle_outliers(
